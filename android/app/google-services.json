@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "742739090143-j0ht2oifa2cr9kfs986725d976ej0tvg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "au.com.bitbot.phonetowers",
+            "certificate_hash": "54ef0f58ce4de39a1c29538ee795e1de92bfd178"
+          }
+        },
+        {
           "client_id": "742739090143-utsea779n4mpqm5hgsm9lke55ic2cou6.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -48,10 +56,11 @@
               "client_type": 3
             },
             {
-              "client_id": "742739090143-ql972n5bubii2b8jsv2jb1fktj27adf0.apps.googleusercontent.com",
+              "client_id": "742739090143-0bsn95lmirihkgqk8nu0hi4a7c5n8bsh.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "au.com.bitbot.phonetowers"
+                "bundle_id": "au.com.bitbot.phonetowers",
+                "app_store_id": "1611042219"
               }
             }
           ]

@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>742739090143-ql972n5bubii2b8jsv2jb1fktj27adf0.apps.googleusercontent.com</string>
+	<string>742739090143-0bsn95lmirihkgqk8nu0hi4a7c5n8bsh.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.742739090143-ql972n5bubii2b8jsv2jb1fktj27adf0</string>
+	<string>com.googleusercontent.apps.742739090143-0bsn95lmirihkgqk8nu0hi4a7c5n8bsh</string>
 	<key>ANDROID_CLIENT_ID</key>
 	<string>742739090143-ebupp8s3snpmhsp499npie2ae7ikpmjp.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
@@ -34,5 +34,7 @@
 	<string>1:742739090143:ios:9f84b3f7da18d9fcb2a76a</string>
 	<key>DATABASE_URL</key>
 	<string>https://aus-phone-towers-7d175.firebaseio.com</string>
+	<key>ADMOB_APP_ID</key>
+	<string>ca-app-pub-6156750794650893~6040337543</string>
 </dict>
 </plist>
