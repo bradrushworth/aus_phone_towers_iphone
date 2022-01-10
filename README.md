@@ -54,3 +54,44 @@ project.save
     #import <firebase_core/FLTFirebasePlugin.h>
      ~~~~~~~^
     2 errors generated.
+
+
+
+
+
+
+Analyzing dependencies
+firebase_analytics: Using Firebase SDK version '8.10.0' defined in 'firebase_core'
+firebase_core: Using Firebase SDK version '8.10.0' defined in 'firebase_core'
+firebase_crashlytics: Using Firebase SDK version '8.10.0' defined in 'firebase_core'
+Downloading dependencies
+Installing Firebase (8.10.0)
+Installing FirebaseAnalytics (8.10.0)
+Installing FirebaseCore (8.10.0)
+Installing FirebaseCoreDiagnostics (8.10.0)
+Installing FirebaseCrashlytics (8.10.0)
+Installing FirebaseInstallations (8.10.0)
+Installing Flutter (1.0.0)
+Installing Google-Mobile-Ads-SDK (8.11.0)
+Installing GoogleAppMeasurement (8.10.0)
+Installing GoogleDataTransport (9.1.2)
+Installing GoogleMaps (4.2.0)
+Installing GoogleUserMessagingPlatform (2.0.0)
+Installing GoogleUtilities (7.7.0)
+Installing PromisesObjC (2.0.0)
+Installing firebase_analytics (9.0.5)
+Installing firebase_core (1.11.0)
+Installing firebase_crashlytics (2.4.5)
+Installing google_maps_flutter (0.0.1)
+Installing google_mobile_ads (0.0.1)
+Installing in_app_purchase_storekit (0.0.1)
+Installing in_app_review (0.2.0)
+Installing location (0.0.1)
+Installing nanopb (2.30908.0)
+Installing path_provider_ios (0.0.1)
+Installing permission_handler (5.1.0+2)
+Installing shared_preferences_ios (0.0.1)
+Installing url_launcher_ios (0.0.1)
+Generating Pods project
+Integrating client project
+Pod installation complete! There are 15 dependencies from the Podfile and 27 total pods installed.
