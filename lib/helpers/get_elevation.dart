@@ -71,8 +71,7 @@ class GetElevation {
     }
 
     String positionString = sb.toString().substring(0, sb.length - 1);
-    debugPrint(
-        'GetElevation", "getPositionsString: measurements=$measurements and positionString is $positionString');
+    //debugPrint('GetElevation", "getPositionsString: measurements=$measurements and positionString is $positionString');
     return positionString;
   }
 

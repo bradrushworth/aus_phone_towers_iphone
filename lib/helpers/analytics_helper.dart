@@ -8,7 +8,7 @@ class AnalyticsHelper {
   }
   AnalyticsHelper._internal();
 
-  final FirebaseAnalytics analytics = FirebaseAnalytics();
+  final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
   sendCustomAnalyticsEvent(
       {@required String eventName, @required Map eventParameters}) {
