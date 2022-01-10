@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>742739090143-0bsn95lmirihkgqk8nu0hi4a7c5n8bsh.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.742739090143-0bsn95lmirihkgqk8nu0hi4a7c5n8bsh</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>742739090143-ebupp8s3snpmhsp499npie2ae7ikpmjp.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDd_W-tPbI0F8ZRw1T5cAKLobOIfVLotDM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>742739090143</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>au.com.bitbot.phonetowers</string>
+	<key>PROJECT_ID</key>
+	<string>aus-phone-towers-7d175</string>
+	<key>STORAGE_BUCKET</key>
+	<string>aus-phone-towers-7d175.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:742739090143:ios:9f84b3f7da18d9fcb2a76a</string>
+	<key>DATABASE_URL</key>
+	<string>https://aus-phone-towers-7d175.firebaseio.com</string>
+	<key>ADMOB_APP_ID</key>
+	<string>ca-app-pub-6156750794650893~6040337543</string>
+</dict>
+</plist>
