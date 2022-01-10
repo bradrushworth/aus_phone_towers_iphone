@@ -140,8 +140,8 @@ class SiteHelper with ChangeNotifier {
         toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
       if (telcoInUse == null || telcoInUse == Telco.NBN)
         toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
-      if (telcoInUse == null || telcoInUse == Telco.OtherMobile)
-        toggleTelcoMarkers(Telco.OtherMobile, NavigationMenu.isOptusVisible);
+      if (telcoInUse == null || telcoInUse == Telco.Other)
+        toggleTelcoMarkers(Telco.Other, NavigationMenu.isOptusVisible);
     }
 
     //TODO code for currently connected tower
@@ -160,8 +160,8 @@ class SiteHelper with ChangeNotifier {
     if (!hideTelco.contains(Telco.NBN)) {
       toggleTelcoMarkers(Telco.NBN, false);
     }
-    if (!hideTelco.contains(Telco.OtherMobile)) {
-      toggleTelcoMarkers(Telco.OtherMobile, false);
+    if (!hideTelco.contains(Telco.Other)) {
+      toggleTelcoMarkers(Telco.Other, false);
     }
 
     //TODO code for currently connected tower

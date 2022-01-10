@@ -1,5 +1,4 @@
 class Secret {
-  final String admob_app_id;
   final String androidAdmobAppId;
   final String androidPortraitAdUnitId;
   final String androidLandscapeAdUnitId;
@@ -10,8 +9,7 @@ class Secret {
   final String terrainAwarenessKey;
 
   Secret(
-      {this.admob_app_id = "",
-      this.androidAdmobAppId = '',
+      {this.androidAdmobAppId = '',
       this.androidPortraitAdUnitId = '',
       this.androidLandscapeAdUnitId = '',
       this.iOSAdmobAppId = '',
@@ -21,7 +19,6 @@ class Secret {
 
   factory Secret.fromJson(Map<String, dynamic> jsonMap) {
     return new Secret(
-      admob_app_id: jsonMap["admob_app_id"],
       androidAdmobAppId: jsonMap["androidAdmobAppId"],
       androidPortraitAdUnitId: jsonMap["androidPortraitAdUnitId"],
       androidLandscapeAdUnitId: jsonMap["androidLandscapeAdUnitId"],

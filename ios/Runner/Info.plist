@@ -23,27 +23,19 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GADApplicationIdentifier</key>
-	<string>YOUR-KEY</string>
+	<string>ca-app-pub-6156750794650893~6040337543</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>itms</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>App needs media library to operate.</string>
-	<key>NSCalendarsUsageDescription</key>
-	<string>App needs calender info to operate.</string>
-	<key>NSContactsUsageDescription</key>
-	<string>App needs contacts info to operate.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>App needs location permission to show nearest towers around you</string>
+	<string>App needs location permission to show nearest towers around you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>App needs location permission to show nearest towers around you</string>
+	<string>App needs location permission to show nearest towers around you.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>App needs Motion to operate.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>App needs speech recognition to operate.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

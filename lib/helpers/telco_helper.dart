@@ -5,7 +5,7 @@ enum Telco {
   Optus,
   Vodafone,
   NBN,
-  OtherMobile,
+  Other,
   Radio,
   TV,
   CBRS,
@@ -20,7 +20,7 @@ class TelcoHelper {
         selectedEnum == Telco.Optus ||
         selectedEnum == Telco.Vodafone ||
         selectedEnum == Telco.NBN ||
-        selectedEnum == Telco.OtherMobile) {
+        selectedEnum == Telco.Other) {
       return true;
     }
     return false;
@@ -36,7 +36,7 @@ class TelcoHelper {
         return Color.fromARGB(alpha, 255, 0, 0);
       case Telco.NBN:
         return Color.fromARGB(alpha, 145, 15, 145);
-      case Telco.OtherMobile:
+      case Telco.Other:
         return Color.fromARGB(alpha, 0, 127, 255);
       default:
         return Color.fromARGB(alpha, 255, 177, 216);

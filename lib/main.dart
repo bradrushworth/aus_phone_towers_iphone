@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_admob/firebase_admob.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -49,7 +50,7 @@ Future<void> main() async {
   //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
 
   // Initialize admob
-  FirebaseAdMob.instance.initialize(appId: secret.admob_app_id);
+  FirebaseAdMob.instance.initialize(appId: Platform.isAndroid ? AdsHelper.androidAdmobAppId : AdsHelper.iOSAdmobAppId);
   // Pass all uncaught errors to Crashlytics.
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
 

@@ -142,9 +142,9 @@ class GetDevices {
       }
 
       // Check to see if any of the downloaded towers are our connected tower
-      if (telco == CellIdentity.getTelcoInUse()) {
+      //if (telco == CellIdentity.getTelcoInUse()) {
         //CustomPhoneStateListener.recordTower(false);//TODO implement this
-      }
+      //}
     }
   }
 

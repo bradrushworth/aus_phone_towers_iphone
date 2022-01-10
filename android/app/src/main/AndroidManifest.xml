@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="example.com.bitbot.phonetowers">
+    package="au.com.bitbot.phonetowers">
 
     <!-- io.flutter.app.FlutterApplication is an android.app.Application that
          calls FlutterMain.startInitialization(this); in its onCreate method.
@@ -12,12 +12,12 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="phonetowers"
+        android:label="Aus Phone Towers iPhone"
         android:icon="@mipmap/ic_launcher">
         
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="example.com.bitbot.phonetowers"
+            android:authorities="au.com.bitbot.phonetowers"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -26,7 +26,7 @@
         </provider>
 
         <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR-KEY"/>
+            android:value="AIzaSyAruu4wIlsMRpFUwctV_6Pp9gYNcbRDg2c"/>
 
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"

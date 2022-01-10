@@ -1,4 +1,4 @@
-package example.com.bitbot.phonetowers
+package au.com.bitbot.phonetowers
 
 import android.content.Intent
 import androidx.annotation.NonNull

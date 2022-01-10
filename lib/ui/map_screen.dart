@@ -423,7 +423,7 @@ class _MapBodyState extends State<MapBody> {
     NavigationMenu.isOtherVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisOtherVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.OtherMobile, NavigationMenu.isOtherVisible);
+        .toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
 
     //2G/3G4G/5G
     NavigationMenu.is2GVisible = SharedPreferencesHelper.getMenuStatus(

@@ -74,7 +74,7 @@ class Site {
       colour = BitmapDescriptor.hueRed;
     } else if (telco == Telco.NBN) {
       colour = BitmapDescriptor.hueViolet;
-    } else if (telco == Telco.OtherMobile) {
+    } else if (telco == Telco.Other) {
       colour = BitmapDescriptor.hueAzure;
     } else {
       colour = BitmapDescriptor.hueRose;
@@ -92,7 +92,7 @@ class Site {
       rotation = 50;
     } else if (telco == Telco.NBN) {
       rotation = 100;
-    } else if (telco == Telco.OtherMobile) {
+    } else if (telco == Telco.Other) {
       rotation = -100;
     } else {
       if (telco == Telco.Radio) {
@@ -118,7 +118,7 @@ class Site {
     } else if (telco == Telco.Optus) {
     } else if (telco == Telco.Vodafone) {
     } else if (telco == Telco.NBN) {
-    } else if (telco == Telco.OtherMobile) {
+    } else if (telco == Telco.Other) {
     } else {}
     return alpha;
   }
