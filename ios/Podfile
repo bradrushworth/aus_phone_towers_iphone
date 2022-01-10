@@ -33,6 +33,12 @@ target 'Runner' do
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
+# Add the pod for Firebase Crashlytics
+pod 'Firebase/Crashlytics'
+
+# Recommended: Add the Firebase pod for Google Analytics
+pod 'Firebase/Analytics'
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
@@ -42,9 +48,3 @@ post_install do |installer|
     configuration.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
   end
 end
-
-# Add the pod for Firebase Crashlytics
-pod 'Firebase/Crashlytics'
-
-# Recommended: Add the Firebase pod for Google Analytics
-pod 'Firebase/Analytics'
