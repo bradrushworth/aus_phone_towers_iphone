@@ -26,12 +26,6 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
-# Add the pod for Firebase Crashlytics
-pod 'Firebase/Crashlytics'
-
-# Recommended: Add the Firebase pod for Google Analytics
-pod 'Firebase/Analytics'
-
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
@@ -48,3 +42,9 @@ post_install do |installer|
     configuration.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
   end
 end
+
+# Add the pod for Firebase Crashlytics
+pod 'Firebase/Crashlytics'
+
+# Recommended: Add the Firebase pod for Google Analytics
+pod 'Firebase/Analytics'
