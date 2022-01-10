@@ -39,3 +39,18 @@ main_target.add_file_references([file])
 #finally, save the project
 project.save
 
+
+
+    While building module 'firebase_core' imported from /Users/builder/programs/flutter_2_8_1/.pub-cache/hosted/pub.dartlang.org/firebase_crashlytics-2.4.5/ios/Classes/FLTFirebaseCrashlyticsPlugin.h:12:
+    In file included from <module-includes>:1:
+    In file included from /Users/builder/clone/ios/Pods/Target Support Files/firebase_core/firebase_core-umbrella.h:13:
+    In file included from /Users/builder/programs/flutter_2_8_1/.pub-cache/hosted/pub.dartlang.org/firebase_core-1.11.0/ios/Classes/FLTFirebaseCorePlugin.h:12:
+    /Users/builder/programs/flutter_2_8_1/.pub-cache/hosted/pub.dartlang.org/firebase_core-1.11.0/ios/Classes/FLTFirebasePlugin.h:9:9: error: include of non-modular header inside framework module 'firebase_core.FLTFirebasePlugin': '/Users/builder/clone/ios/Pods/Headers/Public/FirebaseCore/FirebaseCore.h' [-Werror,-Wnon-modular-include-in-framework-module]
+    #import <FirebaseCore/FirebaseCore.h>
+            ^
+    1 error generated.
+    In file included from /Users/builder/programs/flutter_2_8_1/.pub-cache/hosted/pub.dartlang.org/firebase_crashlytics-2.4.5/ios/Classes/FLTFirebaseCrashlyticsPlugin.m:5:
+    /Users/builder/programs/flutter_2_8_1/.pub-cache/hosted/pub.dartlang.org/firebase_crashlytics-2.4.5/ios/Classes/FLTFirebaseCrashlyticsPlugin.h:12:9: fatal error: could not build module 'firebase_core'
+    #import <firebase_core/FLTFirebasePlugin.h>
+     ~~~~~~~^
+    2 errors generated.
