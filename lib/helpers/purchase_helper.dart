@@ -68,7 +68,7 @@ class PurchaseHelper with ChangeNotifier {
 
     if (available) {
       await _getProducts();
-      //await hasPurchase();
+      //await hasPurchase(); // TODO
 
       // Listen to new purchases
       subscription = _iap.purchaseStream.listen((purchaseDetailsList) {
@@ -101,7 +101,7 @@ class PurchaseHelper with ChangeNotifier {
   }
 
   /// Gets past purchases
-/*  Future<void> hasPurchase() async {
+/*  Future<void> hasPurchase() async { // TODO
     QueryPurchaseDetailsResponse response = await _iap.queryPastPurchases();
 
     Map<String, dynamic> eventMap = Map<String, dynamic>();

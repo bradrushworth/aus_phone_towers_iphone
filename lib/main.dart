@@ -35,7 +35,7 @@ Future<void> main() async {
       .setCrashlyticsCollectionEnabled(AppConstants.isDebug);
 
   // Initialize In App Purchase
-  //InAppPurchaseConnection.enablePendingPurchases();
+  //InAppPurchaseConnection.enablePendingPurchases(); // TODO
 
   //Load secrets
   Secret secret =

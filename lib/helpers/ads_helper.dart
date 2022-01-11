@@ -29,7 +29,6 @@ class AdsHelper {
   // );
 
   void initialize() {
-    //WidgetsFlutterBinding.ensureInitialized();
     MobileAds.instance.initialize();
   }
 
