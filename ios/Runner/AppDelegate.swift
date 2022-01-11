@@ -10,7 +10,7 @@ import MessageUI
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GMSServices.provideAPIKey("YOUR-KEY")
+    GMSServices.provideAPIKey("AIzaSyDd_W-tPbI0F8ZRw1T5cAKLobOIfVLotDM")
     GeneratedPluginRegistrant.register(with: self)
     let shareChannelName = "au.com.bitbot.phonetowers/screenshot";
     let controller:FlutterViewController = self.window?.rootViewController as! FlutterViewController;

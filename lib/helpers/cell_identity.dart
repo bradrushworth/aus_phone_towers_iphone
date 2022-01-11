@@ -1,4 +1,4 @@
-import 'package:flt_telephony_info/flt_telephony_info.dart';
+//import 'package:flt_telephony_info/flt_telephony_info.dart';
 import 'package:intl/intl.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 
@@ -12,6 +12,7 @@ class CellIdentity {
   SDF.setTimeZone(TimeZone.getTimeZone("UTC"));
 }*/
 
+/*
   static Telco getTelcoInUse() {
     FltTelephonyInfo.info.then((infoValue) {
       String network = infoValue.networkOperator;
@@ -32,6 +33,7 @@ class CellIdentity {
       return null;
     });
   }
+*/
 
   /*   @SuppressLint("MissingPermission")
     static JSONArray getCellInfo(TelephonyManager tel) {
@@ -350,7 +352,7 @@ class CellIdentity {
     }
 */
 
-  static int getNetworkGeneration(int type) {
+/*  static int getNetworkGeneration(int type) {
     switch (type) {
       case NetworkType.NETWORK_TYPE_GPRS:
       case NetworkType.NETWORK_TYPE_EDGE:
@@ -378,11 +380,11 @@ class CellIdentity {
       default:
         return NetworkType.NETWORK_TYPE_UNKNOWN;
     }
-  }
+  }*/
 
 //  Network access type; currently supported:
 // 1xRTT, CDMA, eHRPD, IS95A, IS95B, EVDO_0, EVDO_A, EVDO_B, UMTS, HSPA+, HSDPA, HSUPA, HSPA, LTE, EDGE, GPRS, GSM
-  static String getNetworkTypeName(int type) {
+/*  static String getNetworkTypeName(int type) {
     switch (type) {
       case NetworkType.NETWORK_TYPE_GPRS:
         return "GPRS";
@@ -419,7 +421,7 @@ class CellIdentity {
       default:
         return "";
     }
-  }
+  }*/
 
   static double calculateGsmFrequency(int N) {
     double c1 = 0;
@@ -1126,6 +1128,7 @@ class CellIdentity {
     return null;
   }
 
+/*
   static double getFrequencyInt(int networkTypeInt, int arfcn) {
     return getFrequency(
         CellIdentity.getNetworkGeneration(networkTypeInt), arfcn);
@@ -1175,6 +1178,7 @@ class CellIdentity {
     return double.maxFinite.toInt();
   }
 
+
   static String getTimingAdvanceDistanceString(int nt, int ta) {
     int timingAdvanceDistance = getTimingAdvanceDistance(nt, ta);
     return formatDistanceString(timingAdvanceDistance);
@@ -1189,4 +1193,5 @@ class CellIdentity {
       return "${formatter.format(distance / 1000.0)} km";
     return "$distance m";
   }
+  */
 }

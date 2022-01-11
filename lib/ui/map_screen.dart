@@ -3,12 +3,12 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:after_layout/after_layout.dart';
-import 'package:firebase_admob/firebase_admob.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as onlyPath;
@@ -218,13 +218,13 @@ class _MapBodyState extends State<MapBody> {
   static const androidMethodChannel =
       const MethodChannel('au.com.bitbot.phonetowers/screenshot');
 
-  static const MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
-    testDevices: <String>[
-      'B5BD02099B12769D58DBD05B64D1DFAF',
-      'FD6126EE250BB0AA9187FFE30B3C9EE1',
-      'Simulator'
-    ],
-  );
+  // static const MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
+  //   testDevices: <String>[
+  //     'B5BD02099B12769D58DBD05B64D1DFAF',
+  //     'FD6126EE250BB0AA9187FFE30B3C9EE1',
+  //     'Simulator'
+  //   ],
+  // );
 
   /// ******************** Overrided methods **********************************
   @override
@@ -273,12 +273,12 @@ class _MapBodyState extends State<MapBody> {
                     ? SiteHelper.globalListMapOverlay
                         .map((data) => data.marker)
                         .toSet()
-                    : null,
+                    : Set(),
                 polygons: PolygonHelper.globalListPolygons.isNotEmpty
                     ? PolygonHelper.globalListPolygons
                         .map((data) => data.polygon)
                         .toSet()
-                    : null,
+                    : Set(),
                 onMapCreated: _onMapCreated,
                 onCameraMove: _onCameraMove,
               ),
@@ -423,7 +423,7 @@ class _MapBodyState extends State<MapBody> {
     NavigationMenu.isOtherVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisOtherVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.OtherMobile, NavigationMenu.isOtherVisible);
+        .toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
 
     //2G/3G4G/5G
     NavigationMenu.is2GVisible = SharedPreferencesHelper.getMenuStatus(
@@ -1268,6 +1268,7 @@ class _MapBodyState extends State<MapBody> {
 
   int getTowerHeightFromDeviceDetails(List<DeviceDetails> deviceDetailsMobile) {
     int height = 0;
+    if (deviceDetailsMobile.length == 0) return height;
     for (DeviceDetails d in deviceDetailsMobile) {
       height += d.getTowerHeight();
     }

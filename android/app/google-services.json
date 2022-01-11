@@ -1,0 +1,73 @@
+{
+  "project_info": {
+    "project_number": "742739090143",
+    "firebase_url": "https://aus-phone-towers-7d175.firebaseio.com",
+    "project_id": "aus-phone-towers-7d175",
+    "storage_bucket": "aus-phone-towers-7d175.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:742739090143:android:c8e866e24ed31ccc",
+        "android_client_info": {
+          "package_name": "au.com.bitbot.phonetowers"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "742739090143-ebupp8s3snpmhsp499npie2ae7ikpmjp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "au.com.bitbot.phonetowers",
+            "certificate_hash": "e3535eb96fc6cd7453b204da313ecca85e74ab23"
+          }
+        },
+        {
+          "client_id": "742739090143-j0ht2oifa2cr9kfs986725d976ej0tvg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "au.com.bitbot.phonetowers",
+            "certificate_hash": "54ef0f58ce4de39a1c29538ee795e1de92bfd178"
+          }
+        },
+        {
+          "client_id": "742739090143-utsea779n4mpqm5hgsm9lke55ic2cou6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "au.com.bitbot.phonetowers",
+            "certificate_hash": "28972243d6fffe7a3bb22b9ee437dda57174bb16"
+          }
+        },
+        {
+          "client_id": "742739090143-okoj2f70ddfh4lob2bn40naq7bv7pq50.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkakRZbLRfsDIGBKMC4fPLdiVGCIkkFRM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "742739090143-okoj2f70ddfh4lob2bn40naq7bv7pq50.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "742739090143-0bsn95lmirihkgqk8nu0hi4a7c5n8bsh.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "au.com.bitbot.phonetowers",
+                "app_store_id": "1611042219"
+              }
+            }
+          ]
+        }
+      },
+      "admob_app_id": "ca-app-pub-6156750794650893~5795736618"
+    }
+  ],
+  "configuration_version": "1"
+}

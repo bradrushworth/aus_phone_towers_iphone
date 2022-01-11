@@ -23,7 +23,7 @@ class PurchaseHelper with ChangeNotifier {
 
   /// Is the API available on the device
   bool available = false;
-  InAppPurchaseConnection _iap = InAppPurchaseConnection.instance;
+  InAppPurchase _iap = InAppPurchase.instance;
   List<ProductDetails> products = [];
   List<PurchaseDetails> purchases = [];
   StreamSubscription<List<PurchaseDetails>> subscription;
@@ -68,10 +68,10 @@ class PurchaseHelper with ChangeNotifier {
 
     if (available) {
       await _getProducts();
-      await hasPurchase();
+      //await hasPurchase(); // TODO
 
       // Listen to new purchases
-      subscription = _iap.purchaseUpdatedStream.listen((purchaseDetailsList) {
+      subscription = _iap.purchaseStream.listen((purchaseDetailsList) {
         _listenToPurchaseUpdated(purchaseDetailsList);
       }, onDone: () {}, onError: (error) {});
     } else {
@@ -101,7 +101,7 @@ class PurchaseHelper with ChangeNotifier {
   }
 
   /// Gets past purchases
-  Future<void> hasPurchase() async {
+/*  Future<void> hasPurchase() async { // TODO
     QueryPurchaseDetailsResponse response = await _iap.queryPastPurchases();
 
     Map<String, dynamic> eventMap = Map<String, dynamic>();
@@ -147,7 +147,7 @@ class PurchaseHelper with ChangeNotifier {
               SKU_SUBSCRIBE_ONE_YEAR +
               " purchase because it expired!");
           eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
-          _iap.consumePurchase(purchaseDetailsForOneYearSubscription);
+          _iap.completePurchase(purchaseDetailsForOneYearSubscription);
           isShowSubscribePreviousMenuItem = false;
         }
       }
@@ -197,14 +197,14 @@ class PurchaseHelper with ChangeNotifier {
       for (PurchaseDetails purchase in response.pastPurchases) {
         logger.d('purchased item is ${purchase.productID}');
         if (Platform.isIOS) {
-          InAppPurchaseConnection.instance.completePurchase(purchase);
+          InAppPurchase.instance.completePurchase(purchase);
         }
       }
     }
 
     AnalyticsHelper().sendCustomAnalyticsEvent(
         eventName: 'has_purchase', eventParameters: eventMap);
-  }
+  }*/
 
 
   Future<void> initiatePurchase({@required String sku}) async {
@@ -213,7 +213,7 @@ class PurchaseHelper with ChangeNotifier {
       return product.productID == sku;
     }, orElse: () => null);
     if (purchaseDetails != null) {
-      await _iap.consumePurchase(purchaseDetails);
+      await _iap.completePurchase(purchaseDetails);
     }
 
     ProductDetails productToBuy = products.firstWhere((product) {
@@ -252,7 +252,7 @@ class PurchaseHelper with ChangeNotifier {
           }
         }
         if (Platform.isIOS) {
-          InAppPurchaseConnection.instance.completePurchase(purchaseDetails);
+          InAppPurchase.instance.completePurchase(purchaseDetails);
         }
       }
     });
@@ -303,7 +303,7 @@ class PurchaseHelper with ChangeNotifier {
           logger.i(
               "PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
-          hasPurchase();
+          //hasPurchase();
           break;
         }
       case SKU_SUBSCRIBE_PERMANENTLY:
@@ -315,7 +315,7 @@ class PurchaseHelper with ChangeNotifier {
           logger.i(
               "PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
-          hasPurchase();
+          //hasPurchase();
           break;
         }
     }
@@ -334,7 +334,7 @@ class PurchaseHelper with ChangeNotifier {
       return product.productID == sku;
     }, orElse: () => null);
     if (purchaseDetails != null) {
-      await _iap.consumePurchase(purchaseDetails);
+      await _iap.completePurchase(purchaseDetails);
     }
   }
 

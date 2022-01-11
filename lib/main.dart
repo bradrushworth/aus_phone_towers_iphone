@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
-import 'package:firebase_admob/firebase_admob.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
@@ -34,7 +35,7 @@ Future<void> main() async {
       .setCrashlyticsCollectionEnabled(AppConstants.isDebug);
 
   // Initialize In App Purchase
-  InAppPurchaseConnection.enablePendingPurchases();
+  //InAppPurchaseConnection.enablePendingPurchases(); // TODO
 
   //Load secrets
   Secret secret =
@@ -49,7 +50,7 @@ Future<void> main() async {
   //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
 
   // Initialize admob
-  FirebaseAdMob.instance.initialize(appId: secret.admob_app_id);
+  MobileAds.instance.initialize();
   // Pass all uncaught errors to Crashlytics.
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
 

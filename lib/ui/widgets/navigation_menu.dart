@@ -146,7 +146,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
             ),
             LicenceesMenuItem(
               valueName: Strings.other,
-              telco: Telco.OtherMobile,
+              telco: Telco.Other,
               isValueVisible: NavigationMenu.isOtherVisible,
               prefsKey: SharedPreferencesHelper.kisOtherVisible,
               prefs: prefs,

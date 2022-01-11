@@ -56,8 +56,8 @@ class Api {
       logger.e('''Error message is ${e.message}
                   Error type is ${e.type}
                   Error is ${e.error}
-                  For request ${e.request}
-                  And Response ${e.response != null ? 'request => ${e.response.request} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.request}'}''');
+                  For request ${e.requestOptions.path}
+                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -73,8 +73,8 @@ class Api {
       logger.e('''Error message is ${e.message}
                   Error type is ${e.type}
                   Error is ${e.error}
-                  For request ${e.request}
-                  And Response ${e.response != null ? 'request => ${e.response.request} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.request}'}''');
+                  For request ${e.requestOptions.path}
+                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -86,7 +86,7 @@ class Api {
           await dio.get(path, options: Options(), cancelToken: cancelToken);
       //print("marker data: ${response.data.toString()}");
       final int statusCode = response.statusCode;
-      logger.i("raw licenceHRP response ${response.data.toString()}");
+      //logger.i("raw licenceHRP response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
       if (CancelToken.isCancel(e)) {
@@ -101,14 +101,14 @@ class Api {
       Response response = await dio.get(path, options: Options());
       //print("marker data: ${response.data.toString()}");
       final int statusCode = response.statusCode;
-      logger.i("raw search response ${response.data.toString()}");
+      //logger.i("raw search response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
       logger.e('''Error message is ${e.message}
                   Error type is ${e.type}
                   Error is ${e.error}
-                  For request ${e.request}
-                  And Response ${e.response != null ? 'request => ${e.response.request} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.request}'}''');
+                  For request ${e.requestOptions.path}
+                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -124,8 +124,8 @@ class Api {
       logger.e('''Error message is ${e.message}
                   Error type is ${e.type}
                   Error is ${e.error}
-                  For request ${e.request}
-                  And Response ${e.response != null ? 'request => ${e.response.request} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.request}'}''');
+                  For request ${e.requestOptions.path}
+                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -141,8 +141,8 @@ class Api {
       logger.e('''Error message is ${e.message}
                   Error type is ${e.type}
                   Error is ${e.error}
-                  For request ${e.request}
-                  And Response ${e.response != null ? 'request => ${e.response.request} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.request}'}''');
+                  For request ${e.requestOptions.path}
+                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 }
