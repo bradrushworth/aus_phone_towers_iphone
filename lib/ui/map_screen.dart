@@ -1054,18 +1054,18 @@ class _MapBodyState extends State<MapBody> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: IconButton(
-                        color: Colors.grey,
-                        onPressed: () {
-                          if (Navigator.of(bc).canPop()) {
-                            Navigator.of(bc).pop();
-                          }
-                        },
-                        icon: Icon(Icons.cancel),
-                      ),
-                    ),
+                    // Align(
+                    //   alignment: Alignment.topRight,
+                    //   child: IconButton(
+                    //     color: Colors.grey,
+                    //     onPressed: () {
+                    //       if (Navigator.of(bc).canPop()) {
+                    //         Navigator.of(bc).pop();
+                    //       }
+                    //     },
+                    //     icon: Icon(Icons.cancel),
+                    //   ),
+                    // ),
                     ...prepareSiteTitleForInforWindow(
                         '${site.getNameFormatted()} ${site.state} ${site.postcode}'),
                     SizedBox(
@@ -1120,7 +1120,7 @@ class _MapBodyState extends State<MapBody> {
                     ] else if (!TelcoHelper.isTelecommunications(
                         site.getTelco())) ...[
                       Text(
-                        '${TelcoHelper.getName(site.getTelco())}  Services',
+                        '${TelcoHelper.getName(site.getTelco())} Services',
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
                       Table(
@@ -1129,28 +1129,28 @@ class _MapBodyState extends State<MapBody> {
                           TableRow(
                             children: [
                               Align(
-                                alignment: AlignmentDirectional.centerStart,
+                                alignment: AlignmentDirectional.topCenter,
                                 child: Text(
                                   'Frequency',
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.centerStart,
+                                alignment: AlignmentDirectional.topCenter,
                                 child: Text(
                                   'Emission',
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.centerStart,
+                                alignment: AlignmentDirectional.topCenter,
                                 child: Text(
                                   'CallSign',
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.centerStart,
+                                alignment: AlignmentDirectional.topCenter,
                                 child: Text(
                                   'Capacity',
                                   style: Theme.of(context).textTheme.bodyText1,
@@ -1163,7 +1163,7 @@ class _MapBodyState extends State<MapBody> {
                       ),
                     ] else ...[
                       Text(
-                        '${TelcoHelper.getName(site.getTelco())}  Services',
+                        '${TelcoHelper.getName(site.getTelco())} Services',
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
                       SizedBox(height: 4),
@@ -1182,7 +1182,7 @@ class _MapBodyState extends State<MapBody> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
+                                  alignment: AlignmentDirectional.topCenter,
                                   child: Text(
                                     'Gen',
                                     style:
@@ -1193,7 +1193,7 @@ class _MapBodyState extends State<MapBody> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
+                                  alignment: AlignmentDirectional.topCenter,
                                   child: Text(
                                     'Freqncy',
                                     style:
@@ -1204,7 +1204,7 @@ class _MapBodyState extends State<MapBody> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
+                                  alignment: AlignmentDirectional.topCenter,
                                   child: Text(
                                     'Bandwth',
                                     style:
@@ -1215,7 +1215,7 @@ class _MapBodyState extends State<MapBody> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
+                                  alignment: AlignmentDirectional.topCenter,
                                   child: Text(
                                     'MIMO',
                                     style:
@@ -1226,7 +1226,7 @@ class _MapBodyState extends State<MapBody> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.centerStart,
+                                  alignment: AlignmentDirectional.topCenter,
                                   child: Text(
                                     'LTE',
                                     style:
@@ -1235,7 +1235,7 @@ class _MapBodyState extends State<MapBody> {
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.centerStart,
+                                alignment: AlignmentDirectional.topCenter,
                                 child: Text(
                                   'Capacity',
                                   style: Theme.of(context).textTheme.bodyText1,
@@ -1251,13 +1251,12 @@ class _MapBodyState extends State<MapBody> {
                 ),
               ),
               SizedBox(height: 8),
-              RaisedButton(
-                color: Theme.of(context).primaryColor,
-                textColor: Colors.white,
+              ElevatedButton(
+                style: Theme.of(context).elevatedButtonTheme.style,
                 onPressed: () {
                   launchURL(site.siteId);
                 },
-                child: Text('More info'),
+                child: Text('ACMA Website'),
               )
             ],
           ),
@@ -1303,7 +1302,7 @@ class _MapBodyState extends State<MapBody> {
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
-              alignment: AlignmentDirectional.centerStart,
+              alignment: AlignmentDirectional.centerEnd,
               child: Text(
                 '${TranslateFrequencies.formatFrequency(d.frequency, false)}',
                 style: Theme.of(context).textTheme.bodyText1,
@@ -1313,7 +1312,7 @@ class _MapBodyState extends State<MapBody> {
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
-              alignment: AlignmentDirectional.centerStart,
+              alignment: AlignmentDirectional.centerEnd,
               child: Text(
                 '${TranslateFrequencies.formatBandwidth(d.bandwidth, false)}',
                 style: Theme.of(context).textTheme.bodyText1,
@@ -1323,7 +1322,7 @@ class _MapBodyState extends State<MapBody> {
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
-              alignment: AlignmentDirectional.centerStart,
+              alignment: AlignmentDirectional.centerEnd,
               child: Text(
                 '${mimoCount}x',
                 style: Theme.of(context).textTheme.bodyText1,
@@ -1333,7 +1332,7 @@ class _MapBodyState extends State<MapBody> {
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
-              alignment: AlignmentDirectional.centerStart,
+              alignment: AlignmentDirectional.centerEnd,
               child: Text(
                 '${LteTypeHelper.getFirstTwoChars(d.getLteType())}',
                 style: Theme.of(context).textTheme.bodyText1,
@@ -1341,7 +1340,7 @@ class _MapBodyState extends State<MapBody> {
             ),
           ),
           Align(
-            alignment: AlignmentDirectional.centerStart,
+            alignment: AlignmentDirectional.centerEnd,
             child: Text(
               '${DeviceDetails.formatNetworkSpeed(site.getNetworkCapacity(d))}',
               style: Theme.of(context).textTheme.bodyText1,
