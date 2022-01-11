@@ -44,8 +44,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "au.com.bitbot.phonetowers"
+        applicationId "au.com.bitbot.phonetowers.flutter"
         minSdkVersion 21
         targetSdkVersion 31
         versionCode flutterVersionCode.toInteger()
@@ -60,15 +59,6 @@ android {
         }
     }
     buildTypes {
-//         debug {
-//            applicationIdSuffix ".debugflutter"
-//        }
-        // release {
-        //     //applicationIdSuffix ".flutterrelease" //TODO remove this in release
-        //     // TODO: Add your own signing config for the release build.
-        //     // Signing with the debug keys for now, so `flutter run --release` works.
-        //     signingConfig signingConfigs.debug
-        // }
         release {
            signingConfig signingConfigs.release
         }

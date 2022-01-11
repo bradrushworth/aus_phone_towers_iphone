@@ -1,4 +1,4 @@
-# phonetowers
+# Aus Phone Towers (iPhone)
 
 Have you ever wondered where your nearest mobile phone tower was? What services does it support?
 How fast are the 4G Internet speeds in your area? How far does the signal reach? Which is the best phone provider for you?
@@ -13,12 +13,11 @@ The app includes details of Telstra, Optus, Vodafone, NBN, TPG, TV, pagers, gove
 
 The Android version can identify which towers your phone is using, however this feature hasn't been ported to this version of the app yet.
 
-This repository:
-https://github.com/bradrushworth/aus_phone_towers_iphone
-https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332
+[This repository](https://github.com/bradrushworth/aus_phone_towers_iphone) and its
+[Apple App Store listing](https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332).
 
-Sister app written in native Java code:
-https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers&hl=en_AU&gl=US
+[Sister app written in native Java code](https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers&hl=en_AU&gl=US).
+This code is not yet open-sourced but will be soon.
 
 Pull requests are very welcome!
 

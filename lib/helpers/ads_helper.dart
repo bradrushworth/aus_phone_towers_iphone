@@ -33,6 +33,14 @@ class AdsHelper {
   }
 
   void showBannerAd(AdSize bannerAdSize, String adUnitId) {
+    // Configure my personal devices so I don't get in trouble with Google
+    List<String> testDevices = [];
+    testDevices.add("A04D16B625198F3E16D9214B07CCAAD1"); // My Pixel 3 XL (laptop)
+    testDevices.add("B51BDAC25EBAECE25CC0F4985D1A8DDE"); // My Pixel 3 XL (desktop)
+    testDevices.add("E2205354A906F833537939B2DED80DBB"); // My Pixel 6 Pro
+    RequestConfiguration requestConfiguration = RequestConfiguration(maxAdContentRating: 'T', testDeviceIds: testDevices);
+    MobileAds.instance.updateRequestConfiguration(requestConfiguration);
+
     Future.delayed(Duration(seconds: 1), () {
       _bannerAd ??= BannerAd(
         adUnitId: adUnitId,
