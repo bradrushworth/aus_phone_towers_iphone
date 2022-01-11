@@ -21,15 +21,15 @@
 	<key>STORAGE_BUCKET</key>
 	<string>aus-phone-towers-7d175.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
-	<false></false>
+	<true></true>
 	<key>IS_ANALYTICS_ENABLED</key>
-	<false></false>
+	<true></true>
 	<key>IS_APPINVITE_ENABLED</key>
 	<true></true>
 	<key>IS_GCM_ENABLED</key>
 	<true></true>
 	<key>IS_SIGNIN_ENABLED</key>
-	<true></true>
+	<false></false>
 	<key>GOOGLE_APP_ID</key>
 	<string>1:742739090143:ios:9f84b3f7da18d9fcb2a76a</string>
 	<key>DATABASE_URL</key>

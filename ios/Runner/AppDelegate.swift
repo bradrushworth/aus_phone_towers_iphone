@@ -1,7 +1,7 @@
 import UIKit
 import Flutter
 import GoogleMaps
-//import Firebase
+import Firebase
 import MessageUI
 
 @UIApplicationMain
@@ -24,9 +24,9 @@ import MessageUI
     });
     
     // ------------------
-//     if FirebaseApp.app() == nil {
-//         FirebaseApp.configure()
-//     }
+    if FirebaseApp.app() == nil {
+        FirebaseApp.configure()
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
