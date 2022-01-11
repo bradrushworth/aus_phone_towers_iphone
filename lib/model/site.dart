@@ -26,10 +26,12 @@ class Site {
 
   // We split sites per telco
   Telco telco;
+
   // This is all the mobile transmitters on the site per telco. We need it to support concurrency.
   //List<DeviceDetails> deviceDetailsMobile = new CopyOnWriteArrayList<>();
   // This is the elevations of various points
   Map<LatLng, double> elevations = Map<LatLng, double>();
+
   // Does this site have an active transmitter?
   bool active = false;
   double color;
@@ -150,9 +152,7 @@ class Site {
 
       // Check we want to see this network type (e.g. 2G, 3G)
       if (SiteHelper.hideNetworkType.contains(d.getNetworkType(
-          emission: d.emission,
-          frequency: d.frequency,
-          telco: d.getSite().telco))) {
+          d.emission, d.frequency, d.bandwidth, d.getSite().telco))) {
         continue deviceLoop;
       }
 
@@ -292,9 +292,7 @@ class Site {
     int count = 1;
 
     if (d.getNetworkType(
-            emission: d.emission,
-            frequency: d.frequency,
-            telco: d.getSite().telco) !=
+            d.emission, d.frequency, d.bandwidth, d.getSite().telco) !=
         NetworkType.GSM) {
       // Count the number of antennas operating on this frequency at this site
       count = countNumberAntennaPaths(d);

@@ -8,7 +8,7 @@ class AppConstants {
 }
 
 const LatLng kLagLongBathurst = LatLng(-33.433, 149.565);
-const double kDefaultZoom = 13.0;
+const double kDefaultZoom = 13.5;
 const double kZoomTooFar = 11;
 
 const int kMaximumSignalStrength = 0;

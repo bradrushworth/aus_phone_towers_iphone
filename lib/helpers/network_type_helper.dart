@@ -1,26 +1,17 @@
 class NetworkTypeHelper {
   String value;
-  static List<int> gsmBars = [-79, -89, -99, -105];
-  static List<int> umtsBars = [-81, -91, -101, -107];
-  static List<int> lteBars = [
-    -72,
-    -79,
-    -89,
-    -104
-  ]; // Setting RSSI numbers, not RSRP
-  static List<int> nrBars = [
-    -72,
-    -79,
-    -89,
-    -104
-  ]; // Setting RSSI numbers, not RSRP
-  static List<int> otherBars = [-74, -84, -94, -104];
+
+  static List<int> gsmBars = [-89, -97, -103, -107]; // CellSignalStrengthGsm
+  static List<int> umtsBars = [-77, -87,  -97, -107]; // CellSignalStrengthWcdma
+  static List<int> lteBars = [-85, -95, -105, -115]; // Setting RSRP numbers, not RSSI, from CellSignalStrengthLte
+  static List<int> nrBars = [-65, -80,  -90, -110]; // Setting RSRP numbers, not RSSI, from CellSignalStrengthNr
+  static List<int> otherBars = [-77, -87,  -97, -107];
 
   // Min Max as per the phone's signal strength numbers
   static List<int> gsmMinMax = [-113, -51];
   static List<int> umtsMinMax = [-113, -51];
-  static List<int> lteMinMax = [-111, -35]; // Setting RSSI numbers, not RSRP
-  static List<int> nrMinMax = [-111, -35]; // Setting RSSI numbers, not RSRP
+  static List<int> lteMinMax = [-140, -44]; // Setting RSRP numbers, not RSSI
+  static List<int> nrMinMax = [-140, -44]; // Setting RSRP numbers, not RSSI
   static List<int> otherMinMax = [-113, -51];
 
   static List<int> getNetworkBars(NetworkType networkType) {
@@ -109,6 +100,12 @@ class NetworkTypeHelper {
         }
         break;
 
+      case NetworkType.NB_IOT:
+        {
+          return 'LP';
+        }
+        break;
+
       case NetworkType.OTHER:
         {
           return 'OT';
@@ -122,6 +119,10 @@ class NetworkTypeHelper {
         break;
     }
   }
+
+  bool isRsrp() {
+    return this == NetworkType.LTE || this == NetworkType.NR;
+  }
 }
 
 enum NetworkType {
@@ -131,6 +132,7 @@ enum NetworkType {
   LTE,
   NR,
   CDMA,
+  NB_IOT,
   OTHER,
 }
 

@@ -93,6 +93,6 @@ class Strings {
 
   static String betaLaunchPopupTitle = 'This is a preview release!';
   static String betaLaunchPopupDesc =
-      'Aus Phone Towers on iPhone is still under development. Please send feedback to us by email. More features are coming!';
-  static String betaLaunchPopupAction = 'Ok, No problem';
+      'Aus Phone Towers on iPhone is still under development. Please send feedback to bitbot@bitbot.com.au. More features are coming!';
+  static String betaLaunchPopupAction = 'No Problem';
 }

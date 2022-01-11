@@ -1,4 +1,4 @@
-package au.com.bitbot.phonetowers
+package au.com.bitbot.phonetowers.flutter
 
 import android.content.Intent
 import androidx.annotation.NonNull
@@ -9,7 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "au.com.bitbot.phonetowers/screenshot"
+    private val CHANNEL = "au.com.bitbot.phonetowers.flutter.provider/screenshot"
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -39,7 +39,7 @@ class MainActivity : FlutterActivity() {
 
     private fun shareFile(image: String) {
         val imageFile = File(this.applicationContext.cacheDir, image)
-        val filePath = FileProvider.getUriForFile(this, "au.com.bitbot.phonetowers", imageFile)
+        val filePath = FileProvider.getUriForFile(this, "au.com.bitbot.phonetowers.flutter.provider", imageFile)
 
         val emailIntent = Intent(android.content.Intent.ACTION_SEND)
         emailIntent.putExtra(android.content.Intent.EXTRA_EMAIL,

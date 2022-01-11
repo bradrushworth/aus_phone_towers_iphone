@@ -14,6 +14,8 @@ import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 
+import 'translate_frequencies.dart';
+
 typedef void ShowSnackBar({String message});
 
 class GetLicenceHRP {
@@ -64,7 +66,7 @@ class GetLicenceHRP {
 
     dataFound = true;
 
-    double freqInMHz = device.frequency / 1000 / 1000;
+    double freqInMHz = 1.0 * device.frequency / 1000 / 1000;
 
     int towerHeight = device.getTowerHeight();
 
@@ -77,9 +79,10 @@ class GetLicenceHRP {
 
     // Draw appropriate signal strength
     List<int> polygons = NetworkTypeHelper.getNetworkBars(device.getNetworkType(
-        emission: device.emission,
-        frequency: device.frequency,
-        telco: device.getSite().telco));
+        device.emission,
+        device.frequency,
+        device.bandwidth,
+        device.getSite().telco));
 
     // Record the power output in each direction
     Map<double, double> bearingToPower = Map<double, double>();
@@ -90,6 +93,12 @@ class GetLicenceHRP {
       double start_angle = double.tryParse(values.startAngle.value) ?? 0;
       //double stop_angle = row.getJSONObject("stop_angle").getDouble("value");
       double power_dBm = double.tryParse(values.power.value) ?? 0;
+
+      // Convert RSRP to RSSI to get more accurate results
+      if (device.getNetworkType == NetworkType.LTE) {
+        power_dBm +=
+            TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+      }
 
       // 1.25 is half of 2.5, which is the measurement resolution with ACMA
       double bearing = start_angle + 1.25;
