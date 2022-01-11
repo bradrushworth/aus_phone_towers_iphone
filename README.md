@@ -13,21 +13,20 @@ The app includes details of Telstra, Optus, Vodafone, NBN, TPG, TV, pagers, gove
 
 The Android version can identify which towers your phone is using, however this feature hasn't been ported to this version of the app yet.
 
-[This repository](https://github.com/bradrushworth/aus_phone_towers_iphone) and its
-[Apple App Store listing](https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332).
-
-[Sister app written in native Java code](https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers&hl=en_AU&gl=US).
-This code is not yet open-sourced but will be soon.
+Some relevant links:
+* [This repository](https://github.com/bradrushworth/aus_phone_towers_iphone)
+* Its [Apple App Store listing](https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332)
+* [Sister app written in native Java code](https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers&hl=en_AU&gl=US) This code is not yet open-sourced but will be soon.
 
 Pull requests are very welcome!
 
 ## Getting Started
 
-``
+```
 flutter clean
 flutter pub get
 flutter run
-``
+```
 
 I've been testing the app on Windows/Android Studio using the Android version and an Android simulator.
 
