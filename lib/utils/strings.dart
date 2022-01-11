@@ -89,6 +89,7 @@ class Strings {
 
   static String reportProblem = 'Report Problem';
   static String rateApp = 'Rate App';
+  static String sourceCode = 'Source Code';
   static String closeApp = 'Close App';
 
   static String betaLaunchPopupTitle = 'This is a preview release!';
