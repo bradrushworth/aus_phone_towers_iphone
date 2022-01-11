@@ -58,7 +58,7 @@ class Site {
     this.color = getSiteColor(this.telco);
     this.rotation = getSiteRotation(this.telco);
     this.alpha = getSiteAlpha(this.telco);
-    this.deviceDetailsMobile = List<DeviceDetails>();
+    this.deviceDetailsMobile = [];
   }
 
   // Define that two persons are equal if their SSNs are equal
@@ -233,7 +233,7 @@ class Site {
   }
 
   LatLng getLatLng() {
-    return new LatLng(latitude, longitude);
+    return LatLng(latitude, longitude);
   }
 
   Map<String, MapEntry<DeviceDetails, bool>> getDeviceDetailsMobileBands() {

@@ -201,7 +201,7 @@ class PolygonHelper with ChangeNotifier {
 
         // Draw the polygon, no need to download it again. However we do have to calculate it
         // again because the input parameters may have changed (like user settings).
-        List<List<LatLng>> data = List<List<LatLng>>();
+        List<List<LatLng>> data = [];
         for (PolygonContainer polygonContainer in polygonCache[d]) {
           data.add(polygonContainer.getPolygon().points);
         }
@@ -218,11 +218,11 @@ class PolygonHelper with ChangeNotifier {
       // Signal that the polygons have changed
       switchingBetweenTerrainAwareness = false;
 
-      List<List<LatLng>> results = List<List<LatLng>>();
+      List<List<LatLng>> results = [];
       for (int i = 0;
           i <= PolygonHelper.getPolygonSignalStrengthPosition();
           i++) {
-        results.insert(i, List<LatLng>());
+        results.insert(i, []);
       }
 
       String dri = d.deviceRegistrationIdentifier;

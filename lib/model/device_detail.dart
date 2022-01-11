@@ -314,6 +314,6 @@ class DeviceDetails {
     if (speed >= 1024) {
       return '${(1.0 * speed / 1024).toStringAsFixed(0)} kbps';
     }
-    return '$speed bps';
+    return '$speed  bps';
   }
 }

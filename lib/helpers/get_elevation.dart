@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/model/site.dart';
@@ -85,7 +84,7 @@ class GetElevation {
       double elevation = row.elevation.toDouble();
       double lat = row.location.lat.toDouble();
       double lng = row.location.lng.toDouble();
-      site.addElevation(new LatLng(lat, lng), elevation);
+      site.addElevation(LatLng(lat, lng), elevation);
       if (i == rows.length - 1) {
         site.finishedDownloadingElevations = true;
       }

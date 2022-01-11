@@ -248,7 +248,7 @@ class GetLicenceHRP {
     double lon2 = lon1R +
         math.atan2(
             math.sin(bR) * a, math.cos(dR) - math.sin(lat1R) * math.sin(lat2));
-    return new LatLng(toDegrees(lat2), toDegrees(lon2));
+    return LatLng(toDegrees(lat2), toDegrees(lon2));
   }
 
   static double toRadians(x) {

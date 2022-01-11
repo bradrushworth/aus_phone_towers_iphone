@@ -36,3 +36,16 @@ much able to avoid using XCode at all, other than to enrol the app with the Appl
 I don't claim to be an expert with Apple, but I think using CodeMagic I can avoid needing access to
 XCode mostly, since it only runs on a Mac. There are Mac cloud providers though relatively cheap.
 
+## Web Version
+
+If you encounter issues with Chrome complaining about CORS while you are testing, the following
+solution fixed my issue.
+
+[How to solve flutter web api cors error only with dart code?](https://stackoverflow.com/questions/65630743/how-to-solve-flutter-web-api-cors-error-only-with-dart-code)
+
+[flutter_cors](https://pub.dev/packages/flutter_cors)
+
+```
+dart pub global activate flutter_cors
+fluttercors disable
+```

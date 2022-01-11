@@ -19,7 +19,7 @@ class SearchHelper with ChangeNotifier {
   Api api = Api.initialize();
   final ShowSnackBar showSnackBar;
   GoogleMapController mapController;
-  List<LatLng> listLatLongBounds = List<LatLng>();
+  List<LatLng> listLatLongBounds = [];
 
   SearchHelper({this.showSnackBar, this.mapController});
 
@@ -126,6 +126,6 @@ class SearchHelper with ChangeNotifier {
         if (latLng.longitude < y0) y0 = latLng.longitude;
       }
     }
-    return LatLngBounds(northeast: LatLng(x1, y1), southwest: LatLng(x0, y0));
+    return LatLngBounds(southwest: LatLng(x0, y0), northeast: LatLng(x1, y1));
   }
 }
