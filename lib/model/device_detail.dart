@@ -6,6 +6,7 @@ import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
+import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/antenna.dart';
 import 'package:phonetowers/model/license.dart';
 import 'package:phonetowers/model/site.dart';
@@ -100,7 +101,7 @@ class DeviceDetails {
   }
 
   double getAntennaCapacity() {
-    NetworkType type = getNetworkType(emission: emission, frequency: frequency, telco: getSite().telco);
+    NetworkType type = getNetworkType(emission, frequency, bandwidth, getSite().telco);
     double speed = 0;
     if (type == NetworkType.NR) {
       // http://www.techplayon.com/spectral-efficiency-5g-nr-and-4g-lte/
@@ -149,7 +150,7 @@ class DeviceDetails {
     return speed;
   }
 
-  NetworkType getNetworkType({String emission, double frequency, Telco telco}) {
+  NetworkType getNetworkType(String emission, double frequency, double bandwidth, Telco telco) {
     if (emission == null && frequency == null) {
       emission = this.emission;
       frequency = this.frequency;
@@ -163,17 +164,29 @@ class DeviceDetails {
         if (emission.length <= 8) {
           if (frequency != null) {
             // If it a 5G frequency
-            if (frequency >= 3300000000 && frequency < 3800000000) { // n78 (3500 MHz)
+            // https://www.spectrummonitoring.com/frequencies.php/frequencies.php?market=AUS
+            // https://whirlpool.net.au/wiki/mobile_phone_frequencies
+            // https://en.wikipedia.org/wiki/List_of_5G_NR_networks
+            // https://en.wikipedia.org/wiki/5G_NR_frequency_bands
+            // https://halberdbastion.com/intelligence/mobile-networks/optus
+            if (frequency >= 3300000000 && frequency < 3800000000) { // n78 (3500 MHz), <= 100 MHz BW, TDD
               return NetworkType.NR;
-            } else if (frequency >= 24250000000 && frequency < 27500000000) { // n258 (26 GHz)
+            } else if (frequency >= 24250000000 && frequency < 29500000000) { // n257, n258 (covering 24.25 to 29.5 GHz), <=1000 MHz BW, TDD, LMDS
               return NetworkType.NR;
-            } else if (telco == Telco.Vodafone && frequency >= 700000000 && frequency < 800000000 && frequency != 798000000) { // Vodafone Hutchison but not TPG
+            } else if (telco == Telco.Vodafone && frequency >= 758000000 && frequency < 803000000 && bandwidth == 15000000) { // Vodafone (but not TPG) n28 (700MHz), 15 MHz BW, FDD
+              return NetworkType.NR;
+            } else if (telco == Telco.Optus && frequency >= 2300000000 && frequency < 2400000000 && bandwidth == 98000000) { // Optus n40, 98 MHz BW, TDD
+              return NetworkType.NR;
+            } else if (telco == Telco.Telstra && frequency >= 869000000 && frequency < 894000000 && bandwidth == 10000000) { // Telstra n5 (850MHz), 10 MHz BW, FDD
               return NetworkType.NR;
             }
           }
         }
         return NetworkType.LTE;
       case 'W': // Combination
+        if (emission.startsWith("8M20W7W") && telco == Telco.Vodafone) { // This is just a guess
+          return NetworkType.NB_IOT;
+        }
         return NetworkType.UMTS;
       case 'E': // Telephony, voice, sound broadcasting
         return NetworkType.GSM;
@@ -183,17 +196,18 @@ class DeviceDetails {
   }
 
   LteType getLteType() {
-    if (getNetworkType(emission: emission, frequency: frequency, telco: getSite().telco) !=
+    if (getNetworkType(emission, frequency, bandwidth, getSite().telco) !=
         NetworkType.LTE) return LteType.NOT_LTE;
 
     // If emission doesn't explicitly specify LTE type
     if (emission.length <= 8) {
-      if (frequency >= 2300000000 && frequency < 2400000000) {
-        // NBN
+      if (frequency >= 2300000000 && frequency < 2400000000) { // NBN
         return LteType.TD_LTE;
       }
-      if (frequency >= 3400000000 && frequency < 3600000000) {
-        // NBN
+      if (frequency >= 3400000000 && frequency < 3600000000) { // NBN
+        return LteType.TD_LTE;
+      }
+      if (frequency >= 24250000000 && frequency < 29500000000) { // n257, n258
         return LteType.TD_LTE;
       }
       return LteType.FD_LTE;
@@ -244,6 +258,10 @@ class DeviceDetails {
 
     double power_dBm = 10 * log10(eirp) + 30; // Convert Watts to dBm
     power_dBm += 3; // Seems to give closer answers to LicenceHRP
+
+    if (getNetworkType == NetworkType.LTE || getNetworkType == NetworkType.NR) {
+      power_dBm += TranslateFrequencies.convertLteRsrpToRssi(bandwidth); // Convert RSRP to RSSI
+    }
 
     //power_dBm += 30; // Extra FM radio sensitivity (over mobiles)
     //if (getNetworkType() == NetworkType.LTE) power_dBm += 20; // Convert RSRP to RSSI by adding 20 dBm

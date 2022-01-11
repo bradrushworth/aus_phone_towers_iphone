@@ -34,8 +34,8 @@ Future<void> main() async {
   FirebaseCrashlytics.instance
       .setCrashlyticsCollectionEnabled(AppConstants.isDebug);
 
-  // Initialize In App Purchase
-  //InAppPurchaseConnection.enablePendingPurchases(); // TODO
+  // Initialize In App Purchase (No longer required?)
+  //InAppPurchaseConnection.enablePendingPurchases();
 
   //Load secrets
   Secret secret =

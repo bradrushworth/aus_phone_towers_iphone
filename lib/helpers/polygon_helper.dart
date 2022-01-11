@@ -7,6 +7,7 @@ import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
+import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/height_distance_pair.dart';
 import 'package:phonetowers/model/overlay.dart';
@@ -23,9 +24,11 @@ typedef void ShowSnackBar({String message});
 
 class PolygonHelper with ChangeNotifier {
   static final PolygonHelper _singleton = new PolygonHelper._internal();
+
   factory PolygonHelper() {
     return _singleton;
   }
+
   PolygonHelper._internal();
 
   static final double BEARING_START = 1.25;
@@ -50,6 +53,7 @@ class PolygonHelper with ChangeNotifier {
       sitesPolygonsOppositeTerrain;
   static bool drawPolygonsOnClick = true;
   static Logger logger = Logger();
+
   //static Set<Polygon> globalPolygons = Set<Polygon>();
   static List<MapOverlay> globalListPolygons = List<MapOverlay>();
   static CancelToken cancelFetchingPolygonRequestToken;
@@ -88,7 +92,7 @@ class PolygonHelper with ChangeNotifier {
 //        for (PolygonContainer polygonContainer in polygons) {
 //          // Remove from map display
 //          //polygonContainer.getPolygon().remove();//TODO think about this
-//          //TODO no support for ground overlay
+//          //TODO no support for ground overlay. UPDATE: There is now!
 ////     for (GroundOverlay overlay : polygonContainer.getOverlays()) {
 ////     overlay.remove();
 ////     }
@@ -154,10 +158,10 @@ class PolygonHelper with ChangeNotifier {
         // If we don't know the specific devices, use the menu configuration
 
         // Don't download network types we are hiding
-        if (SiteHelper.hideNetworkType.contains(
-            d.getNetworkType(emission: d.emission, frequency: d.frequency))) {
+        if (SiteHelper.hideNetworkType.contains(d.getNetworkType(
+            d.emission, d.frequency, d.bandwidth, d.getSite().telco))) {
           logger.d(
-              "PolygonHelper : queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType(emission: d.emission, frequency: d.frequency, telco: d.getSite().telco)})");
+              "PolygonHelper : queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType(d.emission, d.frequency, d.bandwidth, d.getSite().telco)})");
           continue deviceLoop;
         }
 
@@ -228,7 +232,7 @@ class PolygonHelper with ChangeNotifier {
         createBasicPolygon(d, site, results);
         //}
         logger.d("PolygonHelper",
-            "queryForSignalPolygon: device_registration_identifier == null for [${site.siteId} , ${d.getNetworkType(emission: d.emission, frequency: d.frequency, telco: d.getSite().telco)} ,  $frequency ]");
+            "queryForSignalPolygon: device_registration_identifier == null for [${site.siteId} , ${d.getNetworkType(d.emission, d.frequency, d.bandwidth, d.getSite().telco)} ,  $frequency ]");
         continue deviceLoop;
       }
 
@@ -361,8 +365,9 @@ class PolygonHelper with ChangeNotifier {
       eventMap['site_id'] = site.siteId;
       eventMap['site_telco'] = TelcoHelper.getName(site.getTelco());
       eventMap['device_lteType'] = LteTypeHelper.getName(device.getLteType());
-      eventMap['device_networkType'] =
-          NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
+      eventMap['device_networkType'] = NetworkTypeHelper.resolveNetworkToName(
+          device.getNetworkType(device.emission, device.frequency,
+              device.bandwidth, device.getSite().telco));
       eventMap['device_antennaCapacity'] = device.getAntennaCapacity();
       AnalyticsHelper().sendCustomAnalyticsEvent(
           eventName: 'create_polygon', eventParameters: eventMap);
@@ -374,8 +379,8 @@ class PolygonHelper with ChangeNotifier {
   }
 
   void createBasicPolygon(
-      DeviceDetails d, Site site, List<List<LatLng>> results) {
-    if (site == null || d == null) return;
+      DeviceDetails device, Site site, List<List<LatLng>> results) {
+    if (site == null || device == null) return;
     // If we can't use the Licence HRP table, lets make a circle estimate
 //    double eirp = d.eirp;
 //    if (eirp == null) eirp = 0.0;
@@ -386,16 +391,17 @@ class PolygonHelper with ChangeNotifier {
 //
 //    //Double power = d.power; // Watts
 
-    int freqInMHz = d.frequency / 1000 ~/ 1000;
+    int freqInMHz = device.frequency / 1000 ~/ 1000;
 
     // Draw appropriate signal strength
-    List<int> polygons = NetworkTypeHelper.getNetworkBars(d.getNetworkType(
-        emission: d.emission,
-        frequency: d.frequency,
-        telco: d.getSite().telco));
+    List<int> polygons = NetworkTypeHelper.getNetworkBars(device.getNetworkType(
+        device.emission,
+        device.frequency,
+        device.bandwidth,
+        device.getSite().telco));
 
     int towerHeight = 0;
-    towerHeight = d.height;
+    towerHeight = device.height;
     if (towerHeight < 10) {
       // Sensible default value
       towerHeight = 10;
@@ -418,7 +424,13 @@ class PolygonHelper with ChangeNotifier {
         //Log.d("PolygonHelper", "hillHeight="+hillHeight);
       }
 
-      double power_dBm = d.getPowerAtBearing(bearing);
+      double power_dBm = device.getPowerAtBearing(bearing);
+
+      // Convert RSRP to RSSI to get more accurate results
+      if (device.getNetworkType == NetworkType.LTE) {
+        power_dBm +=
+            TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+      }
 
       int pos = 0;
       for (int p = 0;
@@ -456,7 +468,7 @@ class PolygonHelper with ChangeNotifier {
         pos++;
       }
     }
-    createPolygon(results, site, d);
+    createPolygon(results, site, device);
   }
 
   void clearSitePatterns(bool cancelAllTaskTypes,

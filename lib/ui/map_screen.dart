@@ -216,7 +216,7 @@ class _MapBodyState extends State<MapBody> {
   * Method channel for taking screenshots
   * */
   static const androidMethodChannel =
-      const MethodChannel('au.com.bitbot.phonetowers/screenshot');
+      const MethodChannel('au.com.bitbot.phonetowers.flutter.provider/screenshot');
 
   // static const MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
   //   testDevices: <String>[
@@ -229,14 +229,11 @@ class _MapBodyState extends State<MapBody> {
   /// ******************** Overrided methods **********************************
   @override
   void initState() {
-    if (Platform.isAndroid) {
-      //TODO remove this condition when IAP is implemented for iOS
-      PurchaseHelper().initIAP(
-        showSnackBar: showSnackbar,
-      );
-    }
-
     super.initState();
+
+    PurchaseHelper().initStoreInfo(
+      showSnackBar: showSnackbar,
+    );
 
     _loadNavigationSavedState();
     logger = Logger();
@@ -393,7 +390,7 @@ class _MapBodyState extends State<MapBody> {
   @override
   void dispose() {
     //Free some memory
-    PurchaseHelper().subscription.cancel();
+    //PurchaseHelper().subscription.cancel();
     AdsHelper().hideBannerAd();
     super.dispose();
   }
@@ -702,6 +699,9 @@ class _MapBodyState extends State<MapBody> {
       target: LatLng(lat, long),
       zoom: kDefaultZoom,
     );
+
+    // Start loading the first markers
+    _onCameraMove(lastCameraPosition);
   }
 
   ///Download towers information for either bathurst or user's location
@@ -1285,9 +1285,7 @@ class _MapBodyState extends State<MapBody> {
       DeviceDetails d = freqToDeviceMapping[bandEmission].key;
       //Boolean active = freqToDeviceMapping.get(bandEmission).second;
       NetworkType networkType = d.getNetworkType(
-          emission: d.emission,
-          frequency: d.frequency,
-          telco: d.getSite().telco);
+          d.emission, d.frequency, d.bandwidth, d.getSite().telco);
       int mimoCount = site.countNumberAntennaPaths(d);
 
       TableRow singleTableRow = TableRow(
@@ -1327,7 +1325,7 @@ class _MapBodyState extends State<MapBody> {
             child: Align(
               alignment: AlignmentDirectional.centerStart,
               child: Text(
-                '$mimoCount x $mimoCount',
+                '${mimoCount}x',
                 style: Theme.of(context).textTheme.bodyText1,
               ),
             ),
@@ -1462,6 +1460,7 @@ class SitePropertiesTableWidget extends StatelessWidget {
     Key key,
     @required this.data,
   }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Table(

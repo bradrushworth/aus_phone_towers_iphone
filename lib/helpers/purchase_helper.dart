@@ -7,6 +7,15 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
+import 'package:phonetowers/billing/consumable_store.dart';
 
 import 'analytics_helper.dart';
 
@@ -14,25 +23,41 @@ typedef void ShowSnackBar({String message, bool isDismissible});
 
 class PurchaseHelper with ChangeNotifier {
   static final PurchaseHelper _singleton = new PurchaseHelper._internal();
+
   factory PurchaseHelper() {
     return _singleton;
   }
+
   PurchaseHelper._internal();
 
   Logger logger = Logger();
 
   /// Is the API available on the device
   bool available = false;
-  InAppPurchase _iap = InAppPurchase.instance;
-  List<ProductDetails> products = [];
-  List<PurchaseDetails> purchases = [];
-  StreamSubscription<List<PurchaseDetails>> subscription;
+  final InAppPurchase _inAppPurchase = InAppPurchase.instance;
+  StreamSubscription<List<PurchaseDetails>> _subscription;
+  List<String> _notFoundIds = [];
+  List<ProductDetails> _products = [];
+  List<PurchaseDetails> _purchases = [];
+  List<String> _consumables = [];
+  bool _isAvailable = false;
+  bool _purchasePending = false;
+  bool _loading = true;
+  String _queryProductError;
 
   static const String SKU_DONATION_SMALL = "donation_small";
   static const String SKU_DONATION_MEDIUM = "donation_medium";
   static const String SKU_DONATION_LARGE = "donation_large";
   static const String SKU_SUBSCRIBE_PERMANENTLY = "permanant_adfree";
   static const String SKU_SUBSCRIBE_ONE_YEAR = "yearly_adfree";
+
+  final Set<String> _kProductIds = Set.from([
+    SKU_DONATION_SMALL,
+    SKU_DONATION_MEDIUM,
+    SKU_DONATION_LARGE,
+    SKU_SUBSCRIBE_ONE_YEAR,
+    SKU_SUBSCRIBE_PERMANENTLY
+  ]);
 
   bool isShowDonatePreviousMenuItem = false;
   bool isShowSubscribePreviousMenuItem = false;
@@ -49,13 +74,13 @@ class PurchaseHelper with ChangeNotifier {
 
   bool isHasPurchasedProcessed = false;
 
-  void initIAP(
+  void initStoreInfo(
       {void Function({String message, bool isDismissible})
           showSnackBar}) async {
     this.showSnackBar = showSnackBar;
 
     // Check availability of In App Purchases
-    available = await _iap.isAvailable();
+    final available = await _inAppPurchase.isAvailable();
 
     // Report statistics to Firebase
     AnalyticsHelper().sendCustomAnalyticsEvent(
@@ -67,162 +92,214 @@ class PurchaseHelper with ChangeNotifier {
         });
 
     if (available) {
-      await _getProducts();
-      //await hasPurchase(); // TODO
-
       // Listen to new purchases
-      subscription = _iap.purchaseStream.listen((purchaseDetailsList) {
+      final Stream<List<PurchaseDetails>> purchaseUpdated =
+          _inAppPurchase.purchaseStream;
+      _subscription = purchaseUpdated.listen((purchaseDetailsList) {
         _listenToPurchaseUpdated(purchaseDetailsList);
-      }, onDone: () {}, onError: (error) {});
+      }, onDone: () {
+        _subscription.cancel();
+      }, onError: (error) {
+        // handle error here.
+      });
+
+      await _getProducts();
+      await _hasPurchase();
     } else {
       // Oh no, there was a problem.
       String error = 'The Payment platform is not ready and available';
       logger.e('Error in PurchaseHelper: Error is $error');
       FirebaseCrashlytics.instance.log(error);
       showSnackBar(message: error);
+
+      _products = [];
+      _purchases = [];
+      _notFoundIds = [];
+      _consumables = [];
+      _purchasePending = false;
+      _loading = false;
+      return;
     }
   }
 
   /// Get all products available for sale
   Future<void> _getProducts() async {
-    Set<String> ids = Set.from([
-      SKU_DONATION_SMALL,
-      SKU_DONATION_MEDIUM,
-      SKU_DONATION_LARGE,
-      SKU_SUBSCRIBE_ONE_YEAR,
-      SKU_SUBSCRIBE_PERMANENTLY
-    ]);
-    ProductDetailsResponse response = await _iap.queryProductDetails(ids);
+    if (Platform.isIOS) {
+      var iosPlatformAddition = _inAppPurchase
+          .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      await iosPlatformAddition.setDelegate(ExamplePaymentQueueDelegate());
+    }
 
-    products = response.productDetails;
-    products.forEach((productDetails) {
-      logger.d('products are ${productDetails.id}');
-    });
-  }
-
-  /// Gets past purchases
-/*  Future<void> hasPurchase() async { // TODO
-    QueryPurchaseDetailsResponse response = await _iap.queryPastPurchases();
-
-    Map<String, dynamic> eventMap = Map<String, dynamic>();
-
-    if (response.error != null) {
-      String error = "In-App Billing Failed: " + response.error.message;
+    ProductDetailsResponse productDetailResponse =
+        await _inAppPurchase.queryProductDetails(_kProductIds.toSet());
+    if (productDetailResponse.error != null) {
+      String error =
+          "In-App Billing Failed: " + productDetailResponse.error.message;
       showSnackBar(message: error);
       logger.e("PurchaseHelper", error);
       FirebaseCrashlytics.instance.log(error);
-      eventMap['failure'] = error;
-    } else {
-      //Save all purchased items in temporary list
-      purchases = response.pastPurchases;
 
-      //1) Operation to show / hide donate previous menu
-      PurchaseDetails purchaseDetailsForDonation = response.pastPurchases
-          .firstWhere(
-              (purchaseDetails) =>
-                  purchaseDetails.productID == SKU_DONATION_SMALL ||
-                  purchaseDetails.productID == SKU_DONATION_MEDIUM ||
-                  purchaseDetails.productID == SKU_DONATION_LARGE,
-              orElse: () => null);
-      // Thank the user for donating in the past :-)
-      eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
-      isShowDonatePreviousMenuItem =
-          purchaseDetailsForDonation != null ? true : false;
+      _queryProductError = productDetailResponse.error.message;
+      _products = productDetailResponse.productDetails;
+      _purchases = [];
+      _notFoundIds = productDetailResponse.notFoundIDs;
+      _consumables = [];
+      _purchasePending = false;
+      _loading = false;
+      return;
+    }
 
-      //2)  Operation to perform when user has removed ad for one year
-      PurchaseDetails purchaseDetailsForOneYearSubscription =
-          response.pastPurchases.firstWhere(
-              (purchaseDetails) =>
-                  purchaseDetails.productID == SKU_SUBSCRIBE_ONE_YEAR,
-              orElse: () => null);
-      if (purchaseDetailsForOneYearSubscription != null) {
-        int purchaseTime = int.tryParse(
-                purchaseDetailsForOneYearSubscription.transactionDate) ??
-            0;
-        if (purchaseTime > 0 &&
-            purchaseTime <
-                DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
-          // Remove ads for one year is now over
-          logger.i("BillingHelper Consuming the " +
-              SKU_SUBSCRIBE_ONE_YEAR +
-              " purchase because it expired!");
-          eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
-          _iap.completePurchase(purchaseDetailsForOneYearSubscription);
-          isShowSubscribePreviousMenuItem = false;
-        }
+    if (productDetailResponse.productDetails.isEmpty) {
+      String error = "In-App Billing is empty!";
+      showSnackBar(message: error);
+      logger.e("PurchaseHelper", error);
+      FirebaseCrashlytics.instance.log(error);
+
+      _queryProductError = null;
+      _products = productDetailResponse.productDetails;
+      _purchases = [];
+      _notFoundIds = productDetailResponse.notFoundIDs;
+      _consumables = [];
+      _purchasePending = false;
+      _loading = false;
+      return;
+    }
+
+    List<String> consumables = await ConsumableStore.load();
+    _products = productDetailResponse.productDetails;
+    _notFoundIds = productDetailResponse.notFoundIDs;
+    _consumables = consumables;
+    _purchasePending = false;
+    _loading = false;
+  }
+
+  @override
+  void dispose() {
+    if (Platform.isIOS) {
+      var iosPlatformAddition = _inAppPurchase
+          .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      iosPlatformAddition.setDelegate(null);
+    }
+    _subscription.cancel();
+    super.dispose();
+  }
+
+  /// Gets past purchases
+  Future<void> _hasPurchase() async {
+    Map<String, PurchaseDetails> purchases =
+        Map.fromEntries(_purchases.map((PurchaseDetails purchase) {
+      if (purchase.pendingCompletePurchase) {
+        _inAppPurchase.completePurchase(purchase);
       }
+      return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
+    }));
+    _purchases = purchases.values.toList();
 
-      //3) This is just for analytics
-      // This needs to be after the consume everything above
-      PurchaseDetails purchaseDetailsForPermanentSubscription =
-          response.pastPurchases.firstWhere(
-              (purchaseDetails) =>
-                  purchaseDetails.productID == SKU_SUBSCRIBE_PERMANENTLY,
-              orElse: () => null);
-      bool permanent =
-          purchaseDetailsForPermanentSubscription != null ? true : false;
-      bool yearly =
-          purchaseDetailsForOneYearSubscription != null ? true : false;
-      bool subscription = permanent || yearly;
+    Map<String, dynamic> eventMap = Map<String, dynamic>();
 
-      eventMap['permanent'] = permanent;
-      eventMap['yearly'] = yearly;
-      eventMap['subscription'] = subscription;
-      List<String> listAllOwnedSkus = response.pastPurchases
-          .map((purchaseDetails) => purchaseDetails.productID)
-          .toList();
-      eventMap['owned_sku'] = listAllOwnedSkus.toString();
+    //1) Operation to show / hide donate previous menu
+    PurchaseDetails purchaseDetailsForDonation = _purchases.firstWhere(
+        (purchaseDetails) =>
+            purchaseDetails.productID == SKU_DONATION_SMALL ||
+            purchaseDetails.productID == SKU_DONATION_MEDIUM ||
+            purchaseDetails.productID == SKU_DONATION_LARGE,
+        orElse: () => null);
+    // Thank the user for donating in the past :-)
+    eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
+    isShowDonatePreviousMenuItem =
+        purchaseDetailsForDonation != null ? true : false;
 
-      // Stop users from subscribing more than once
-      isShowSubscribePreviousMenuItem = subscription;
-      isSubscribedPermanently = permanent;
-      if (yearly) {
-        int expiry = int.tryParse(
-                purchaseDetailsForOneYearSubscription.transactionDate) ??
-            0;
-        expiry += EXPIRY_PERIOD;
-        DateTime date = new DateTime.fromMillisecondsSinceEpoch(expiry);
-        await initializeDateFormatting("en-AU", null);
-        var formatter = DateFormat.yMMMd('en-AU');
-        String expiryDate = formatter.format(date);
-        timeToExpireYearlySubscription = 'Expires $expiryDate';
-        eventMap['yearly_expiry'] = expiry;
+    //2)  Operation to perform when user has removed ad for one year
+    PurchaseDetails purchaseDetailsForOneYearSubscription =
+        _purchases.firstWhere(
+            (purchaseDetails) =>
+                purchaseDetails.productID == SKU_SUBSCRIBE_ONE_YEAR,
+            orElse: () => null);
+    if (purchaseDetailsForOneYearSubscription != null) {
+      int purchaseTime =
+          int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate) ??
+              0;
+      if (purchaseTime > 0 &&
+          purchaseTime <
+              DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
+        // Remove ads for one year is now over
+        logger.i("BillingHelper Consuming the " +
+            SKU_SUBSCRIBE_ONE_YEAR +
+            " purchase because it expired!");
+        eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
+        _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
+        isShowSubscribePreviousMenuItem = false;
       }
+    }
 
-      // Remove or display the ads
-      isHasPurchasedProcessed = true;
-      notifyListeners();
+    //3) This is just for analytics
+    // This needs to be after the consume everything above
+    PurchaseDetails purchaseDetailsForPermanentSubscription =
+        _purchases.firstWhere(
+            (purchaseDetails) =>
+                purchaseDetails.productID == SKU_SUBSCRIBE_PERMANENTLY,
+            orElse: () => null);
+    bool permanent =
+        purchaseDetailsForPermanentSubscription != null ? true : false;
+    bool yearly = purchaseDetailsForOneYearSubscription != null ? true : false;
+    bool subscription = permanent || yearly;
 
-      //This is required only for iOS
-      for (PurchaseDetails purchase in response.pastPurchases) {
-        logger.d('purchased item is ${purchase.productID}');
-        if (Platform.isIOS) {
-          InAppPurchase.instance.completePurchase(purchase);
-        }
+    eventMap['permanent'] = permanent;
+    eventMap['yearly'] = yearly;
+    eventMap['subscription'] = subscription;
+    List<String> listAllOwnedSkus =
+        _purchases.map((purchaseDetails) => purchaseDetails.productID).toList();
+    eventMap['owned_sku'] = listAllOwnedSkus.toString();
+
+    // Stop users from subscribing more than once
+    isShowSubscribePreviousMenuItem = subscription;
+    isSubscribedPermanently = permanent;
+    if (yearly) {
+      int expiry =
+          int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate) ??
+              0;
+      expiry += EXPIRY_PERIOD;
+      DateTime date = new DateTime.fromMillisecondsSinceEpoch(expiry);
+      await initializeDateFormatting("en-AU", null);
+      var formatter = DateFormat.yMMMd('en-AU');
+      String expiryDate = formatter.format(date);
+      timeToExpireYearlySubscription = 'Expires $expiryDate';
+      eventMap['yearly_expiry'] = expiry;
+    }
+
+    // Remove or display the ads
+    isHasPurchasedProcessed = true;
+    notifyListeners();
+
+    //This is required only for iOS
+    for (PurchaseDetails purchase in _purchases) {
+      logger.d('purchased item is ${purchase.productID}');
+      if (Platform.isIOS) {
+        InAppPurchase.instance.completePurchase(purchase);
       }
     }
 
     AnalyticsHelper().sendCustomAnalyticsEvent(
         eventName: 'has_purchase', eventParameters: eventMap);
-  }*/
-
+  }
 
   Future<void> initiatePurchase({@required String sku}) async {
     //If product is already purchased, First consume it and then buy again
-    PurchaseDetails purchaseDetails = purchases.firstWhere((product) {
+    PurchaseDetails purchaseDetails = _purchases.firstWhere((product) {
       return product.productID == sku;
     }, orElse: () => null);
     if (purchaseDetails != null) {
-      await _iap.completePurchase(purchaseDetails);
+      await _inAppPurchase.completePurchase(purchaseDetails);
     }
 
-    ProductDetails productToBuy = products.firstWhere((product) {
+    ProductDetails productToBuy = _products.firstWhere((product) {
       return product.id == sku;
     }, orElse: () => null);
     final PurchaseParam purchaseParam =
         PurchaseParam(productDetails: productToBuy);
     if (productToBuy != null) {
-      _iap.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
+      _inAppPurchase.buyConsumable(
+          purchaseParam: purchaseParam, autoConsume: false);
     }
   }
 
@@ -330,11 +407,11 @@ class PurchaseHelper with ChangeNotifier {
 
   Future<void> consumeforDebuggingOnly({@required String sku}) async {
     logger.d('$sku');
-    PurchaseDetails purchaseDetails = purchases.firstWhere((product) {
+    PurchaseDetails purchaseDetails = _purchases.firstWhere((product) {
       return product.productID == sku;
     }, orElse: () => null);
     if (purchaseDetails != null) {
-      await _iap.completePurchase(purchaseDetails);
+      await _inAppPurchase.completePurchase(purchaseDetails);
     }
   }
 
@@ -343,4 +420,22 @@ class PurchaseHelper with ChangeNotifier {
 //        purchaseDetails.billingClientPurchase.originalJson,
 //        purchaseDetails.billingClientPurchase.signature));
 //  }
+}
+
+/// Example implementation of the
+/// [`SKPaymentQueueDelegate`](https://developer.apple.com/documentation/storekit/skpaymentqueuedelegate?language=objc).
+///
+/// The payment queue delegate can be implementated to provide information
+/// needed to complete transactions.
+class ExamplePaymentQueueDelegate implements SKPaymentQueueDelegateWrapper {
+  @override
+  bool shouldContinueTransaction(
+      SKPaymentTransactionWrapper transaction, SKStorefrontWrapper storefront) {
+    return true;
+  }
+
+  @override
+  bool shouldShowPriceConsent() {
+    return false;
+  }
 }

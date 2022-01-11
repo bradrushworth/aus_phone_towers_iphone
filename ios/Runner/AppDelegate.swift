@@ -12,7 +12,7 @@ import MessageUI
   ) -> Bool {
     GMSServices.provideAPIKey("AIzaSyDd_W-tPbI0F8ZRw1T5cAKLobOIfVLotDM")
     GeneratedPluginRegistrant.register(with: self)
-    let shareChannelName = "au.com.bitbot.phonetowers/screenshot";
+    let shareChannelName = "au.com.bitbot.phonetowers.flutter.provider/screenshot";
     let controller:FlutterViewController = self.window?.rootViewController as! FlutterViewController;
     let shareChannel:FlutterMethodChannel = FlutterMethodChannel.init(name: shareChannelName, binaryMessenger: controller as! FlutterBinaryMessenger);
     

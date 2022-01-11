@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="au.com.bitbot.phonetowers">
+    package="au.com.bitbot.phonetowers.flutter">
 
     <!-- io.flutter.app.FlutterApplication is an android.app.Application that
          calls FlutterMain.startInitialization(this); in its onCreate method.
@@ -13,11 +13,14 @@
 
     <application
         android:label="Aus Phone Towers iPhone"
-        android:icon="@mipmap/ic_launcher">
-        
+        android:icon="@mipmap/ic_launcher"
+        android:largeHeap="true"
+        android:hardwareAccelerated="true"
+        android:allowBackup="true">
+
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="au.com.bitbot.phonetowers"
+            android:authorities="au.com.bitbot.phonetowers.flutter.provider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
