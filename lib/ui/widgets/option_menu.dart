@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:logger/logger.dart';
@@ -72,7 +73,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
             );
           }).where((optionItem) {
             int optionItemPosition = listOptionItem.indexOf(optionItem.value);
-            if (Platform.isAndroid) {
+            if (!kIsWeb && Platform.isAndroid) {
               return SearchHelper.calculatingSearchResults
                   ? optionItemPosition != 1
                   : true;

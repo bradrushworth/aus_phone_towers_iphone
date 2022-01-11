@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:dart_numerics/dart_numerics.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';

@@ -270,7 +270,7 @@ class Site {
     if (d.isMIMO()) count *= 2;
 
     // We only care about powers of 2
-    count = TranslateFrequencies.log2(count).toInt();
+    count = log2(count).toInt();
     count = math.pow(2, count).toInt();
 
     return count;

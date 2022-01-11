@@ -1,11 +1,10 @@
 import 'dart:math';
 
+double log2(int n) => (log(n) / log(2));
+double log10(num x) => log(x) / ln10;
+double logBase(num x, num base) => log(x) / log(base);
+
 class TranslateFrequencies {
-  static double log2(int n) {
-    return (log(n) / log(2));
-  }
-  static double log10(num x) => log(x) / ln10;
-  static double logBase(num x, num base) => log(x) / log(base);
 
   static String formatFrequency(double freq, bool showDecimal) {
     if (freq == null || freq == 0) {

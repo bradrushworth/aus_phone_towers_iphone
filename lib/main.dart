@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
@@ -28,11 +27,31 @@ Future<void> main() async {
   // development.
   WidgetsFlutterBinding.ensureInitialized();
 
-  //Initialize Firebase
-  await Firebase.initializeApp();
-
-  FirebaseCrashlytics.instance
-      .setCrashlyticsCollectionEnabled(AppConstants.isDebug);
+  // Initialize Firebase
+  if (kIsWeb) {
+    // Web version needs the parameters sent though here
+    await Firebase.initializeApp(
+        // Replace with actual values
+        options: FirebaseOptions(
+            apiKey: "AIzaSyDSjVeI6yRIbl_VtihyNEe-JgxEl_LCupA",
+            authDomain: "aus-phone-towers-7d175.firebaseapp.com",
+            databaseURL: "https://aus-phone-towers-7d175.firebaseio.com",
+            projectId: "aus-phone-towers-7d175",
+            storageBucket: "aus-phone-towers-7d175.appspot.com",
+            messagingSenderId: "742739090143",
+            appId: "1:742739090143:web:a7d35db594855884b2a76a",
+            measurementId: "G-WT4TEP3Z7X"));
+  } else {
+    // Mobile version gets them from GoogleService-Info.plist or google-services.json
+    Firebase.initializeApp();
+  }
+  if (!kIsWeb) {
+    if (AppConstants.isDebug) {
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
+    } else {
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+    }
+  }
 
   // Initialize In App Purchase (No longer required?)
   //InAppPurchaseConnection.enablePendingPurchases();
@@ -49,10 +68,13 @@ Future<void> main() async {
   PolygonHelper.terrainAwarenessKey = secret.terrainAwarenessKey;
   //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
 
-  // Initialize admob
-  MobileAds.instance.initialize();
-  // Pass all uncaught errors to Crashlytics.
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+  if (!kIsWeb) {
+    // Initialize admob
+    MobileAds.instance.initialize();
+
+    // Pass all uncaught errors to Crashlytics.
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+  }
 
   /*
   * runZoned Provides monitoring on whole app and reporting to the FireBase.
@@ -86,7 +108,7 @@ Future<void> main() async {
       ],
       child: AusPhoneTowers(),
     ));
-  }, onError: FirebaseCrashlytics.instance.recordError);
+  }, onError: kIsWeb ? (exception) {} : FirebaseCrashlytics.instance.recordError);
 }
 
 class AusPhoneTowers extends StatelessWidget {
