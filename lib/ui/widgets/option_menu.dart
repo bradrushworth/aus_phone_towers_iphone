@@ -11,6 +11,7 @@ import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
 import 'package:phonetowers/utils/strings.dart';
+import 'package:phonetowers/utils/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -72,7 +73,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
           }).where((optionItem) {
             int optionItemPosition = listOptionItem.indexOf(optionItem.value);
             if (Platform.isAndroid) {
-              //TODO remove this condition when IAP is implemented for iOS and keep only below if condition part
               return SearchHelper.calculatingSearchResults
                   ? optionItemPosition != 1
                   : true;
@@ -118,9 +118,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
                     .setSearchStatus(true);
                 break;
               }
-            case 2: //Clear map menu
+            case 2: //Clear everything
               {
-                showSingleRowOptionMenu(listClearMapItem, kClearMenu);
+                SiteHelper().clearMap(
+                    onCameraMoveFromLastLocation:
+                    widget.onCameraMoveFromLastLocation);
                 break;
               }
             case 3: //Map mode
@@ -189,9 +191,10 @@ class _OptionsMenuState extends State<OptionsMenu> {
 
                 break;
               }
-            case 10: //Close App
+            case 10: //Source code
               {
-                exit(0);
+                Utils.launchURL(
+                    'https://github.com/bradrushworth/aus_phone_towers_iphone');
                 break;
               }
           }
@@ -252,24 +255,24 @@ class _OptionsMenuState extends State<OptionsMenu> {
 
     int selectedOptionItem = listSingleRowItem.indexOf(singleRowItem);
     switch (menuType) {
-      case kClearMenu: //Clear map menu option
-        {
-          switch (selectedOptionItem) {
-            case 1: //Clear polygons
-              {
-                SiteHelper().clearPolygons();
-                break;
-              }
-            case 2: //Reload everything
-              {
-                SiteHelper().clearMap(
-                    onCameraMoveFromLastLocation:
-                        widget.onCameraMoveFromLastLocation);
-                break;
-              }
-          }
-          break;
-        }
+      // case kClearMenu: //Clear map menu option
+      //   {
+      //     switch (selectedOptionItem) {
+      //       case 1: //Clear polygons
+      //         {
+      //           SiteHelper().clearPolygons();
+      //           break;
+      //         }
+      //       case 2: //Reload everything
+      //         {
+      //           SiteHelper().clearMap(
+      //               onCameraMoveFromLastLocation:
+      //                   widget.onCameraMoveFromLastLocation);
+      //           break;
+      //         }
+      //     }
+      //     break;
+      //   }
       case kHidingMenu: //Hiding menu
         {
           switch (selectedOptionItem) {
@@ -397,7 +400,7 @@ List<OptionItem> listOptionItem = <OptionItem>[
           ? Strings.hide_border
           : Strings.show_border),
   OptionItem(title: Strings.search_sites),
-  OptionItem(title: Strings.clear_map, trailing: true),
+  OptionItem(title: Strings.reload_everything),
   OptionItem(title: Strings.map_mode, trailing: true),
   OptionItem(title: Strings.hiding_menu, trailing: true),
   OptionItem(title: Strings.remove_ads, trailing: true),
@@ -408,7 +411,7 @@ List<OptionItem> listOptionItem = <OptionItem>[
           : Strings.developerMode),
   OptionItem(title: Strings.reportProblem),
   OptionItem(title: Strings.rateApp),
-  OptionItem(title: Strings.closeApp),
+  OptionItem(title: Strings.sourceCode),
 ];
 
 //********************** Clear map ***************************//
@@ -421,12 +424,12 @@ class SingleRowItem {
   bool isEnabled;
 }
 
-List<SingleRowItem> listClearMapItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.clear_map, isEnabled: false),
-  SingleRowItem(title: Strings.clear_polygons, prefix: Icon(Icons.clear)),
-  SingleRowItem(
-      title: Strings.reload_everything, prefix: Icon(Icons.delete_forever))
-];
+// List<SingleRowItem> listClearMapItem = <SingleRowItem>[
+//   SingleRowItem(isTitle: true, title: Strings.clear_map, isEnabled: false),
+//   SingleRowItem(title: Strings.clear_polygons, prefix: Icon(Icons.clear)),
+//   SingleRowItem(
+//       title: Strings.reload_everything, prefix: Icon(Icons.delete_forever))
+// ];
 
 List<SingleRowItem> listHidingMenuItem = <SingleRowItem>[
   SingleRowItem(isTitle: true, title: Strings.hiding_menu, isEnabled: false),

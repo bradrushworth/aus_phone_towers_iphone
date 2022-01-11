@@ -14,7 +14,7 @@
     <application
         android:label="Aus Phone Towers iPhone"
         android:icon="@mipmap/ic_launcher"
-        android:largeHeap="true"
+        android:largeHeap="false"
         android:hardwareAccelerated="true"
         android:allowBackup="true">
 
