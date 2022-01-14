@@ -3,7 +3,6 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:after_layout/after_layout.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +13,7 @@ import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as onlyPath;
 import 'package:phonetowers/helpers/ads_helper.dart';
+import 'package:phonetowers/helpers/analytics_helper.dart';
 import 'package:phonetowers/helpers/frequency_range_helper.dart';
 import 'package:phonetowers/helpers/get_devices.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
@@ -656,8 +656,7 @@ class _MapBodyState extends State<MapBody> {
         showSnackbar(
             message: 'Location permissions were denied by the user!',
             isDismissible: true);
-        if (!kIsWeb) FirebaseCrashlytics.instance
-            .log('Location permissions were denied by the user!');
+        AnalyticsHelper().log('Location permissions were denied by the user!');
       }
     } on PlatformException catch (e) {
       print(e);
@@ -991,9 +990,10 @@ class _MapBodyState extends State<MapBody> {
   }
 
   void refreshUI({String message = 'Global refresh'}) {
-    logger.d('$message');
+    //logger.d('$message');
     if (mounted) {
-      setState(() {});
+      // TODO: This probably wasn't right!
+      //setState(() {});
     }
   }
 

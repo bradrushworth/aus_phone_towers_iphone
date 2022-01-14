@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -105,7 +104,7 @@ class PurchaseHelper with ChangeNotifier {
       // Oh no, there was a problem.
       String error = 'The Payment platform is not ready and available';
       logger.e('Error in PurchaseHelper: Error is $error');
-      if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
+      AnalyticsHelper().log(error);
       showSnackBar(message: error);
 
       _products = [];
@@ -133,7 +132,7 @@ class PurchaseHelper with ChangeNotifier {
           "In-App Billing Failed: " + productDetailResponse.error.message;
       showSnackBar(message: error);
       logger.e("PurchaseHelper", error);
-      if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
+      AnalyticsHelper().log(error);
 
       _queryProductError = productDetailResponse.error.message;
       _products = productDetailResponse.productDetails;
@@ -149,7 +148,7 @@ class PurchaseHelper with ChangeNotifier {
       String error = "In-App Billing is empty!";
       showSnackBar(message: error);
       logger.e("PurchaseHelper", error);
-      if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
+      AnalyticsHelper().log(error);
 
       _queryProductError = null;
       _products = productDetailResponse.productDetails;
@@ -315,10 +314,10 @@ class PurchaseHelper with ChangeNotifier {
           showSnackBar(message: error);
           logger.w("PurchaseHelper", error);
           eventMap['failure'] = error;
-          if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
+          AnalyticsHelper().log(error);
 
           AnalyticsHelper().sendCustomAnalyticsEvent(
-              eventName: 'purchase', eventParameters: eventMap);
+              eventName: 'purchase_error', eventParameters: eventMap);
         } else if (purchaseDetails.status == PurchaseStatus.purchased) {
           bool valid = true;
           //await _verifyPurchase(purchaseDetails);

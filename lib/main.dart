@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -7,7 +6,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart' as Foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_driver/driver_extension.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
@@ -26,12 +24,6 @@ import 'utils/secret.dart';
 Logger logger = new Logger();
 
 Future<void> main() async {
-  if (!kIsWeb) {
-    if (Platform.environment.containsKey('FLUTTER_TEST')) {
-      // This line enables the extension
-      enableFlutterDriverExtension();
-    }
-  }
 
   // Set `enableInDevMode` to true to see reports while in debug mode
   // This is only to be used for confirming that reports are being
@@ -41,7 +33,7 @@ Future<void> main() async {
 
   // Initialize Firebase
   if (!kIsWeb) {
-    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (!Foundation.kDebugMode) {
       // Mobile version gets them from GoogleService-Info.plist or google-services.json
       await Firebase.initializeApp();
     }
@@ -62,13 +54,9 @@ Future<void> main() async {
 
   // Initialise Crashlytics
   if (!kIsWeb) {
-    if (Foundation.kDebugMode) {
-      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
-    } else {
-      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-    }
-
     if (!Foundation.kDebugMode) {
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+
       // Pass all uncaught errors to Crashlytics.
       FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
     }
