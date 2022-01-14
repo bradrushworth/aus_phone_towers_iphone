@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart' as Foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_driver/driver_extension.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
@@ -24,6 +25,7 @@ import 'helpers/polygon_helper.dart';
 import 'utils/secret.dart';
 
 Future<void> main() async {
+  enableFlutterDriverExtension();
   Logger logger = new Logger();
 
   // Set `enableInDevMode` to true to see reports while in debug mode
@@ -39,7 +41,7 @@ Future<void> main() async {
   } else {
     // Web version needs the parameters sent though here
     await Firebase.initializeApp(
-        // Replace with actual values
+      // Replace with actual values
         options: FirebaseOptions(
             apiKey: "AIzaSyDSjVeI6yRIbl_VtihyNEe-JgxEl_LCupA",
             authDomain: "aus-phone-towers-7d175.firebaseapp.com",
@@ -65,7 +67,7 @@ Future<void> main() async {
 
   //Load secrets
   Secret secret =
-      await SecretLoader(secretPath: 'assets/json/secrets.json').load();
+  await SecretLoader(secretPath: 'assets/json/secrets.json').load();
   AdsHelper.androidAdmobAppId = secret.androidAdmobAppId;
   AdsHelper.androidPortraitAdUnitId = secret.androidPortraitAdUnitId;
   AdsHelper.androidLandscapeAdUnitId = secret.androidLandscapeAdUnitId;
@@ -117,7 +119,7 @@ Future<void> main() async {
     ));
   },
       onError:
-          kIsWeb ? (exception) {} : FirebaseCrashlytics.instance.recordError);
+      kIsWeb ? (exception) {} : FirebaseCrashlytics.instance.recordError);
 }
 
 class AusPhoneTowers extends StatelessWidget {
