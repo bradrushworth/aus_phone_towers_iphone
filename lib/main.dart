@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart' as Foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_driver/driver_extension.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
@@ -14,7 +15,6 @@ import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/ui/map_screen.dart';
-import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/secretloader.dart';
 import 'package:phonetowers/utils/strings.dart';
 import 'package:provider/provider.dart';
@@ -26,10 +26,25 @@ import 'utils/secret.dart';
 Logger logger = new Logger();
 
 Future<void> main() async {
+  if (!kIsWeb) {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      // This line enables the extension
+      enableFlutterDriverExtension();
+    }
+  }
+
+  // Set `enableInDevMode` to true to see reports while in debug mode
+  // This is only to be used for confirming that reports are being
+  // submitted as expected. It is not intended to be used for everyday
+  // development.
+  await WidgetsFlutterBinding.ensureInitialized();
+
   // Initialize Firebase
   if (!kIsWeb) {
-    // Mobile version gets them from GoogleService-Info.plist or google-services.json
-    await Firebase.initializeApp();
+    if (!Platform.environment.containsKey('FLUTTER_TEST')) {
+      // Mobile version gets them from GoogleService-Info.plist or google-services.json
+      await Firebase.initializeApp();
+    }
   } else {
     // Web version needs the parameters sent though here
     await Firebase.initializeApp(
@@ -47,22 +62,27 @@ Future<void> main() async {
 
   // Initialise Crashlytics
   if (!kIsWeb) {
-    if (AppConstants.isDebug ||
-        AppConstants.isMock ||
-        Foundation.kDebugMode ||
-        Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (Foundation.kDebugMode) {
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
     } else {
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
     }
-  }
 
-  // Initialize In App Purchase (No longer required?)
-  //InAppPurchaseConnection.enablePendingPurchases();
+    if (!Foundation.kDebugMode) {
+      // Pass all uncaught errors to Crashlytics.
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+    }
+
+    // Initialize admob
+    await MobileAds.instance.initialize();
+
+    // Initialize In App Purchase (No longer required?)
+    //InAppPurchaseConnection.enablePendingPurchases();
+  }
 
   //Load secrets
   Secret secret =
-      await SecretLoader(secretPath: 'assets/json/secrets.json').load();
+  await SecretLoader(secretPath: 'assets/json/secrets.json').load();
   AdsHelper.androidAdmobAppId = secret.androidAdmobAppId;
   AdsHelper.androidPortraitAdUnitId = secret.androidPortraitAdUnitId;
   AdsHelper.androidLandscapeAdUnitId = secret.androidLandscapeAdUnitId;
@@ -71,25 +91,6 @@ Future<void> main() async {
   AdsHelper.iOSLandscapeAdUnitId = secret.iOSLandscapeAdUnitId;
   PolygonHelper.terrainAwarenessKey = secret.terrainAwarenessKey;
   //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
-
-  if (!kIsWeb) {
-    // Initialize admob
-    MobileAds.instance.initialize();
-
-    if (Foundation.kDebugMode) {
-      // Set `enableInDevMode` to true to see reports while in debug mode
-      // This is only to be used for confirming that reports are being
-      // submitted as expected. It is not intended to be used for everyday
-      // development.
-      //await WidgetsFlutterBinding.ensureInitialized();
-
-      // This line enables the extension
-      //enableFlutterDriverExtension();
-    } else {
-      // Pass all uncaught errors to Crashlytics.
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
-    }
-  }
 
   /*
   * runZoned Provides monitoring on whole app and reporting to the FireBase.
@@ -125,8 +126,8 @@ Future<void> main() async {
     ));
   },
       onError: kIsWeb || Foundation.kDebugMode
-          ? (exception) {}
-          : FirebaseCrashlytics.instance.recordError);
+          ? (exception, stack) {}
+          : await FirebaseCrashlytics.instance.recordError);
 }
 
 class AusPhoneTowers extends StatelessWidget {

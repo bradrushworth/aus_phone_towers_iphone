@@ -79,9 +79,8 @@ class _NavigationMenuState extends State<NavigationMenu> {
     screenheight = MediaQuery.of(context).size.height;
 
     return SizedBox(
-      width: screenWidth * .50,
+      width: 200,
       child: Drawer(
-
         child: ListView(
           children: <Widget>[
             //Licencess
