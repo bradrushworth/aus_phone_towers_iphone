@@ -35,7 +35,7 @@
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>App needs location permission to show nearest towers around you.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>App needs Motion to operate.</string>
+	<string>App needs motion to operate map directions.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -57,5 +57,7 @@
 	<false/>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<string>NO</string>
 </dict>
 </plist>

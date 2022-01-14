@@ -179,7 +179,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 widget.takeScreenshot();
                 break;
               }
-            case 9: //Rate App
+            case 9: //Rate App TODO Not relevant for web!
               {
                 final InAppReview inAppReview = InAppReview.instance;
 

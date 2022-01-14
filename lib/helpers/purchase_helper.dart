@@ -176,7 +176,11 @@ class PurchaseHelper with ChangeNotifier {
           .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       iosPlatformAddition.setDelegate(null);
     }
-    _subscription.cancel();
+
+    if (_subscription != null) {
+      _subscription.cancel();
+    }
+
     super.dispose();
   }
 
