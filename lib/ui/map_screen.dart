@@ -264,7 +264,7 @@ class _MapBodyState extends State<MapBody> {
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
               builder: (context, polygonHelper, siteHelper, mapHelper, child) =>
                   GoogleMap(
-                padding: EdgeInsets.only(bottom: 55, top: 100),
+                padding: EdgeInsets.only(bottom: 100, top: 100),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
                 initialCameraPosition: CameraPosition(

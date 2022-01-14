@@ -89,6 +89,9 @@ class Strings {
 
   static String reportProblem = 'Report Problem';
   static String rateApp = 'Rate App';
+  static String links = 'Links';
+  static String ausphonetowers = 'AusPhoneTowers.com.au';
+  static String iosAppStore = 'iOS App Store';
   static String sourceCode = 'Source Code';
   static String closeApp = 'Close App';
 
