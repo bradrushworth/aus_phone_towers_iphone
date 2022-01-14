@@ -313,7 +313,7 @@ class DeviceDetails {
 //    return new Position(site.getLatLng().latitude, site.getLatLng().doubleitude);
 //  }
 
-  static String formatNetworkSpeed(double speed) {
+  static String formatNetworkSpeed(int speed) {
     if (speed >= 10 * 1024 * 1024 * 1024) {
       return '${(1.0 * speed / 1024 / 1024 / 1024).toStringAsFixed(0)} Gbps';
     }
