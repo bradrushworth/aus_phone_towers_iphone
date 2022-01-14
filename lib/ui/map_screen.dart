@@ -364,6 +364,7 @@ class _MapBodyState extends State<MapBody> {
                     icon: Image.asset(PolygonHelper.calculateTerrain
                         ? 'assets/images/ic_terrain_selected.png'
                         : 'assets/images/ic_terrain_unselected.png'),
+                    tooltip: Strings.calculate_terrain,
                     onPressed: () {
                       PolygonHelper.calculateTerrain =
                           !PolygonHelper.calculateTerrain;

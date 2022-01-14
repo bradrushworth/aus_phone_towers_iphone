@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart' as Foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_driver/driver_extension.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
@@ -24,16 +23,9 @@ import 'helpers/ads_helper.dart';
 import 'helpers/polygon_helper.dart';
 import 'utils/secret.dart';
 
+Logger logger = new Logger();
+
 Future<void> main() async {
-  enableFlutterDriverExtension();
-  Logger logger = new Logger();
-
-  // Set `enableInDevMode` to true to see reports while in debug mode
-  // This is only to be used for confirming that reports are being
-  // submitted as expected. It is not intended to be used for everyday
-  // development.
-  await WidgetsFlutterBinding.ensureInitialized();
-
   // Initialize Firebase
   if (!kIsWeb) {
     // Mobile version gets them from GoogleService-Info.plist or google-services.json
@@ -41,7 +33,7 @@ Future<void> main() async {
   } else {
     // Web version needs the parameters sent though here
     await Firebase.initializeApp(
-      // Replace with actual values
+        // Replace with actual values
         options: FirebaseOptions(
             apiKey: "AIzaSyDSjVeI6yRIbl_VtihyNEe-JgxEl_LCupA",
             authDomain: "aus-phone-towers-7d175.firebaseapp.com",
@@ -55,7 +47,10 @@ Future<void> main() async {
 
   // Initialise Crashlytics
   if (!kIsWeb) {
-    if (AppConstants.isDebug || AppConstants.isMock || Foundation.kDebugMode || Platform.environment.containsKey('FLUTTER_TEST')) {
+    if (AppConstants.isDebug ||
+        AppConstants.isMock ||
+        Foundation.kDebugMode ||
+        Platform.environment.containsKey('FLUTTER_TEST')) {
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
     } else {
       await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
@@ -67,7 +62,7 @@ Future<void> main() async {
 
   //Load secrets
   Secret secret =
-  await SecretLoader(secretPath: 'assets/json/secrets.json').load();
+      await SecretLoader(secretPath: 'assets/json/secrets.json').load();
   AdsHelper.androidAdmobAppId = secret.androidAdmobAppId;
   AdsHelper.androidPortraitAdUnitId = secret.androidPortraitAdUnitId;
   AdsHelper.androidLandscapeAdUnitId = secret.androidLandscapeAdUnitId;
@@ -81,8 +76,19 @@ Future<void> main() async {
     // Initialize admob
     MobileAds.instance.initialize();
 
-    // Pass all uncaught errors to Crashlytics.
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+    if (Foundation.kDebugMode) {
+      // Set `enableInDevMode` to true to see reports while in debug mode
+      // This is only to be used for confirming that reports are being
+      // submitted as expected. It is not intended to be used for everyday
+      // development.
+      //await WidgetsFlutterBinding.ensureInitialized();
+
+      // This line enables the extension
+      //enableFlutterDriverExtension();
+    } else {
+      // Pass all uncaught errors to Crashlytics.
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+    }
   }
 
   /*
@@ -118,8 +124,9 @@ Future<void> main() async {
       child: AusPhoneTowers(),
     ));
   },
-      onError:
-      kIsWeb ? (exception) {} : FirebaseCrashlytics.instance.recordError);
+      onError: kIsWeb || Foundation.kDebugMode
+          ? (exception) {}
+          : FirebaseCrashlytics.instance.recordError);
 }
 
 class AusPhoneTowers extends StatelessWidget {

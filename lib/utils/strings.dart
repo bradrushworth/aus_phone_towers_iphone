@@ -54,6 +54,7 @@ class Strings {
   static String transmitter_type_CBRS = 'CBRS';
   static String transmitter_type_aviation = 'Aviation';
 
+  static String calculate_terrain = 'Calculate Terrain';
   static String hide_border = 'Hide Borders';
   static String show_border = 'Show Borders';
   static String search_sites = 'Search Sites';

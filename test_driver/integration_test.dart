@@ -1,4 +1,4 @@
-//import 'package:integration_test/integration_test_driver.dart';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:integration_test/integration_test_driver_extended.dart';
@@ -32,6 +32,7 @@ Future<void> main() async {
   ]);
 
   await integrationDriver(
+    //driver: ,
     onScreenshot: (String screenshotName, List<int> screenshotBytes) async {
       final File image = File('$screenshotName.png');
       image.writeAsBytesSync(screenshotBytes);
@@ -40,3 +41,7 @@ Future<void> main() async {
     },
   );
 }
+
+// import'package:integration_test/integration_test_driver.dart';
+//
+// Future<void> main() => integrationDriver();
