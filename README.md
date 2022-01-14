@@ -14,21 +14,28 @@ The app includes details of Telstra, Optus, Vodafone, NBN, TPG, TV, pagers, gove
 The Android version can identify which towers your phone is using, however this feature hasn't been ported to this version of the app yet.
 
 Some relevant links:
+
 * [This repository](https://github.com/bradrushworth/aus_phone_towers_iphone)
-* Its [Apple App Store listing](https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332)
-* [Sister app written in native Java code](https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers&hl=en_AU&gl=US) This code is not yet open-sourced but will be soon.
+*
+Its [Apple App Store listing](https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332)
+* [Sister app written in native Java code](https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers&hl=en_AU&gl=US)
+  This code is not yet open-sourced but will be soon.
 
 Pull requests are very welcome!
 
 ## Getting Started
 
+Here are some random commands:
+
 ```
 flutter clean
 flutter pub get
 flutter run
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/better_test.dart
 ```
 
-I've been testing the app on Windows/Android Studio using the Android version and an Android simulator.
+I've been testing the app on Windows/Android Studio using the Android version and an Android
+simulator.
 
 This is primarily a iOS app, so you might require XCode from time to time. I use CodeMagic as my build
 pipeline and they allow you to VNC (or SSH) into your build machine for 20 minutes. I've been pretty
@@ -36,3 +43,16 @@ much able to avoid using XCode at all, other than to enrol the app with the Appl
 I don't claim to be an expert with Apple, but I think using CodeMagic I can avoid needing access to
 XCode mostly, since it only runs on a Mac. There are Mac cloud providers though relatively cheap.
 
+## Web Version
+
+If you encounter issues with Chrome complaining about CORS while you are testing, the following
+solution fixed my issue.
+
+[How to solve flutter web api cors error only with dart code?](https://stackoverflow.com/questions/65630743/how-to-solve-flutter-web-api-cors-error-only-with-dart-code)
+
+[flutter_cors](https://pub.dev/packages/flutter_cors)
+
+```
+dart pub global activate flutter_cors
+fluttercors disable
+```

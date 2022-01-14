@@ -1,4 +1,3 @@
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:geohash/geohash.dart';
@@ -75,9 +74,9 @@ class MapHelper with ChangeNotifier {
 
     for (String hash in hashes) {
       // Convert from David Morton's implementation to Silvio Heuberger's implementation
-      Point<double> centre = Geohash.decode(hash);
+      //Point<double> centre = Geohash.decode(hash);
       final extents = Geohash.getExtents(hash);
-      List<LatLng> polygonPoints = List<LatLng>();
+      List<LatLng> polygonPoints = <LatLng>[];
       polygonPoints.add(LatLng(extents.left, extents.top));
       polygonPoints.add(LatLng(extents.right, extents.top));
       polygonPoints.add(LatLng(extents.right, extents.bottom));

@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:dart_numerics/dart_numerics.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -78,11 +77,8 @@ class GetLicenceHRP {
     }
 
     // Draw appropriate signal strength
-    List<int> polygons = NetworkTypeHelper.getNetworkBars(device.getNetworkType(
-        device.emission,
-        device.frequency,
-        device.bandwidth,
-        device.getSite().telco));
+    List<int> polygons =
+        NetworkTypeHelper.getNetworkBars(device.getNetworkType());
 
     // Record the power output in each direction
     Map<double, double> bearingToPower = Map<double, double>();
@@ -95,7 +91,7 @@ class GetLicenceHRP {
       double power_dBm = double.tryParse(values.power.value) ?? 0;
 
       // Convert RSRP to RSSI to get more accurate results
-      if (device.getNetworkType == NetworkType.LTE) {
+      if (device.getNetworkType() == NetworkType.LTE) {
         power_dBm +=
             TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
       }
@@ -249,7 +245,7 @@ class GetLicenceHRP {
     double lon2 = lon1R +
         math.atan2(
             math.sin(bR) * a, math.cos(dR) - math.sin(lat1R) * math.sin(lat2));
-    return new LatLng(toDegrees(lat2), toDegrees(lon2));
+    return LatLng(toDegrees(lat2), toDegrees(lon2));
   }
 
   static double toRadians(x) {

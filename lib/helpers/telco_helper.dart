@@ -69,11 +69,11 @@ class TelcoHelper {
     }
   }
 
-  static String getName(Telco) {
-    return Telco.toString().split('.').last;
+  static String getName(Telco telco) {
+    return telco.toString().split('.').last;
   }
 
-  static String getNameLowerCase(Telco) {
-    return Telco.toString().split('.').last.toLowerCase();
+  static String getNameLowerCase(Telco telco) {
+    return telco.toString().split('.').last.toLowerCase();
   }
 }

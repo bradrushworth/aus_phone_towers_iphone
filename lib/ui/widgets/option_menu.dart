@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:logger/logger.dart';
@@ -72,7 +73,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
             );
           }).where((optionItem) {
             int optionItemPosition = listOptionItem.indexOf(optionItem.value);
-            if (Platform.isAndroid) {
+            if (!kIsWeb && Platform.isAndroid) {
               return SearchHelper.calculatingSearchResults
                   ? optionItemPosition != 1
                   : true;
@@ -122,7 +123,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
               {
                 SiteHelper().clearMap(
                     onCameraMoveFromLastLocation:
-                    widget.onCameraMoveFromLastLocation);
+                        widget.onCameraMoveFromLastLocation);
                 break;
               }
             case 3: //Map mode
@@ -178,23 +179,9 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 widget.takeScreenshot();
                 break;
               }
-            case 9: //Rate App
+            case 9: //Source code
               {
-                final InAppReview inAppReview = InAppReview.instance;
-
-                if (await inAppReview.isAvailable()) {
-                  inAppReview.requestReview();
-                }
-
-                // This package also has in app review, but it should not be used on a direct button tab.
-                // inAppReview.openStoreListing(appStoreId: kAppleId
-
-                break;
-              }
-            case 10: //Source code
-              {
-                Utils.launchURL(
-                    'https://github.com/bradrushworth/aus_phone_towers_iphone');
+                showSingleRowOptionMenu(listLinksItem, kLinks);
                 break;
               }
           }
@@ -341,6 +328,43 @@ class _OptionsMenuState extends State<OptionsMenu> {
           }
           break;
         }
+      case kLinks:
+        {
+          switch (selectedOptionItem) {
+            case 1: //Rate App TODO Not relevant for web!
+              {
+                final InAppReview inAppReview = InAppReview.instance;
+
+                if (await inAppReview.isAvailable()) {
+                  inAppReview.requestReview();
+                }
+
+                // This package also has in app review, but it should not be used on a direct button tab.
+                // inAppReview.openStoreListing(appStoreId: kAppleId
+
+                break;
+              }
+
+            case 2: //AusPhoneTowers.com.au
+              {
+                Utils.launchURL('https://ausphonetowers.com.au/');
+                break;
+              }
+            case 3: //iOS App Store
+              {
+                Utils.launchURL(
+                    'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
+                break;
+              }
+            case 4: //Source Code
+              {
+                Utils.launchURL(
+                    'https://github.com/bradrushworth/aus_phone_towers_iphone');
+                break;
+              }
+          }
+          break;
+        }
     }
   }
 
@@ -390,6 +414,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
 //********************** All options ***************************//
 class OptionItem {
   OptionItem({this.title, this.trailing = false});
+
   String title;
   final bool trailing;
 }
@@ -410,14 +435,14 @@ List<OptionItem> listOptionItem = <OptionItem>[
           ? Strings.regularMode
           : Strings.developerMode),
   OptionItem(title: Strings.reportProblem),
-  OptionItem(title: Strings.rateApp),
-  OptionItem(title: Strings.sourceCode),
+  OptionItem(title: Strings.links, trailing: true),
 ];
 
 //********************** Clear map ***************************//
 class SingleRowItem {
   SingleRowItem(
       {this.isTitle = false, this.title, this.prefix, this.isEnabled = true});
+
   bool isTitle;
   String title;
   final Widget prefix;
@@ -471,15 +496,24 @@ List<SingleRowItem> listDonateItem = <SingleRowItem>[
       isEnabled: !PurchaseHelper().isDonateLargePurchased),
 ];
 
+List<SingleRowItem> listLinksItem = <SingleRowItem>[
+  SingleRowItem(isTitle: true, title: Strings.links),
+  SingleRowItem(title: Strings.rateApp),
+  SingleRowItem(title: Strings.ausphonetowers),
+  SingleRowItem(title: Strings.iosAppStore),
+  SingleRowItem(title: Strings.sourceCode),
+];
+
 //********************** Radio options ***************************//
 class RadioItem {
   RadioItem({this.isTitle = false, this.title});
+
   bool isTitle;
   String title;
 }
 
 List<RadioItem> listRadioItem = <RadioItem>[
-  RadioItem(isTitle: true, title: Strings.clear_map),
+  RadioItem(isTitle: true, title: Strings.map_mode),
   RadioItem(title: Strings.map_mode_terrain),
   RadioItem(title: Strings.map_mode_hybrid),
   RadioItem(title: Strings.map_mode_satellite),

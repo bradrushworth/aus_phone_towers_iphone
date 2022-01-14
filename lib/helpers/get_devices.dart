@@ -8,7 +8,6 @@ import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 
-import 'cell_identity.dart';
 import 'get_antenna.dart';
 
 typedef void TowerInfoChanged({String message});
@@ -61,8 +60,8 @@ class GetDevices {
         polarisation: values.polarisation.value,
         callSign: values.callSign != null ? values.callSign.value : '',
         active: values.active != null ? values.active.value : '',
-        frequency: double.tryParse(values.frequency.value) ?? 0,
-        bandwidth: double.tryParse(values.bandwidth.value) ?? 0,
+        frequency: int.tryParse(values.frequency.value) ?? 0,
+        bandwidth: int.tryParse(values.bandwidth.value) ?? 0,
         height: int.tryParse(values.height.value) ?? 0,
         azimuth: int.tryParse(values.azimuth.value) ?? 0,
         eirp: double.tryParse(values.eirp.value) ?? 0,
@@ -143,7 +142,7 @@ class GetDevices {
 
       // Check to see if any of the downloaded towers are our connected tower
       //if (telco == CellIdentity.getTelcoInUse()) {
-        //CustomPhoneStateListener.recordTower(false);//TODO implement this
+      //CustomPhoneStateListener.recordTower(false);//TODO implement this
       //}
     }
   }

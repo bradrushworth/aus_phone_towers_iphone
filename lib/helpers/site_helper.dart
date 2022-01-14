@@ -11,9 +11,11 @@ import 'network_type_helper.dart';
 
 class SiteHelper with ChangeNotifier {
   static final SiteHelper _singleton = new SiteHelper._internal();
+
   factory SiteHelper() {
     return _singleton;
   }
+
   SiteHelper._internal();
 
   static Set<String> downloadedGeohashes = new Set<String>();
@@ -24,6 +26,7 @@ class SiteHelper with ChangeNotifier {
   static Set<NetworkType> hideNetworkType = Set<NetworkType>();
 
   static int GEOHASH_LENGTH = 5;
+
   //static ConcurrentHashMap<Marker, Site> markersHashMap = new ConcurrentHashMap<>();
   static Set<Site> siteDownloadSinceLastClick = Set<Site>();
   static Set<List<int>> hideFrequency = Set<List<int>>();

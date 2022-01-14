@@ -20,6 +20,7 @@ class Site {
   int licensingAreaId = 0;
   double latitude, longitude;
   String state, postcode, elevation;
+  CityDensity cityDensity;
 
   bool startedDownloadingElevations = false;
   bool finishedDownloadingElevations = false;
@@ -40,6 +41,7 @@ class Site {
 
   Site(
       {@required this.telco,
+      @required this.cityDensity,
       this.siteId,
       this.name,
       this.licensingAreaId = 0,
@@ -58,12 +60,7 @@ class Site {
     this.color = getSiteColor(this.telco);
     this.rotation = getSiteRotation(this.telco);
     this.alpha = getSiteAlpha(this.telco);
-    this.deviceDetailsMobile = List<DeviceDetails>();
-  }
-
-  // Define that two persons are equal if their SSNs are equal
-  bool operator ==(site) {
-    return (site.siteId == siteId && site.getTelco() == getTelco());
+    this.deviceDetailsMobile = [];
   }
 
   double getSiteColor(Telco telco) {
@@ -151,8 +148,7 @@ class Site {
       //Log.i("Site", "shouldBeVisible(): checking site=" + this + " d=" + d);
 
       // Check we want to see this network type (e.g. 2G, 3G)
-      if (SiteHelper.hideNetworkType.contains(d.getNetworkType(
-          d.emission, d.frequency, d.bandwidth, d.getSite().telco))) {
+      if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) {
         continue deviceLoop;
       }
 
@@ -233,14 +229,14 @@ class Site {
   }
 
   LatLng getLatLng() {
-    return new LatLng(latitude, longitude);
+    return LatLng(latitude, longitude);
   }
 
   Map<String, MapEntry<DeviceDetails, bool>> getDeviceDetailsMobileBands() {
     Map<String, MapEntry<DeviceDetails, bool>> bands =
         Map<String, MapEntry<DeviceDetails, bool>>();
     for (DeviceDetails d in deviceDetailsMobile) {
-      double frequency = d.frequency;
+      int frequency = d.frequency;
       //if (rounded) frequency = TranslateFrequencies.roundMobileFrequency(frequency);
       String emission = d.emission;
       // Ensure the key is padded to enable sorting to work correctly
@@ -270,14 +266,14 @@ class Site {
     if (d.isMIMO()) count *= 2;
 
     // We only care about powers of 2
-    count = TranslateFrequencies.log2(count).toInt();
+    count = log2(count).toInt();
     count = math.pow(2, count).toInt();
 
     return count;
   }
 
   int countNumberAntennas(DeviceDetails referenceDevice) {
-    double targetFreq = referenceDevice.frequency;
+    int targetFreq = referenceDevice.frequency;
     String targetEmission = referenceDevice.emission;
     int count = 0;
     for (DeviceDetails d in deviceDetailsMobile) {
@@ -288,12 +284,10 @@ class Site {
     return count;
   }
 
-  double getNetworkCapacity(DeviceDetails d) {
+  int getNetworkCapacity(DeviceDetails d) {
     int count = 1;
 
-    if (d.getNetworkType(
-            d.emission, d.frequency, d.bandwidth, d.getSite().telco) !=
-        NetworkType.GSM) {
+    if (d.getNetworkType() != NetworkType.GSM) {
       // Count the number of antennas operating on this frequency at this site
       count = countNumberAntennaPaths(d);
     }
@@ -361,5 +355,19 @@ class Site {
       i++;
     }
     return 0;
+  }
+
+  @override
+  // Define that two persons are equal if their SSNs are equal
+  bool operator ==(site) {
+    return (site.siteId == siteId && site.getTelco() == getTelco());
+  }
+
+  @override
+  int get hashCode => toString().hashCode;
+
+  @override
+  String toString() {
+    return '$siteId($telco)';
   }
 }

@@ -3,18 +3,14 @@ import 'dart:io';
 
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import 'dart:async';
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:in_app_purchase_android/billing_client_wrappers.dart';
-import 'package:in_app_purchase_android/in_app_purchase_android.dart';
-import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
-import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:phonetowers/billing/consumable_store.dart';
 
 import 'analytics_helper.dart';
@@ -109,7 +105,7 @@ class PurchaseHelper with ChangeNotifier {
       // Oh no, there was a problem.
       String error = 'The Payment platform is not ready and available';
       logger.e('Error in PurchaseHelper: Error is $error');
-      FirebaseCrashlytics.instance.log(error);
+      if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
       showSnackBar(message: error);
 
       _products = [];
@@ -137,7 +133,7 @@ class PurchaseHelper with ChangeNotifier {
           "In-App Billing Failed: " + productDetailResponse.error.message;
       showSnackBar(message: error);
       logger.e("PurchaseHelper", error);
-      FirebaseCrashlytics.instance.log(error);
+      if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
 
       _queryProductError = productDetailResponse.error.message;
       _products = productDetailResponse.productDetails;
@@ -153,7 +149,7 @@ class PurchaseHelper with ChangeNotifier {
       String error = "In-App Billing is empty!";
       showSnackBar(message: error);
       logger.e("PurchaseHelper", error);
-      FirebaseCrashlytics.instance.log(error);
+      if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
 
       _queryProductError = null;
       _products = productDetailResponse.productDetails;
@@ -180,7 +176,11 @@ class PurchaseHelper with ChangeNotifier {
           .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       iosPlatformAddition.setDelegate(null);
     }
-    _subscription.cancel();
+
+    if (_subscription != null) {
+      _subscription.cancel();
+    }
+
     super.dispose();
   }
 
@@ -315,7 +315,7 @@ class PurchaseHelper with ChangeNotifier {
           showSnackBar(message: error);
           logger.w("PurchaseHelper", error);
           eventMap['failure'] = error;
-          FirebaseCrashlytics.instance.log(error);
+          if (!kIsWeb) FirebaseCrashlytics.instance.log(error);
 
           AnalyticsHelper().sendCustomAnalyticsEvent(
               eventName: 'purchase', eventParameters: eventMap);

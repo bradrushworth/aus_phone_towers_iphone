@@ -57,7 +57,7 @@ class Api {
                   Error type is ${e.type}
                   Error is ${e.error}
                   For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -74,7 +74,7 @@ class Api {
                   Error type is ${e.type}
                   Error is ${e.error}
                   For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -108,7 +108,7 @@ class Api {
                   Error type is ${e.type}
                   Error is ${e.error}
                   For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -125,7 +125,7 @@ class Api {
                   Error type is ${e.type}
                   Error is ${e.error}
                   For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 
@@ -142,7 +142,7 @@ class Api {
                   Error type is ${e.type}
                   Error is ${e.error}
                   For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'request => ${e.response.requestOptions.path} and data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
     }
   }
 }

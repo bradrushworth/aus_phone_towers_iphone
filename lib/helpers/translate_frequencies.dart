@@ -1,23 +1,21 @@
 import 'dart:math';
 
-class TranslateFrequencies {
-  static double log2(int n) {
-    return (log(n) / log(2));
-  }
-  static double log10(num x) => log(x) / ln10;
-  static double logBase(num x, num base) => log(x) / log(base);
+double log2(int n) => (log(n) / log(2));
+double log10(num x) => log(x) / ln10;
+double logBase(num x, num base) => log(x) / log(base);
 
-  static String formatFrequency(double freq, bool showDecimal) {
+class TranslateFrequencies {
+
+  static String formatFrequency(int freq, bool showDecimal) {
     if (freq == null || freq == 0) {
       return "Unknown";
     }
     // Only use e.g. MHz when over 10,000 kHz
-    if (freq >= 10 * 1000 * 1000 * 1000)
-      if (showDecimal) {
-        return '${(1.0 * freq / 1000 / 1000 / 1000).toStringAsFixed(2)} GHz';
-      } else {
-        return '${(freq / 1000 / 1000 / 1000).toStringAsFixed(0)} GHz';
-      }
+    if (freq >= 10 * 1000 * 1000 * 1000) if (showDecimal) {
+      return '${(1.0 * freq / 1000 / 1000 / 1000).toStringAsFixed(1)} GHz';
+    } else {
+      return '${(freq / 1000 / 1000 / 1000).toStringAsFixed(0)} GHz';
+    }
     if (freq >= 10 * 1000 * 1000) {
       if (showDecimal) {
         return '${(1.0 * freq / 1000 / 1000).toStringAsFixed(1)} MHz';
@@ -35,7 +33,7 @@ class TranslateFrequencies {
     return '$freq Hz';
   }
 
-  static String formatBandwidth(double freq, bool showDecimal) {
+  static String formatBandwidth(int freq, bool showDecimal) {
     if (freq == null || freq == 0) {
       return "Unknown";
     }
@@ -70,7 +68,7 @@ class TranslateFrequencies {
       case 20000000:
         return 100;
       default:
-      // I'm guessing this is a fair assumption
+        // I'm guessing this is a fair assumption
         return 100;
     }
   }
@@ -80,8 +78,8 @@ class TranslateFrequencies {
    * @param bandwidth in Hz
    * @return RSSI adjustment value
    */
-  static int convertLteRsrpToRssi(num bandwidth) {
-    int N = numberOfRbsPerLteChannel(bandwidth.toInt());
+  static int convertLteRsrpToRssi(int bandwidth) {
+    int N = numberOfRbsPerLteChannel(bandwidth);
     if (N > 0) {
       return (10 * log10(12 * N)).toInt();
     } else {

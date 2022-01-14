@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:after_layout/after_layout.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geohash/geohash.dart';
@@ -158,36 +159,38 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
 
   //Ad Integration in the widget
   void configureAds() {
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       //TODO remove this condition when IAP is implemented for iOS
       if (!PurchaseHelper().isHasPurchasedProcessed) {
         return;
       }
     }
 
-    if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
-      //Show ads only if user has not subscribed to any of remove ads menu item
-      AdSize bannerAdSize;
-      String adUnitId = '';
-      if (screenOrientation == Orientation.portrait) {
-        logger.d('load ad in portrait mode');
-        bannerAdSize = AdSize.banner;
-        adUnitId = Platform.isAndroid
-            ? AdsHelper.androidPortraitAdUnitId
-            : AdsHelper.iOSPortraitAdUnitId;
-      } else {
-        logger.d('load ad in landscape mode');
-        bannerAdSize = AdSize.smartBanner;
-        adUnitId = Platform.isAndroid
-            ? AdsHelper.androidLandscapeAdUnitId
-            : AdsHelper.iOSLandscapeAdUnitId;
-      }
+    if (!kIsWeb) {
+      if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
+        //Show ads only if user has not subscribed to any of remove ads menu item
+        AdSize bannerAdSize;
+        String adUnitId = '';
+        if (screenOrientation == Orientation.portrait) {
+          logger.d('load ad in portrait mode');
+          bannerAdSize = AdSize.banner;
+          adUnitId = Platform.isAndroid
+              ? AdsHelper.androidPortraitAdUnitId
+              : AdsHelper.iOSPortraitAdUnitId;
+        } else {
+          logger.d('load ad in landscape mode');
+          bannerAdSize = AdSize.smartBanner;
+          adUnitId = Platform.isAndroid
+              ? AdsHelper.androidLandscapeAdUnitId
+              : AdsHelper.iOSLandscapeAdUnitId;
+        }
 
-      AdsHelper()
-        ..hideBannerAd()
-        ..showBannerAd(bannerAdSize, adUnitId);
-    } else {
-      AdsHelper().hideBannerAd();
+        AdsHelper()
+          ..hideBannerAd()
+          ..showBannerAd(bannerAdSize, adUnitId);
+      } else {
+        AdsHelper().hideBannerAd();
+      }
     }
   }
 }
@@ -231,9 +234,11 @@ class _MapBodyState extends State<MapBody> {
   void initState() {
     super.initState();
 
-    PurchaseHelper().initStoreInfo(
-      showSnackBar: showSnackbar,
-    );
+    if (!kIsWeb) {
+      PurchaseHelper().initStoreInfo(
+        showSnackBar: showSnackbar,
+      );
+    }
 
     _loadNavigationSavedState();
     logger = Logger();
@@ -246,7 +251,7 @@ class _MapBodyState extends State<MapBody> {
       });
     });
 
-    AdsHelper().initialize();
+    if (!kIsWeb) AdsHelper().initialize();
   }
 
   @override
@@ -259,7 +264,7 @@ class _MapBodyState extends State<MapBody> {
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
               builder: (context, polygonHelper, siteHelper, mapHelper, child) =>
                   GoogleMap(
-                padding: EdgeInsets.only(bottom: 55, top: 100),
+                padding: EdgeInsets.only(bottom: 100, top: 100),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
                 initialCameraPosition: CameraPosition(
@@ -391,7 +396,7 @@ class _MapBodyState extends State<MapBody> {
   void dispose() {
     //Free some memory
     //PurchaseHelper().subscription.cancel();
-    AdsHelper().hideBannerAd();
+    if (!kIsWeb) AdsHelper().hideBannerAd();
     super.dispose();
   }
 
@@ -650,7 +655,7 @@ class _MapBodyState extends State<MapBody> {
         showSnackbar(
             message: 'Location permissions were denied by the user!',
             isDismissible: true);
-        FirebaseCrashlytics.instance
+        if (!kIsWeb) FirebaseCrashlytics.instance
             .log('Location permissions were denied by the user!');
       }
     } on PlatformException catch (e) {
@@ -1283,8 +1288,7 @@ class _MapBodyState extends State<MapBody> {
     for (String bandEmission in freqToDeviceMapping.keys) {
       DeviceDetails d = freqToDeviceMapping[bandEmission].key;
       //Boolean active = freqToDeviceMapping.get(bandEmission).second;
-      NetworkType networkType = d.getNetworkType(
-          d.emission, d.frequency, d.bandwidth, d.getSite().telco);
+      NetworkType networkType = d.getNetworkType();
       int mimoCount = site.countNumberAntennaPaths(d);
 
       TableRow singleTableRow = TableRow(

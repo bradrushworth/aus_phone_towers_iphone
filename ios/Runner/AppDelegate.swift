@@ -6,10 +6,13 @@ import MessageUI
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate,MFMailComposeViewControllerDelegate {
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    FirebaseApp.configure()
+
     GMSServices.provideAPIKey("AIzaSyDd_W-tPbI0F8ZRw1T5cAKLobOIfVLotDM")
     GeneratedPluginRegistrant.register(with: self)
     let shareChannelName = "au.com.bitbot.phonetowers.flutter.provider/screenshot";
@@ -23,30 +26,26 @@ import MessageUI
         }
     });
     
-    // ------------------
-    if FirebaseApp.app() == nil {
-        FirebaseApp.configure()
-    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   func shareFile(sharedItems:Any, controller:UIViewController) {
-        let mailComposeViewController = configureMailComposer()
-        if MFMailComposeViewController.canSendMail(){
-            controller.present(mailComposeViewController, animated: true, completion: nil)
-        }else{
-            print("Can't send email")
-            
-            let alert = UIAlertController(title: "Can't send mail", message: "Please configure mail app", preferredStyle: .alert)
-            
-            alert.addAction(UIAlertAction(title: "Ok", style: .default, handler:{ (UIAlertAction)in
-                print("User click Ok button")
-            }))
-            controller.present(alert, animated: true, completion: {
-            })
-        }
-        
-        return;
+    let mailComposeViewController = configureMailComposer()
+    if MFMailComposeViewController.canSendMail() {
+        controller.present(mailComposeViewController, animated: true, completion: nil)
+    } else{
+        print("Can't send email")
+
+        let alert = UIAlertController(title: "Can't send mail", message: "Please configure mail app", preferredStyle: .alert)
+
+        alert.addAction(UIAlertAction(title: "Ok", style: .default, handler:{ (UIAlertAction)in
+            print("User click Ok button")
+        }))
+        controller.present(alert, animated: true, completion: {
+        })
+    }
+
+    return;
 //        let filePath:NSMutableString = NSMutableString.init(string: sharedItems as! String);
 //        let docsPath:NSString = (NSSearchPathForDirectoriesInDomains(FileManager.SearchPathDirectory.cachesDirectory, FileManager.SearchPathDomainMask.userDomainMask, true)[0]) as NSString;
 //        let imagePath = docsPath.appendingPathComponent(filePath as String);
@@ -61,6 +60,7 @@ import MessageUI
 //
 //        }
     }
+
     func configureMailComposer() -> MFMailComposeViewController{
         let mailComposeVC = MFMailComposeViewController()
         mailComposeVC.mailComposeDelegate = self
