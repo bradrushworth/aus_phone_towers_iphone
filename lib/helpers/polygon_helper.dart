@@ -158,10 +158,9 @@ class PolygonHelper with ChangeNotifier {
         // If we don't know the specific devices, use the menu configuration
 
         // Don't download network types we are hiding
-        if (SiteHelper.hideNetworkType.contains(d.getNetworkType(
-            d.emission, d.frequency, d.bandwidth, d.getSite().telco))) {
+        if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) {
           logger.d(
-              "PolygonHelper : queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType(d.emission, d.frequency, d.bandwidth, d.getSite().telco)})");
+              "PolygonHelper : queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType()})");
           continue deviceLoop;
         }
 
@@ -232,7 +231,7 @@ class PolygonHelper with ChangeNotifier {
         createBasicPolygon(d, site, results);
         //}
         logger.d("PolygonHelper",
-            "queryForSignalPolygon: device_registration_identifier == null for [${site.siteId} , ${d.getNetworkType(d.emission, d.frequency, d.bandwidth, d.getSite().telco)} ,  $frequency ]");
+            "queryForSignalPolygon: device_registration_identifier == null for [${site.siteId} , ${d.getNetworkType()} ,  $frequency ]");
         continue deviceLoop;
       }
 
@@ -258,7 +257,7 @@ class PolygonHelper with ChangeNotifier {
     for (int i = 0; i < data.length; i++) {
       if (data[i].length == 0) continue;
 
-      double capacity = device.getAntennaCapacity();
+      int capacity = device.getAntennaCapacity();
       Telco telco = site.getTelco();
       int alpha = 50;
       if (TelcoHelper.isTelecommunications(telco)) {
@@ -365,9 +364,8 @@ class PolygonHelper with ChangeNotifier {
       eventMap['site_id'] = site.siteId;
       eventMap['site_telco'] = TelcoHelper.getName(site.getTelco());
       eventMap['device_lteType'] = LteTypeHelper.getName(device.getLteType());
-      eventMap['device_networkType'] = NetworkTypeHelper.resolveNetworkToName(
-          device.getNetworkType(device.emission, device.frequency,
-              device.bandwidth, device.getSite().telco));
+      eventMap['device_networkType'] =
+          NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
       eventMap['device_antennaCapacity'] = device.getAntennaCapacity();
       AnalyticsHelper().sendCustomAnalyticsEvent(
           eventName: 'create_polygon', eventParameters: eventMap);
@@ -394,11 +392,8 @@ class PolygonHelper with ChangeNotifier {
     int freqInMHz = device.frequency / 1000 ~/ 1000;
 
     // Draw appropriate signal strength
-    List<int> polygons = NetworkTypeHelper.getNetworkBars(device.getNetworkType(
-        device.emission,
-        device.frequency,
-        device.bandwidth,
-        device.getSite().telco));
+    List<int> polygons =
+        NetworkTypeHelper.getNetworkBars(device.getNetworkType());
 
     int towerHeight = 0;
     towerHeight = device.height;
@@ -427,7 +422,7 @@ class PolygonHelper with ChangeNotifier {
       double power_dBm = device.getPowerAtBearing(bearing);
 
       // Convert RSRP to RSSI to get more accurate results
-      if (device.getNetworkType == NetworkType.LTE) {
+      if (device.getNetworkType() == NetworkType.LTE) {
         power_dBm +=
             TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
       }

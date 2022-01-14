@@ -77,11 +77,8 @@ class GetLicenceHRP {
     }
 
     // Draw appropriate signal strength
-    List<int> polygons = NetworkTypeHelper.getNetworkBars(device.getNetworkType(
-        device.emission,
-        device.frequency,
-        device.bandwidth,
-        device.getSite().telco));
+    List<int> polygons =
+        NetworkTypeHelper.getNetworkBars(device.getNetworkType());
 
     // Record the power output in each direction
     Map<double, double> bearingToPower = Map<double, double>();
@@ -94,7 +91,7 @@ class GetLicenceHRP {
       double power_dBm = double.tryParse(values.power.value) ?? 0;
 
       // Convert RSRP to RSSI to get more accurate results
-      if (device.getNetworkType == NetworkType.LTE) {
+      if (device.getNetworkType() == NetworkType.LTE) {
         power_dBm +=
             TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
       }

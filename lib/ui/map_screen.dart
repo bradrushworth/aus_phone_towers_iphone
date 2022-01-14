@@ -1288,8 +1288,7 @@ class _MapBodyState extends State<MapBody> {
     for (String bandEmission in freqToDeviceMapping.keys) {
       DeviceDetails d = freqToDeviceMapping[bandEmission].key;
       //Boolean active = freqToDeviceMapping.get(bandEmission).second;
-      NetworkType networkType = d.getNetworkType(
-          d.emission, d.frequency, d.bandwidth, d.getSite().telco);
+      NetworkType networkType = d.getNetworkType();
       int mimoCount = site.countNumberAntennaPaths(d);
 
       TableRow singleTableRow = TableRow(

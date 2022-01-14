@@ -13,8 +13,8 @@ class TranslateFrequencies {
     // Only use e.g. MHz when over 10,000 kHz
     if (freq >= 10 * 1000 * 1000 * 1000)
       if (showDecimal) {
-        return '${(1.0 * freq / 1000 / 1000 / 1000).toStringAsFixed(2)} GHz';
-      } else {
+        return '${(1.0 * freq / 1000 / 1000 / 1000).toStringAsFixed(1)} GHz';
+    } else {
         return '${(freq / 1000 / 1000 / 1000).toStringAsFixed(0)} GHz';
       }
     if (freq >= 10 * 1000 * 1000) {

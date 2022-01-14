@@ -23,11 +23,12 @@ class DeviceDetails {
       polarisation,
       callSign,
       active = '';
-  double frequency, bandwidth;
+  int frequency, bandwidth;
   int height, azimuth, antennaId;
   double eirp;
   Licence licence;
   Client client;
+
 //  Licence licence;
 //  Client client;
 
@@ -84,7 +85,7 @@ class DeviceDetails {
 
   bool isMultiConditionCode() {
     if (emission == null || emission.length <= 7) return false;
-    String type = emission[6];
+    String type = emission[7];
     switch (type) {
       case 'E':
         // Multi-condition code (more than four) in which each condition represents a signal element (of one or more bits)
@@ -99,8 +100,8 @@ class DeviceDetails {
     return mimo;
   }
 
-  double getAntennaCapacity() {
-    NetworkType type = getNetworkType(emission, frequency, bandwidth, getSite().telco);
+  int getAntennaCapacity() {
+    NetworkType type = getNetworkType();
     double speed = 0;
     if (type == NetworkType.NR) {
       // http://www.techplayon.com/spectral-efficiency-5g-nr-and-4g-lte/
@@ -146,15 +147,19 @@ class DeviceDetails {
       // http://www.wirelesscommunication.nl/reference/chaptr01/telephon/gsm/gsm.htm
       speed = (1.3545 * bandwidth);
     }
-    return speed;
+    return speed.toInt();
   }
 
-  NetworkType getNetworkType(String emission, double frequency, double bandwidth, Telco telco) {
-    if (emission == null && frequency == null) {
-      emission = this.emission;
-      frequency = this.frequency;
-    }
+  NetworkType getNetworkType() {
+    return getNetworkTypeStatic(
+        emission: emission,
+        frequency: frequency,
+        bandwidth: bandwidth,
+        telco: site.telco);
+  }
 
+  static NetworkType getNetworkTypeStatic(
+      {String emission, int frequency, int bandwidth, Telco telco}) {
     if (emission == null || emission.length <= 6) return NetworkType.UNKNOWN;
     String type = emission[6];
     switch (type) {
@@ -195,18 +200,22 @@ class DeviceDetails {
   }
 
   LteType getLteType() {
-    if (getNetworkType(emission, frequency, bandwidth, getSite().telco) !=
-        NetworkType.LTE) return LteType.NOT_LTE;
+    NetworkType networkType = getNetworkType();
+    if (networkType != NetworkType.LTE && networkType != NetworkType.NR)
+      return LteType.NOT_LTE;
 
     // If emission doesn't explicitly specify LTE type
     if (emission.length <= 8) {
-      if (frequency >= 2300000000 && frequency < 2400000000) { // NBN
+      if (frequency >= 2300000000 && frequency < 2400000000) {
+        // NBN
         return LteType.TD_LTE;
       }
-      if (frequency >= 3400000000 && frequency < 3600000000) { // NBN
+      if (frequency >= 3400000000 && frequency < 3600000000) {
+        // NBN
         return LteType.TD_LTE;
       }
-      if (frequency >= 24250000000 && frequency < 29500000000) { // n257, n258
+      if (frequency >= 24250000000 && frequency < 29500000000) {
+        // n257, n258
         return LteType.TD_LTE;
       }
       return LteType.FD_LTE;
@@ -314,6 +323,17 @@ class DeviceDetails {
     if (speed >= 1024) {
       return '${(1.0 * speed / 1024).toStringAsFixed(0)} kbps';
     }
-    return '$speed  bps';
+    return '${speed.toStringAsFixed(0)}  bps';
+  }
+
+  @override
+  bool operator ==(o) => o is DeviceDetails && sddId == o.sddId;
+
+  @override
+  int get hashCode => sddId.hashCode;
+
+  @override
+  String toString() {
+    return sddId;
   }
 }

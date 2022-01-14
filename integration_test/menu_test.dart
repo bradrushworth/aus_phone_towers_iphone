@@ -4,7 +4,6 @@ import 'package:integration_test/integration_test.dart';
 import 'package:phonetowers/main.dart' as app;
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
-import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/strings.dart';
 
 void main() {
@@ -13,7 +12,6 @@ void main() {
           as IntegrationTestWidgetsFlutterBinding;
 
   testWidgets('verify menus', (WidgetTester tester) async {
-    print('AppConstants.isDebug=${AppConstants.isDebug}');
     // Build our app and trigger a frame.
     app.main();
 
