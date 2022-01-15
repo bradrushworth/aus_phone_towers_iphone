@@ -36,7 +36,8 @@ class Site {
 
   // Does this site have an active transmitter?
   bool active = false;
-  double colour;
+
+  //double colour;
   double rotation, alpha;
   List<DeviceDetails> deviceDetailsMobile;
 
@@ -54,19 +55,19 @@ class Site {
       this.startedDownloadingElevations = false,
       this.finishedDownloadingElevations = false,
       this.active = false,
-      this.colour,
+      //this.colour,
       this.rotation,
       this.alpha,
       this.deviceDetailsMobile}) {
-    this.colour = TelcoHelper.getColour(this.telco);
+    //this.colour = TelcoHelper.getColour(this.telco);
     this.rotation = TelcoHelper.getRotation(this.telco);
     this.alpha = TelcoHelper.getAlpha(this.telco);
     this.deviceDetailsMobile = [];
   }
 
-  double getColour() {
-    return TelcoHelper.getColour(telco);
-  }
+  // double getColour() {
+  //   return TelcoHelper.getColour(telco);
+  // }
 
   double getRotation() {
     return TelcoHelper.getRotation(telco);

@@ -169,12 +169,20 @@ void main() {
       expect(site.getAlpha(), 0.7);
     });
 
-    test('getColour', () {
-      expect(site.getColour(), 240.0);
-    });
+    // test('getColour', () {
+    //   expect(site.getColour(), 240.0);
+    // });
 
     test('getRotation', () {
       expect(site.getRotation(), -50.0);
+    });
+
+    test('getIcon', () {
+      expect(site.getIcon(25), '');
+    });
+
+    test('getIconName', () {
+      expect(site.getIconName(), '');
     });
 
     //   test('getActiveDevicesForArfcnLTE', () {

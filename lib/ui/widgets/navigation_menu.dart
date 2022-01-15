@@ -21,6 +21,7 @@ class NavigationMenu extends StatefulWidget {
   static bool isOptusVisible = true;
   static bool isVodafoneVisible = true;
   static bool isNBNVisible = true;
+  static bool isDenseAirVisible = true;
   static bool isOtherVisible = true;
 
   static bool is2GVisible = true;

@@ -160,6 +160,9 @@ class SiteHelper with ChangeNotifier {
     if (!hideTelco.contains(Telco.Vodafone)) {
       toggleTelcoMarkers(Telco.Vodafone, false);
     }
+    if (!hideTelco.contains(Telco.Dense_Air)) {
+      toggleTelcoMarkers(Telco.Dense_Air, false);
+    }
     if (!hideTelco.contains(Telco.NBN)) {
       toggleTelcoMarkers(Telco.NBN, false);
     }

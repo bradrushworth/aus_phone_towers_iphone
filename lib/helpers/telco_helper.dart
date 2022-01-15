@@ -82,27 +82,30 @@ class TelcoHelper {
   }
 
   static Future<Uint8List> getIcon(Telco telco, int width) {
-    return getBytesFromAsset(
-        path: 'assets/' + getIconName(telco), width: width);
+    return getBytesFromAsset(path: getIconName(telco), width: width);
   }
 
-  static double getColour(Telco telco) {
-    double colour;
-    if (telco == Telco.Telstra) {
-      colour = BitmapDescriptor.hueBlue;
-    } else if (telco == Telco.Optus) {
-      colour = BitmapDescriptor.hueCyan;
-    } else if (telco == Telco.Vodafone) {
-      colour = BitmapDescriptor.hueRed;
-    } else if (telco == Telco.NBN) {
-      colour = BitmapDescriptor.hueViolet;
-    } else if (telco == Telco.Other) {
-      colour = BitmapDescriptor.hueAzure;
-    } else {
-      colour = BitmapDescriptor.hueRose;
-    }
-    return colour;
+  static Future<Uint8List> getIconByString(String name, int width) {
+    return getBytesFromAsset(path: 'assets/$name', width: width);
   }
+
+  // static double getColour(Telco telco) {
+  //   double colour;
+  //   if (telco == Telco.Telstra) {
+  //     colour = BitmapDescriptor.hueBlue;
+  //   } else if (telco == Telco.Optus) {
+  //     colour = BitmapDescriptor.hueCyan;
+  //   } else if (telco == Telco.Vodafone) {
+  //     colour = BitmapDescriptor.hueRed;
+  //   } else if (telco == Telco.NBN) {
+  //     colour = BitmapDescriptor.hueViolet;
+  //   } else if (telco == Telco.Other) {
+  //     colour = BitmapDescriptor.hueAzure;
+  //   } else {
+  //     colour = BitmapDescriptor.hueRose;
+  //   }
+  //   return colour;
+  // }
 
   static double getRotation(Telco telco) {
     double rotation = 0;
@@ -136,9 +139,12 @@ class TelcoHelper {
 
   static double getAlpha(Telco telco) {
     double alpha = 0.70;
-    if (telco == Telco.Telstra) {} else if (telco == Telco.Optus) {} else
-    if (telco == Telco.Vodafone) {} else
-    if (telco == Telco.NBN) {} else if (telco == Telco.Other) {} else {}
+    if (telco == Telco.Telstra) {
+    } else if (telco == Telco.Optus) {
+    } else if (telco == Telco.Vodafone) {
+    } else if (telco == Telco.NBN) {
+    } else if (telco == Telco.Other) {
+    } else {}
     return alpha;
   }
 
@@ -172,14 +178,10 @@ class TelcoHelper {
   }
 
   static String getName(Telco telco) {
-    return telco
-        .toString()
-        .split('.')
-        .last
-        .replaceAll('_', ' ');
+    return telco.toString().split('.').last.replaceAll('_', ' ');
   }
 
-  static String getNameLowerCase(Telco telco) {
-    return getName(telco).toLowerCase();
+  static String getNameForApi(Telco telco) {
+    return telco.toString().split('.').last.toLowerCase();
   }
 }
