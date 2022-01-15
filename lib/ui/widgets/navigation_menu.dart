@@ -134,6 +134,17 @@ class _NavigationMenuState extends State<NavigationMenu> {
               },
             ),
             LicenceesMenuItem(
+              valueName: Strings.dense_Air,
+              telco: Telco.Dense_Air,
+              isValueVisible: NavigationMenu.isDenseAirVisible && false, // TODO
+              prefsKey: SharedPreferencesHelper.kisDenseAirVisible,
+              prefs: prefs,
+              onMenuItemChanged: ({bool itemChanged}) {
+                NavigationMenu.isDenseAirVisible = itemChanged;
+                setTelecomOption();
+              },
+            ),
+            LicenceesMenuItem(
               valueName: Strings.nbn,
               telco: Telco.NBN,
               isValueVisible: NavigationMenu.isNBNVisible,
@@ -644,6 +655,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     NavigationMenu.isTelstraVisible = true;
                     NavigationMenu.isOptusVisible = true;
                     NavigationMenu.isVodafoneVisible = true;
+                    NavigationMenu.isDenseAirVisible = true;
                     NavigationMenu.isNBNVisible = true;
                     NavigationMenu.isOtherVisible = true;
                     SiteHelper().enableTelcoInUse(true);
@@ -651,6 +663,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     NavigationMenu.isTelstraVisible = false;
                     NavigationMenu.isOptusVisible = false;
                     NavigationMenu.isVodafoneVisible = false;
+                    NavigationMenu.isDenseAirVisible = false;
                     NavigationMenu.isNBNVisible = false;
                     NavigationMenu.isOtherVisible = false;
                     SiteHelper().disableTelcos();
@@ -808,6 +821,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
     if (NavigationMenu.isTelstraVisible == false &&
         NavigationMenu.isOptusVisible == false &&
         NavigationMenu.isVodafoneVisible == false &&
+        NavigationMenu.isDenseAirVisible == false &&
         NavigationMenu.isNBNVisible == false &&
         NavigationMenu.isOtherVisible == false) {
       NavigationMenu.isTelcoVisible = false;

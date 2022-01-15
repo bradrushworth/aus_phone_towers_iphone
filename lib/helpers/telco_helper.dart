@@ -65,19 +65,19 @@ class TelcoHelper {
   static String getIconName(Telco telco) {
     switch (telco) {
       case Telco.Telstra:
-        return 'icons/telstra.png';
+        return 'assets/icons/telstra.png';
       case Telco.Optus:
-        return 'icons/optus.png';
+        return 'assets/icons/optus.png';
       case Telco.Vodafone:
-        return 'icons/vodafone.png';
+        return 'assets/icons/vodafone.png';
       case Telco.NBN:
-        return 'icons/nbn.png';
+        return 'assets/icons/nbn.png';
       case Telco.Dense_Air:
-        return 'icons/denseair.png';
+        return 'assets/icons/dense_air.png';
       case Telco.Other:
-        return 'icons/other.png';
+        return 'assets/icons/other.png';
       default:
-        return 'icons/nontelco.png';
+        return 'assets/icons/non_telco.png';
     }
   }
 
@@ -115,6 +115,8 @@ class TelcoHelper {
       rotation = 0;
     } else if (telco == Telco.Vodafone) {
       rotation = 50;
+    } else if (telco == Telco.Dense_Air) {
+      rotation = 75;
     } else if (telco == Telco.NBN) {
       rotation = 100;
     } else if (telco == Telco.Other) {
@@ -143,6 +145,7 @@ class TelcoHelper {
     } else if (telco == Telco.Optus) {
     } else if (telco == Telco.Vodafone) {
     } else if (telco == Telco.NBN) {
+    } else if (telco == Telco.Dense_Air) {
     } else if (telco == Telco.Other) {
     } else {}
     return alpha;

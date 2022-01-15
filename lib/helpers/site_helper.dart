@@ -141,6 +141,8 @@ class SiteHelper with ChangeNotifier {
         toggleTelcoMarkers(Telco.Optus, NavigationMenu.isOptusVisible);
       if (telcoInUse == null || telcoInUse == Telco.Vodafone)
         toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
+      if (telcoInUse == null || telcoInUse == Telco.Dense_Air)
+        toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
       if (telcoInUse == null || telcoInUse == Telco.NBN)
         toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
       if (telcoInUse == null || telcoInUse == Telco.Other)

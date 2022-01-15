@@ -4,6 +4,7 @@ class Strings {
   static String telstra = "Telstra";
   static String optus = "Optus";
   static String vodafone = "Vodafone";
+  static String dense_air = "Dense Air";
   static String nbn = "NBN";
   static String other = "Other";
   static String tv = "TV";
