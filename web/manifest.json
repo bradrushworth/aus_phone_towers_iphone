@@ -1,21 +1,45 @@
 {
-    "name": "ausphonetowers",
-    "short_name": "ausphonetowers",
+    "name": "Aus Phone Towers Web (3G, 4G, 5G)",
+    "short_name": "Aus Phone Towers",
+    "categories": [
+        "mobile",
+        "towers",
+        "phone",
+        "signal",
+        "internet",
+        "australia",
+        "telstra",
+        "optus",
+        "vodafone",
+        "ACMA"
+    ],
+    "iarc_rating_id": "895697e7-d8c6-4ddc-871b-465a2bcc1d67",
     "start_url": ".",
-    "display": "minimal-ui",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#ffffff",
+    "description": "Australian mobile tower locations, frequencies and radiation patterns from ACMA.",
+    "orientation": "any",
     "prefer_related_applications": false,
+    "related_applications": [
+        {
+            "platform": "play",
+            "url": "https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers",
+            "id": "au.com.bitbot.phonetowers"
+        },
+        {
+            "platform": "itunes",
+            "url": "https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332"
+        }
+    ],
     "icons": [
         {
-            "src": "icons/Icon-192.png",
+            "src": "icons/android-chrome-192x192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/Icon-512.png",
+            "src": "icons/android-chrome-512x512.png",
             "sizes": "512x512",
             "type": "image/png"
         }
