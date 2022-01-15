@@ -1,6 +1,5 @@
 //import 'package:flt_telephony_info/flt_telephony_info.dart';
 import 'package:intl/intl.dart';
-import 'package:phonetowers/helpers/telco_helper.dart';
 
 class CellIdentity {
   static int CONNECTED_NETWORK_TYPE = 0;

@@ -134,7 +134,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               },
             ),
             LicenceesMenuItem(
-              valueName: Strings.dense_Air,
+              valueName: Strings.dense_air,
               telco: Telco.Dense_Air,
               isValueVisible: NavigationMenu.isDenseAirVisible && false, // TODO
               prefsKey: SharedPreferencesHelper.kisDenseAirVisible,
@@ -852,7 +852,6 @@ class LicenceesMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Ink(
-
       color: isValueVisible ? Colors.grey[300] : Colors.white,
       child: ListTile(
         title: Text(valueName,

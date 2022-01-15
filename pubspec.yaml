@@ -11,7 +11,7 @@ description: Aus Phone Towers
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.4.1+38
+version: 1.4.2+39
 
 environment:
   sdk: ">=2.2.2 <3.0.0"
@@ -19,6 +19,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  google_maps_flutter_platform_interface: ^2.1.1
   google_maps_flutter_web: ^0.3.2+1
   google_maps_flutter: ^2.1.1
   #google_map_polyutil: ^1.0.1

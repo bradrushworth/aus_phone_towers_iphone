@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+
+//import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
+// import 'package:google_maps/google_maps.dart'
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
@@ -28,11 +32,15 @@ import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/device_detail.dart';
+import 'package:phonetowers/model/overlay.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
+import 'package:phonetowers/ui/map_platform.dart'
+    if (dart.library.js) 'package:phonetowers/ui/map_web.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
+import 'package:phonetowers/utils/app_colors.dart';
 import 'package:phonetowers/utils/geo_hash.dart';
 import 'package:phonetowers/utils/hex_color.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
@@ -42,7 +50,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../helpers/ads_helper.dart';
-import '../model/overlay.dart';
 import '../utils/app_constants.dart';
 
 class MapScreen extends StatefulWidget {
@@ -201,17 +208,13 @@ class MapBody extends StatefulWidget {
   MapBody(this.screenshotController);
 
   @override
-  _MapBodyState createState() => _MapBodyState();
+  MapBodyState createState() => MapBodyState();
 }
 
-class _MapBodyState extends State<MapBody> {
+class MapBodyState extends AbstractMapBodyState {
   /// ******************** State variables ************************************
-  GoogleMapController mapController;
-  Logger logger;
-  Api api;
   Location _locationService = new Location();
   SharedPreferences prefs;
-  CameraPosition lastCameraPosition;
   final TextEditingController _searchTextFilter = new TextEditingController();
   bool isShowCancelSearch = false;
 
@@ -273,8 +276,8 @@ class _MapBodyState extends State<MapBody> {
                         .map((data) => data.polygon)
                         .toSet()
                     : Set(),
-                onMapCreated: _onMapCreated,
-                onCameraMove: _onCameraMove,
+                onMapCreated: onMapCreated,
+                onCameraMove: onCameraMove,
               ),
             ),
             Container(
@@ -339,7 +342,7 @@ class _MapBodyState extends State<MapBody> {
                       textInputAction: TextInputAction.search,
                       onSubmitted: (query) {
                         logger.d('search query is $query');
-                        _handleSearchQuery(query);
+                        handleSearchQuery(query);
                       },
                     ),
               actions: <Widget>[
@@ -608,7 +611,7 @@ class _MapBodyState extends State<MapBody> {
     setState(() {});
   }
 
-  void _onMapCreated(GoogleMapController controllerParam) {
+  void onMapCreated(dynamic controllerParam) {
     setState(() {
       mapController = controllerParam;
     });
@@ -677,13 +680,13 @@ class _MapBodyState extends State<MapBody> {
             alpha: 0.50,
             visible: false);
 
-        //add to map overlay
+        // add to map overlay
         MapOverlay mapOverlay = MapOverlay(marker: marker);
 
-        //add mapoverlay to list
+        // add mapoverlay to list
         SiteHelper.globalListMapOverlay.add(mapOverlay);
 
-        //move camera to location
+        // move camera to location
         mapController.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -704,7 +707,7 @@ class _MapBodyState extends State<MapBody> {
     );
 
     // Start loading the first markers
-    _onCameraMove(lastCameraPosition);
+    onCameraMove(lastCameraPosition);
   }
 
   ///Download towers information for either bathurst or user's location
@@ -712,7 +715,8 @@ class _MapBodyState extends State<MapBody> {
     //parse json and get all sites
     Telco.values.forEach((telco) {
       // Only get the currently selected ones!
-      if (!SiteHelper.hideTelco.contains(telco) && telco != Telco.Dense_Air) { // TODO Remove Dense Air once ready to go
+      // TODO Remove Dense Air once ready to go
+      if (!SiteHelper.hideTelco.contains(telco) && telco != Telco.Dense_Air) {
         int expansionAmount = 0;
         int recursionDepth = 0;
 
@@ -730,6 +734,111 @@ class _MapBodyState extends State<MapBody> {
         }
       }
     });
+  }
+
+  Future downloadTowersForSingleTelco(Telco telco, String geoHash,
+      {String nextPageURL,
+      int expansionAmount,
+      int recursionDepth,
+      bool expandGeohash}) async {
+    List<MapOverlay> listOfTowersForSingleTeclo = new List<MapOverlay>();
+
+    logger.d(
+        'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}');
+
+    showSnackbar(
+        message: "Downloading ${TelcoHelper.getName(telco)} towers...");
+
+    SiteReponse rawReponse = await api.getMarkerData(nextPageURL != null
+        ? nextPageURL
+        : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash');
+
+    int totalLatLong = rawReponse?.restify?.rows?.length ?? 0;
+
+    //If no data found for this telco then don't do anything
+    if (totalLatLong == 0) {
+      return;
+    }
+
+    //1) Start displaying markers
+    for (int i = 0; i <= totalLatLong - 1; i++) {
+      //Get the row
+      Values values = rawReponse.restify.rows[i].values;
+
+      //Create site from row
+      Site site = Site(
+          telco: telco,
+          siteId: values.siteId.value,
+          name: values.name.value,
+          licensingAreaId: values.licensingAreaId != null
+              ? int.parse(values.licensingAreaId.value)
+              : 0,
+          latitude: double.parse(values.latitude.value),
+          longitude: double.parse(values.longitude.value),
+          state: values.state.value,
+          postcode: values.postcode.value,
+          elevation: values.elevation.value);
+
+      Marker marker = Marker(
+          markerId: MarkerId(
+              "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}"),
+          // title: site.name,
+          position: LatLng(site.latitude, site.longitude),
+          icon:
+              BitmapDescriptor.fromBytes(await site.getIcon(kPlatformIconSize)),
+          rotation: site.rotation,
+          alpha: site.alpha,
+          visible: site.shouldBeVisible(),
+          //infoWindow: InfoWindow(title: ' ', snippet: 'Site Data \n dsfdf'),
+          onTap: () {
+            showCustomInfoWindowAsBottomSheet(context, site);
+          });
+
+      //add to map overlay
+      MapOverlay mapOverlay = MapOverlay(marker: marker, site: site);
+
+      //add mapoverlay to list
+      listOfTowersForSingleTeclo.add(mapOverlay);
+    }
+
+    setState(() {
+      SiteHelper.globalListMapOverlay.addAll(listOfTowersForSingleTeclo);
+    });
+
+//    Future.delayed(Duration(seconds: 3), () {
+//      logger.d(
+//          "total towers downloaded are ${SiteHelper.globalListMapOverlay.length} and displaying on map are ${SiteHelper.globalListMapOverlay.map((data) => data.marker).toSet().length}");
+//    });
+
+    //Add expansion amount
+    expansionAmount = expansionAmount + totalLatLong;
+
+    //2) Download next page towers if exist
+    NextPage nextPage = rawReponse.restify.nextPage;
+    if (nextPage != null) {
+      logger.d("next page exist");
+      downloadTowersForSingleTelco(telco, geoHash,
+          nextPageURL: nextPage.href,
+          expansionAmount: expansionAmount,
+          recursionDepth: recursionDepth,
+          expandGeohash: expandGeohash);
+    } else {
+      // Draw the developer mode squares, as required
+      if (MapHelper().developerMode) {
+        MapHelper().removeDeveloperShapes();
+        MapHelper().drawDeveloperShapes();
+      }
+    }
+
+    //3) Prepare to query for the devices at the site
+    String site_ids = "";
+    //int siteCounter = 0;
+    listOfTowersForSingleTeclo.forEach((MapOverlay mapOverlay) {
+      if (mapOverlay.site != null) {
+        site_ids = site_ids + 'site_id%3D%3D${mapOverlay.site.siteId}||';
+        //siteCounter++;
+      }
+    });
     if (site_ids.length > 2) {
       // Trim the last two "||" characters
       site_ids = site_ids.substring(0, site_ids.length - 2);
@@ -743,10 +852,10 @@ class _MapBodyState extends State<MapBody> {
       if (TelcoHelper.isTelecommunications(telco)) {
         fields += "%2Cactive";
         url =
-            '/towers/device_details_mobile_${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
+            '/towers/device_details_mobile_${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
       } else {
         url =
-            '/towers/device_details_${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
+            '/towers/device_details_${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
       }
 
       //logger.d('get device url for site count $siteCounter');
@@ -790,7 +899,7 @@ class _MapBodyState extends State<MapBody> {
         String neightbourURL =
             '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=$filter';
 
-        _downloadTowersForSingleTelco(telco, geoHash,
+        downloadTowersForSingleTelco(telco, geoHash,
             nextPageURL: neightbourURL,
             expansionAmount: expansionAmount,
             recursionDepth: recursionDepth + 1,
@@ -830,35 +939,6 @@ class _MapBodyState extends State<MapBody> {
     return filter;
   }
 
-  void _onCameraMove(CameraPosition position) {
-    //Store last camera position when map scrolled in order to make clear map option menu work.
-    lastCameraPosition = position;
-    if (!SearchHelper.calculatingSearchResults) {
-      onMapScroll(position);
-    }
-  }
-
-  //Set camera to last location and perform further operations.
-  void onCameraMoveFromLastLocation() {
-    if (lastCameraPosition != null) {
-      if (!SearchHelper.calculatingSearchResults) {
-        onMapScroll(lastCameraPosition);
-      }
-    }
-  }
-
-  void onMapScroll(CameraPosition position) {
-    if (position.zoom < kZoomTooFar) {
-      showSnackbar(message: Strings.zoominFurther, isDismissible: true);
-      return;
-    }
-
-    double lat = position.target.latitude;
-    double long = position.target.longitude;
-    String geoHash = Geohash.encode(lat, long, codeLength: 5);
-    downloadTowers(geoHash, true);
-  }
-
   void showSnackbar(
       {@required String message,
       Duration duration = const Duration(seconds: 1),
@@ -881,15 +961,7 @@ class _MapBodyState extends State<MapBody> {
     Scaffold.of(context).showSnackBar(snackBar);
   }
 
-  void refreshUI({String message = 'Global refresh'}) {
-    //logger.d('$message');
-    if (mounted) {
-      // TODO: This probably wasn't right!
-      //setState(() {});
-    }
-  }
-
-  void _showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {
+  void showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {
     setState(() {
       //Remove any existing polygons first
       //PolygonHelper().globalListPolygons.clear();
@@ -954,7 +1026,7 @@ class _MapBodyState extends State<MapBody> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset(site.getIconName(), width: 25),
+                    Image.asset('assets/' + site.getIconName(), width: 25),
                     SizedBox(height: 8.0),
                     ...prepareSiteTitleForInforWindow(
                         '${site.getNameFormatted()} ${site.state} ${site.postcode}'),
@@ -1307,26 +1379,6 @@ class _MapBodyState extends State<MapBody> {
       ));
     }
     return siteTitleDetails;
-  }
-
-  void _handleSearchQuery(String query) {
-    // Centre the map on Australia
-    mapController.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: const LatLng(-44, 113),
-          northeast: const LatLng(-10, 154),
-        ),
-        10.0,
-      ),
-    );
-
-    //Clear the map
-    SiteHelper()
-        .clearMap(onCameraMoveFromLastLocation: onCameraMoveFromLastLocation);
-
-    SearchHelper(showSnackBar: showSnackbar, mapController: mapController)
-        .executeSiteSearch(query, downloadTowers);
   }
 
   void takeScreenshot() {

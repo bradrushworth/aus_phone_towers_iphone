@@ -177,12 +177,8 @@ void main() {
       expect(site.getRotation(), -50.0);
     });
 
-    test('getIcon', () {
-      expect(site.getIcon(25), '');
-    });
-
     test('getIconName', () {
-      expect(site.getIconName(), '');
+      expect(site.getIconName(), 'icons/telstra.png');
     });
 
     //   test('getActiveDevicesForArfcnLTE', () {

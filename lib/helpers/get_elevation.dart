@@ -1,4 +1,4 @@
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';

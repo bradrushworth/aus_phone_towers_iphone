@@ -1,13 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
+import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/utils/app_constants.dart';
-
-import 'get_licenceHRP.dart';
 
 typedef void ShowSnackBar({String message, bool isDismissible});
 
@@ -18,7 +18,7 @@ class SearchHelper with ChangeNotifier {
   Logger logger = new Logger();
   Api api = Api.initialize();
   final ShowSnackBar showSnackBar;
-  GoogleMapController mapController;
+  dynamic mapController; // Could be a platform or web Google map controller
   List<LatLng> listLatLongBounds = [];
 
   SearchHelper({this.showSnackBar, this.mapController});
@@ -101,7 +101,7 @@ class SearchHelper with ChangeNotifier {
           GetLicenceHRP.travel(latLngBoundsBuilder.southwest, 225, minSizeKm));
       latLngBoundsBuilder = boundsFromLatLngList(listLatLongBounds);
 
-      mapController.animateCamera(
+      mapController.moveCamera(
         CameraUpdate.newLatLngBounds(
           latLngBoundsBuilder,
           10.0,

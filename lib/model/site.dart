@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:phonetowers/helpers/get_elevation.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
@@ -212,7 +212,7 @@ class Site {
 
   Map<String, MapEntry<DeviceDetails, bool>> getDeviceDetailsMobileBands() {
     Map<String, MapEntry<DeviceDetails, bool>> bands =
-    Map<String, MapEntry<DeviceDetails, bool>>();
+        Map<String, MapEntry<DeviceDetails, bool>>();
     for (DeviceDetails d in deviceDetailsMobile) {
       int frequency = d.frequency;
       //if (rounded) frequency = TranslateFrequencies.roundMobileFrequency(frequency);
@@ -285,16 +285,17 @@ class Site {
     );
   }
 
-  Set<HeightDistancePair> getHeightsAlongBearingWithDistanceAndBearing(double distanceKm, final double bearing) {
+  Set<HeightDistancePair> getHeightsAlongBearingWithDistanceAndBearing(
+      double distanceKm, final double bearing) {
     final Set<HeightDistancePair> heightToDistance = {};
     for (int i = 0;
-    i < GetElevation.SAMPLE_DISTANCES.length &&
-        GetElevation.SAMPLE_DISTANCES[i] <= distanceKm;
-    i++) {
+        i < GetElevation.SAMPLE_DISTANCES.length &&
+            GetElevation.SAMPLE_DISTANCES[i] <= distanceKm;
+        i++) {
       double distance = GetElevation.SAMPLE_DISTANCES[i];
 
       final LatLng sampleLatLon =
-      GetLicenceHRP.travel(getLatLng(), bearing, distance);
+          GetLicenceHRP.travel(getLatLng(), bearing, distance);
       final double sampleHeight = getElevation(sampleLatLon);
 
       heightToDistance.add(

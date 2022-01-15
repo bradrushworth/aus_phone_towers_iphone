@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 enum Telco {
   Telstra,
@@ -65,24 +64,25 @@ class TelcoHelper {
   static String getIconName(Telco telco) {
     switch (telco) {
       case Telco.Telstra:
-        return 'assets/icons/telstra.png';
+        return 'icons/telstra.png';
       case Telco.Optus:
-        return 'assets/icons/optus.png';
+        return 'icons/optus.png';
       case Telco.Vodafone:
-        return 'assets/icons/vodafone.png';
+        return 'icons/vodafone.png';
       case Telco.NBN:
-        return 'assets/icons/nbn.png';
+        return 'icons/nbn.png';
       case Telco.Dense_Air:
-        return 'assets/icons/dense_air.png';
+        return 'icons/dense_air.png';
       case Telco.Other:
-        return 'assets/icons/other.png';
+        return 'icons/other.png';
       default:
-        return 'assets/icons/non_telco.png';
+        return 'icons/non_telco.png';
     }
   }
 
   static Future<Uint8List> getIcon(Telco telco, int width) {
-    return getBytesFromAsset(path: getIconName(telco), width: width);
+    return getBytesFromAsset(
+        path: 'assets/' + getIconName(telco), width: width);
   }
 
   static Future<Uint8List> getIconByString(String name, int width) {

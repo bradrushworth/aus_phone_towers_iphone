@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/site_helper.dart';

@@ -12,7 +12,7 @@ import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
-import 'package:phonetowers/ui/map_screen.dart';
+import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/utils/secretloader.dart';
 import 'package:phonetowers/utils/strings.dart';
 import 'package:provider/provider.dart';
