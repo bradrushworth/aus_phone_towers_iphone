@@ -166,7 +166,7 @@ void main() {
     // });
 
     test('getAlpha', () {
-      expect(site.getAlpha(), 0.6);
+      expect(site.getAlpha(), 0.7);
     });
 
     test('getColour', () {
