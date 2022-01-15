@@ -221,14 +221,6 @@ class _MapBodyState extends State<MapBody> {
   static const androidMethodChannel = const MethodChannel(
       'au.com.bitbot.phonetowers.flutter.provider/screenshot');
 
-  // static const MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
-  //   testDevices: <String>[
-  //     'B5BD02099B12769D58DBD05B64D1DFAF',
-  //     'FD6126EE250BB0AA9187FFE30B3C9EE1',
-  //     'Simulator'
-  //   ],
-  // );
-
   /// ******************** Overrided methods **********************************
   @override
   void initState() {
@@ -419,6 +411,10 @@ class _MapBodyState extends State<MapBody> {
         key: SharedPreferencesHelper.kisVodafoneVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
+    NavigationMenu.isDenseAirVisible = SharedPreferencesHelper.getMenuStatus(
+        key: SharedPreferencesHelper.kisDenseAirVisible, prefs: prefs);
+    Provider.of<SiteHelper>(context, listen: false)
+        .toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
     NavigationMenu.isNBNVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisNBNVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
@@ -545,6 +541,7 @@ class _MapBodyState extends State<MapBody> {
       NavigationMenu.isTelstraVisible = NavigationMenu.isTelstraVisible;
       NavigationMenu.isOptusVisible = NavigationMenu.isOptusVisible;
       NavigationMenu.isVodafoneVisible = NavigationMenu.isVodafoneVisible;
+      NavigationMenu.isDenseAirVisible = NavigationMenu.isDenseAirVisible;
       NavigationMenu.isNBNVisible = NavigationMenu.isNBNVisible;
       NavigationMenu.isOtherVisible = NavigationMenu.isOtherVisible;
       SiteHelper().enableTelcoInUse(true);
@@ -552,6 +549,7 @@ class _MapBodyState extends State<MapBody> {
       NavigationMenu.isTelstraVisible = false;
       NavigationMenu.isOptusVisible = false;
       NavigationMenu.isVodafoneVisible = false;
+      NavigationMenu.isDenseAirVisible = false;
       NavigationMenu.isNBNVisible = false;
       NavigationMenu.isOtherVisible = false;
       SiteHelper().disableTelcos();
@@ -713,129 +711,23 @@ class _MapBodyState extends State<MapBody> {
   void downloadTowers(String geoHash, bool expandGeohash) {
     //parse json and get all sites
     Telco.values.forEach((telco) {
-//      if (telco != Telco.Telstra) {
-//        return; //TODO remove this code
-//      }
+      // Only get the currently selected ones!
+      if (!SiteHelper.hideTelco.contains(telco) && telco != Telco.Dense_Air) { // TODO Remove Dense Air once ready to go
+        int expansionAmount = 0;
+        int recursionDepth = 0;
 
-      int expansionAmount = 0;
-      int recursionDepth = 0;
-
-      // Don't download the same area more than once for a given telco
-      if (SiteHelper.downloadedGeohashAlready(geoHash, telco)) {
-        // See if any neighbour sites need downloading and fetch them if required also
-        fetchNeighbourSites(
-            geoHash: geoHash, telco: telco, expandGeohash: expandGeohash);
-      } else {
-        //logger.d('mygeoHash doest not exist');
-        _downloadTowersForSingleTelco(telco, geoHash,
-            expansionAmount: expansionAmount,
-            recursionDepth: recursionDepth,
-            expandGeohash: expandGeohash);
-      }
-    });
-  }
-
-  Future _downloadTowersForSingleTelco(Telco telco, String geoHash,
-      {String nextPageURL,
-      int expansionAmount,
-      int recursionDepth,
-      bool expandGeohash}) async {
-    List<MapOverlay> listOfTowersForSingleTeclo = new List<MapOverlay>();
-
-    logger.d(
-        'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}');
-
-    showSnackbar(
-        message: "Downloading ${TelcoHelper.getName(telco)} towers...");
-
-    SiteReponse rawReponse = await api.getMarkerData(nextPageURL != null
-        ? nextPageURL
-        : '/towers/${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash');
-
-    int totalLatLong = rawReponse?.restify?.rows?.length ?? 0;
-
-    //If no data found for this telco then don't do anything
-    if (totalLatLong == 0) {
-      return;
-    }
-
-    //1) Start displaying markers
-    for (int i = 0; i <= totalLatLong - 1; i++) {
-      //Get the row
-      Values values = rawReponse.restify.rows[i].values;
-
-      //Create site from row
-      Site site = Site(
-          telco: telco,
-          siteId: values.siteId.value,
-          name: values.name.value,
-          licensingAreaId: values.licensingAreaId != null
-              ? int.parse(values.licensingAreaId.value)
-              : 0,
-          latitude: double.parse(values.latitude.value),
-          longitude: double.parse(values.longitude.value),
-          state: values.state.value,
-          postcode: values.postcode.value,
-          elevation: values.elevation.value);
-
-      ///create marker
-      Marker marker = Marker(
-          markerId: MarkerId(
-              "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}"),
-          // title: site.name,
-          position: LatLng(site.latitude, site.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(site.color),
-          rotation: site.rotation,
-          alpha: site.alpha,
-          visible: site.shouldBeVisible(),
-          //infoWindow: InfoWindow(title: ' ', snippet: 'Site Data \n dsfdf'),
-          onTap: () {
-            _showCustomInfoWindowAsBottomSheet(context, site);
-          });
-
-      //add to map overlay
-      MapOverlay mapOverlay = MapOverlay(marker: marker, site: site);
-
-      //add mapoverlay to list
-      listOfTowersForSingleTeclo.add(mapOverlay);
-    }
-
-    setState(() {
-      SiteHelper.globalListMapOverlay.addAll(listOfTowersForSingleTeclo);
-    });
-
-//    Future.delayed(Duration(seconds: 3), () {
-//      logger.d(
-//          "total towers downloaded are ${SiteHelper.globalListMapOverlay.length} and displaying on map are ${SiteHelper.globalListMapOverlay.map((data) => data.marker).toSet().length}");
-//    });
-
-    //Add expansion amount
-    expansionAmount = expansionAmount + totalLatLong;
-
-    //2) Download next page towers if exist
-    NextPage nextPage = rawReponse.restify.nextPage;
-    if (nextPage != null) {
-      logger.d("next page exist");
-      _downloadTowersForSingleTelco(telco, geoHash,
-          nextPageURL: nextPage.href,
-          expansionAmount: expansionAmount,
-          recursionDepth: recursionDepth,
-          expandGeohash: expandGeohash);
-    } else {
-      // Draw the developer mode squares, as required
-      if (MapHelper().developerMode) {
-        MapHelper().removeDeveloperShapes();
-        MapHelper().drawDeveloperShapes();
-      }
-    }
-
-    //3) Prepare to query for the devices at the site
-    String site_ids = "";
-    //int siteCounter = 0;
-    listOfTowersForSingleTeclo.forEach((MapOverlay mapOverlay) {
-      if (mapOverlay.site != null) {
-        site_ids = site_ids + 'site_id%3D%3D${mapOverlay.site.siteId}||';
-        //siteCounter++;
+        // Don't download the same area more than once for a given telco
+        if (SiteHelper.downloadedGeohashAlready(geoHash, telco)) {
+          // See if any neighbour sites need downloading and fetch them if required also
+          fetchNeighbourSites(
+              geoHash: geoHash, telco: telco, expandGeohash: expandGeohash);
+        } else {
+          //logger.d('mygeoHash doest not exist');
+          downloadTowersForSingleTelco(telco, geoHash,
+              expansionAmount: expansionAmount,
+              recursionDepth: recursionDepth,
+              expandGeohash: expandGeohash);
+        }
       }
     });
     if (site_ids.length > 2) {
@@ -896,7 +788,7 @@ class _MapBodyState extends State<MapBody> {
         logger.i(
             "fetchNeighbourSites: recursionDepth=$recursionDepth + telco= ${TelcoHelper.getName(telco)} +  filter= $filter");
         String neightbourURL =
-            '/towers/${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=50&_filter=$filter';
+            '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=$filter';
 
         _downloadTowersForSingleTelco(telco, geoHash,
             nextPageURL: neightbourURL,
