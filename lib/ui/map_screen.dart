@@ -218,8 +218,8 @@ class _MapBodyState extends State<MapBody> {
   /*
   * Method channel for taking screenshots
   * */
-  static const androidMethodChannel =
-      const MethodChannel('au.com.bitbot.phonetowers.flutter.provider/screenshot');
+  static const androidMethodChannel = const MethodChannel(
+      'au.com.bitbot.phonetowers.flutter.provider/screenshot');
 
   // static const MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
   //   testDevices: <String>[
@@ -1033,7 +1033,7 @@ class _MapBodyState extends State<MapBody> {
     }
   }
 
-  void _settingModalBottomSheet(context, Site site) {
+  void _settingModalBottomSheet(BuildContext context, Site site) {
     showDialog(
       context: context,
       builder: (BuildContext bc) {
@@ -1045,6 +1045,7 @@ class _MapBodyState extends State<MapBody> {
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -1059,24 +1060,13 @@ class _MapBodyState extends State<MapBody> {
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    // Align(
-                    //   alignment: Alignment.topRight,
-                    //   child: IconButton(
-                    //     color: Colors.grey,
-                    //     onPressed: () {
-                    //       if (Navigator.of(bc).canPop()) {
-                    //         Navigator.of(bc).pop();
-                    //       }
-                    //     },
-                    //     icon: Icon(Icons.cancel),
-                    //   ),
-                    // ),
+                    Image.asset(site.getIconName(), width: 25),
+                    SizedBox(height: 8.0),
                     ...prepareSiteTitleForInforWindow(
                         '${site.getNameFormatted()} ${site.state} ${site.postcode}'),
-                    SizedBox(
-                      height: 8.0,
-                    ),
+                    SizedBox(height: 8.0),
                     SitePropertiesTableWidget(
                       data: {
                         'Site ID:': '${site.siteId}',
@@ -1172,7 +1162,7 @@ class _MapBodyState extends State<MapBody> {
                         '${TelcoHelper.getName(site.getTelco())} Services',
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
-                      SizedBox(height: 4),
+                      SizedBox(height: 8),
                       Table(
                         columnWidths: {
                           0: IntrinsicColumnWidth(),
@@ -1263,7 +1253,8 @@ class _MapBodyState extends State<MapBody> {
                   launchURL(site.siteId);
                 },
                 child: Text('ACMA Website'),
-              )
+              ),
+              SizedBox(height: 16),
             ],
           ),
         );
@@ -1468,6 +1459,7 @@ class SitePropertiesTableWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Table(
+      defaultColumnWidth: FixedColumnWidth(150.0),
       children: data.entries.map(
         (item) {
           return TableRow(

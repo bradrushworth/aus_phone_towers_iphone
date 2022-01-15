@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:html_unescape/html_unescape.dart';
 import 'package:phonetowers/helpers/get_elevation.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
@@ -35,7 +36,7 @@ class Site {
 
   // Does this site have an active transmitter?
   bool active = false;
-  double color;
+  double colour;
   double rotation, alpha;
   List<DeviceDetails> deviceDetailsMobile;
 
@@ -53,73 +54,34 @@ class Site {
       this.startedDownloadingElevations = false,
       this.finishedDownloadingElevations = false,
       this.active = false,
-      this.color,
+      this.colour,
       this.rotation,
       this.alpha,
       this.deviceDetailsMobile}) {
-    this.color = getSiteColor(this.telco);
-    this.rotation = getSiteRotation(this.telco);
-    this.alpha = getSiteAlpha(this.telco);
+    this.colour = TelcoHelper.getColour(this.telco);
+    this.rotation = TelcoHelper.getRotation(this.telco);
+    this.alpha = TelcoHelper.getAlpha(this.telco);
     this.deviceDetailsMobile = [];
   }
 
-  double getSiteColor(Telco telco) {
-    double colour;
-    if (telco == Telco.Telstra) {
-      colour = BitmapDescriptor.hueBlue;
-    } else if (telco == Telco.Optus) {
-      colour = BitmapDescriptor.hueCyan;
-    } else if (telco == Telco.Vodafone) {
-      colour = BitmapDescriptor.hueRed;
-    } else if (telco == Telco.NBN) {
-      colour = BitmapDescriptor.hueViolet;
-    } else if (telco == Telco.Other) {
-      colour = BitmapDescriptor.hueAzure;
-    } else {
-      colour = BitmapDescriptor.hueRose;
-    }
-    return colour;
+  double getColour() {
+    return TelcoHelper.getColour(telco);
   }
 
-  double getSiteRotation(Telco telco) {
-    double rotation = 0;
-    if (telco == Telco.Telstra) {
-      rotation = -50;
-    } else if (telco == Telco.Optus) {
-      rotation = 0;
-    } else if (telco == Telco.Vodafone) {
-      rotation = 50;
-    } else if (telco == Telco.NBN) {
-      rotation = 100;
-    } else if (telco == Telco.Other) {
-      rotation = -100;
-    } else {
-      if (telco == Telco.Radio) {
-        rotation = 150;
-      } else if (telco == Telco.TV) {
-        rotation = -150;
-      } else if (telco == Telco.CBRS) {
-        rotation = -120;
-      } else if (telco == Telco.Civil) {
-        rotation = 120;
-      } else if (telco == Telco.Aviation) {
-        rotation = -25;
-      } else if (telco == Telco.Pager) {
-        rotation = 25;
-      }
-    }
-    return rotation;
+  double getRotation() {
+    return TelcoHelper.getRotation(telco);
   }
 
-  double getSiteAlpha(Telco telco) {
-    double alpha = 0.60;
-    if (telco == Telco.Telstra) {
-    } else if (telco == Telco.Optus) {
-    } else if (telco == Telco.Vodafone) {
-    } else if (telco == Telco.NBN) {
-    } else if (telco == Telco.Other) {
-    } else {}
-    return alpha;
+  double getAlpha() {
+    return TelcoHelper.getAlpha(telco);
+  }
+
+  String getIconName() {
+    return TelcoHelper.getIconName(telco);
+  }
+
+  Future<Uint8List> getIcon(int width) {
+    return TelcoHelper.getIcon(telco, width);
   }
 
   List<DeviceDetails> getDeviceDetailsMobile() {
@@ -131,6 +93,11 @@ class Site {
       this.active = true;
     }
   }
+
+  // bool hasTechnology(int networkType) {
+  //   NetworkType networkGen = CellIdentity.getNetworkGeneration(networkType);
+  //   return hasTechnology(networkGen);
+  // }
 
   bool shouldBeVisible() {
     // Keep hidden telcos hidden
@@ -188,25 +155,25 @@ class Site {
     String name = "";
     bool newLineNumber = false;
     int tokensSinceSplit = 0;
-    var unescape = new HtmlUnescape();
-    List<String> tokens = unescape.convert(this.name).split(" ");
+    List<String> tokens = HtmlEscape().convert(this.name).split(" ");
     for (int i = 0; i < tokens.length; i++) {
+      final numbers = RegExp(r'^[0-9-]+$');
       if (i > 1 &&
               tokensSinceSplit > 1 &&
               !newLineNumber &&
-              tokens[i].contains("[0-9-]+") ||
-          tokens[i].toLowerCase() == ("Lot").toLowerCase()) {
+              numbers.hasMatch(tokens[i]) ||
+          tokens[i].toLowerCase() == "lot") {
         name += "\n";
         newLineNumber = true;
         tokensSinceSplit = 0;
       } else if (i > 1 &&
           tokensSinceSplit > 1 &&
-          tokens[i].toUpperCase() == (tokens[i])) {
+          tokens[i].toUpperCase() == tokens[i]) {
         name += "\n";
         tokensSinceSplit = 0;
       } else if (i > 0 &&
-          (tokens[i - 1].toLowerCase() == ("Site").toLowerCase() ||
-              tokens[i - 1].toLowerCase() == ("Exchange").toLowerCase())) {
+          (tokens[i - 1].toLowerCase() == "site" ||
+              tokens[i - 1].toLowerCase() == "exchange")) {
         name += "\n";
         tokensSinceSplit = 0;
       } else if (tokensSinceSplit >= 4) {
@@ -220,9 +187,19 @@ class Site {
   }
 
   static String centerEachLine(String text) {
+    final int INFO_WINDOW_TEXT_WIDTH = 38;
     StringBuffer buffer = new StringBuffer();
-    for (String line in text.split("\\r?\\n")) {
-      buffer.write(line);
+    List<String> lines = new LineSplitter().convert(text);
+    for (String line in lines) {
+      String buffedLine = '$line';
+      while (buffedLine.length < INFO_WINDOW_TEXT_WIDTH) {
+        buffedLine = ' $buffedLine ';
+      }
+      if (buffedLine.length > INFO_WINDOW_TEXT_WIDTH &&
+          buffedLine.startsWith(' ')) {
+        buffedLine = buffedLine.substring(1);
+      }
+      buffer.write(buffedLine);
       buffer.write('\n');
     }
     return buffer.toString();
@@ -234,14 +211,13 @@ class Site {
 
   Map<String, MapEntry<DeviceDetails, bool>> getDeviceDetailsMobileBands() {
     Map<String, MapEntry<DeviceDetails, bool>> bands =
-        Map<String, MapEntry<DeviceDetails, bool>>();
+    Map<String, MapEntry<DeviceDetails, bool>>();
     for (DeviceDetails d in deviceDetailsMobile) {
       int frequency = d.frequency;
       //if (rounded) frequency = TranslateFrequencies.roundMobileFrequency(frequency);
       String emission = d.emission;
       // Ensure the key is padded to enable sorting to work correctly
-      String key =
-          '$frequency $emission'; //"" + StringUtils.leftPad("" + frequency, 12, '0') + "_" + emission;
+      String key = '$frequency'.padLeft(12, '0') + '_' + emission;
 
       // Roll-up multiple transmitters so that if any are active, the frequency is active
       bool active = false;
@@ -308,17 +284,16 @@ class Site {
     );
   }
 
-  Set<HeightDistancePair> getHeightsAlongBearingWithDistanceAndBearing(
-      double distanceKm, final double bearing) {
+  Set<HeightDistancePair> getHeightsAlongBearingWithDistanceAndBearing(double distanceKm, final double bearing) {
     final Set<HeightDistancePair> heightToDistance = {};
     for (int i = 0;
-        i < GetElevation.SAMPLE_DISTANCES.length &&
-            GetElevation.SAMPLE_DISTANCES[i] <= distanceKm;
-        i++) {
+    i < GetElevation.SAMPLE_DISTANCES.length &&
+        GetElevation.SAMPLE_DISTANCES[i] <= distanceKm;
+    i++) {
       double distance = GetElevation.SAMPLE_DISTANCES[i];
 
       final LatLng sampleLatLon =
-          GetLicenceHRP.travel(getLatLng(), bearing, distance);
+      GetLicenceHRP.travel(getLatLng(), bearing, distance);
       final double sampleHeight = getElevation(sampleLatLon);
 
       heightToDistance.add(
