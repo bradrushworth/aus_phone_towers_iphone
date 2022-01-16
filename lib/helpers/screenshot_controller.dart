@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 
 class ScreenshotController {
   GlobalKey _containerKey;
+
   ScreenshotController() {
     _containerKey = GlobalKey();
   }
@@ -48,8 +49,10 @@ class Screenshot<T> extends StatefulWidget {
   final Widget child;
   final ScreenshotController controller;
   final GlobalKey containerKey;
+
   const Screenshot({Key key, this.child, this.controller, this.containerKey})
       : super(key: key);
+
   @override
   State<Screenshot> createState() {
     return new ScreenshotState();
@@ -58,6 +61,7 @@ class Screenshot<T> extends StatefulWidget {
 
 class ScreenshotState extends State<Screenshot> with TickerProviderStateMixin {
   ScreenshotController _controller;
+
   @override
   void initState() {
     super.initState();

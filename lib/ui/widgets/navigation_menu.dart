@@ -21,6 +21,7 @@ class NavigationMenu extends StatefulWidget {
   static bool isOptusVisible = true;
   static bool isVodafoneVisible = true;
   static bool isNBNVisible = true;
+  static bool isDenseAirVisible = true;
   static bool isOtherVisible = true;
 
   static bool is2GVisible = true;
@@ -132,6 +133,17 @@ class _NavigationMenuState extends State<NavigationMenu> {
                 setTelecomOption();
               },
             ),
+            // LicenceesMenuItem( // TODO
+            //   valueName: Strings.dense_air,
+            //   telco: Telco.Dense_Air,
+            //   isValueVisible: NavigationMenu.isDenseAirVisible,
+            //   prefsKey: SharedPreferencesHelper.kisDenseAirVisible,
+            //   prefs: prefs,
+            //   onMenuItemChanged: ({bool itemChanged}) {
+            //     NavigationMenu.isDenseAirVisible = itemChanged;
+            //     setTelecomOption();
+            //   },
+            // ),
             LicenceesMenuItem(
               valueName: Strings.nbn,
               telco: Telco.NBN,
@@ -643,6 +655,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     NavigationMenu.isTelstraVisible = true;
                     NavigationMenu.isOptusVisible = true;
                     NavigationMenu.isVodafoneVisible = true;
+                    NavigationMenu.isDenseAirVisible = true;
                     NavigationMenu.isNBNVisible = true;
                     NavigationMenu.isOtherVisible = true;
                     SiteHelper().enableTelcoInUse(true);
@@ -650,6 +663,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     NavigationMenu.isTelstraVisible = false;
                     NavigationMenu.isOptusVisible = false;
                     NavigationMenu.isVodafoneVisible = false;
+                    NavigationMenu.isDenseAirVisible = false;
                     NavigationMenu.isNBNVisible = false;
                     NavigationMenu.isOtherVisible = false;
                     SiteHelper().disableTelcos();
@@ -807,6 +821,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
     if (NavigationMenu.isTelstraVisible == false &&
         NavigationMenu.isOptusVisible == false &&
         NavigationMenu.isVodafoneVisible == false &&
+        NavigationMenu.isDenseAirVisible == false &&
         NavigationMenu.isNBNVisible == false &&
         NavigationMenu.isOtherVisible == false) {
       NavigationMenu.isTelcoVisible = false;
@@ -837,7 +852,6 @@ class LicenceesMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Ink(
-
       color: isValueVisible ? Colors.grey[300] : Colors.white,
       child: ListTile(
         title: Text(valueName,

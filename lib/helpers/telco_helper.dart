@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 enum Telco {
   Telstra,
@@ -54,8 +54,7 @@ class TelcoHelper {
 
   static Future<Uint8List> getBytesFromAsset({String path, int width}) async {
     ByteData data = await rootBundle.load(path);
-    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
-        targetWidth: width);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     ui.FrameInfo fi = await codec.getNextFrame();
     return await (await fi.image.toByteData(format: ui.ImageByteFormat.png))
         .buffer
@@ -65,44 +64,53 @@ class TelcoHelper {
   static String getIconName(Telco telco) {
     switch (telco) {
       case Telco.Telstra:
-        return 'icons/telstra.png';
+        return 'telstra.png';
       case Telco.Optus:
-        return 'icons/optus.png';
+        return 'optus.png';
       case Telco.Vodafone:
-        return 'icons/vodafone.png';
+        return 'vodafone.png';
       case Telco.NBN:
-        return 'icons/nbn.png';
+        return 'nbn.png';
       case Telco.Dense_Air:
-        return 'icons/denseair.png';
+        return 'dense_air.png';
       case Telco.Other:
-        return 'icons/other.png';
+        return 'other.png';
       default:
-        return 'icons/nontelco.png';
+        return 'non_telco.png';
     }
   }
 
-  static Future<Uint8List> getIcon(Telco telco, int width) {
-    return getBytesFromAsset(
-        path: 'assets/' + getIconName(telco), width: width);
+  static String getIconFullName(Telco telco) {
+    // Different paths is a weird incompatibility
+    return (kIsWeb ? 'icons_web' : 'assets/icons') + '/' + getIconName(telco);
   }
 
-  static double getColour(Telco telco) {
-    double colour;
-    if (telco == Telco.Telstra) {
-      colour = BitmapDescriptor.hueBlue;
-    } else if (telco == Telco.Optus) {
-      colour = BitmapDescriptor.hueCyan;
-    } else if (telco == Telco.Vodafone) {
-      colour = BitmapDescriptor.hueRed;
-    } else if (telco == Telco.NBN) {
-      colour = BitmapDescriptor.hueViolet;
-    } else if (telco == Telco.Other) {
-      colour = BitmapDescriptor.hueAzure;
-    } else {
-      colour = BitmapDescriptor.hueRose;
-    }
-    return colour;
+  static Future<Uint8List> getIconByString(String name) {
+    return getBytesFromAsset(path: name);
   }
+
+  static Future<Uint8List> getIcon(Telco telco) {
+    return getIconByString(getIconFullName(telco));
+  }
+
+
+  // static double getColour(Telco telco) {
+  //   double colour;
+  //   if (telco == Telco.Telstra) {
+  //     colour = BitmapDescriptor.hueBlue;
+  //   } else if (telco == Telco.Optus) {
+  //     colour = BitmapDescriptor.hueCyan;
+  //   } else if (telco == Telco.Vodafone) {
+  //     colour = BitmapDescriptor.hueRed;
+  //   } else if (telco == Telco.NBN) {
+  //     colour = BitmapDescriptor.hueViolet;
+  //   } else if (telco == Telco.Other) {
+  //     colour = BitmapDescriptor.hueAzure;
+  //   } else {
+  //     colour = BitmapDescriptor.hueRose;
+  //   }
+  //   return colour;
+  // }
 
   static double getRotation(Telco telco) {
     double rotation = 0;
@@ -112,6 +120,8 @@ class TelcoHelper {
       rotation = 0;
     } else if (telco == Telco.Vodafone) {
       rotation = 50;
+    } else if (telco == Telco.Dense_Air) {
+      rotation = 75;
     } else if (telco == Telco.NBN) {
       rotation = 100;
     } else if (telco == Telco.Other) {
@@ -135,10 +145,14 @@ class TelcoHelper {
   }
 
   static double getAlpha(Telco telco) {
-    double alpha = 0.70;
-    if (telco == Telco.Telstra) {} else if (telco == Telco.Optus) {} else
-    if (telco == Telco.Vodafone) {} else
-    if (telco == Telco.NBN) {} else if (telco == Telco.Other) {} else {}
+    double alpha = 0.95;
+    if (telco == Telco.Telstra) {
+    } else if (telco == Telco.Optus) {
+    } else if (telco == Telco.Vodafone) {
+    } else if (telco == Telco.NBN) {
+    } else if (telco == Telco.Dense_Air) {
+    } else if (telco == Telco.Other) {
+    } else {}
     return alpha;
   }
 
@@ -172,14 +186,10 @@ class TelcoHelper {
   }
 
   static String getName(Telco telco) {
-    return telco
-        .toString()
-        .split('.')
-        .last
-        .replaceAll('_', ' ');
+    return telco.toString().split('.').last.replaceAll('_', ' ');
   }
 
-  static String getNameLowerCase(Telco telco) {
-    return getName(telco).toLowerCase();
+  static String getNameForApi(Telco telco) {
+    return telco.toString().split('.').last.toLowerCase();
   }
 }

@@ -1,4 +1,4 @@
-//import 'package:google_maps_flutter/google_maps_flutter.dart';
+//import 'package:google_maps/google_maps.dart';
 //import 'package:logger/logger.dart';
 //import 'package:phonetowers/helpers/site_helper.dart';
 //import 'package:phonetowers/helpers/telco_helper.dart';

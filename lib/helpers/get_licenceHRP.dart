@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/get_elevation.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
@@ -91,9 +91,8 @@ class GetLicenceHRP {
       double power_dBm = double.tryParse(values.power.value) ?? 0;
 
       // Convert RSRP to RSSI to get more accurate results
-      if (device.getNetworkType() == NetworkType.LTE) {
-        power_dBm +=
-            TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+      if (NetworkTypeHelper.isRsrp(device.getNetworkType())) {
+        //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
       }
 
       // 1.25 is half of 2.5, which is the measurement resolution with ACMA

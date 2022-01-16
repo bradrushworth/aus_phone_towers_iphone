@@ -1,5 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/model/overlay.dart';
@@ -141,6 +142,8 @@ class SiteHelper with ChangeNotifier {
         toggleTelcoMarkers(Telco.Optus, NavigationMenu.isOptusVisible);
       if (telcoInUse == null || telcoInUse == Telco.Vodafone)
         toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
+      if (telcoInUse == null || telcoInUse == Telco.Dense_Air)
+        toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
       if (telcoInUse == null || telcoInUse == Telco.NBN)
         toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
       if (telcoInUse == null || telcoInUse == Telco.Other)
@@ -159,6 +162,9 @@ class SiteHelper with ChangeNotifier {
     }
     if (!hideTelco.contains(Telco.Vodafone)) {
       toggleTelcoMarkers(Telco.Vodafone, false);
+    }
+    if (!hideTelco.contains(Telco.Dense_Air)) {
+      toggleTelcoMarkers(Telco.Dense_Air, false);
     }
     if (!hideTelco.contains(Telco.NBN)) {
       toggleTelcoMarkers(Telco.NBN, false);

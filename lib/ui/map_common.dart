@@ -8,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+
+//import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
+// import 'package:google_maps/google_maps.dart'
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
@@ -28,11 +32,15 @@ import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/device_detail.dart';
+import 'package:phonetowers/model/overlay.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
+import 'package:phonetowers/ui/map_platform.dart'
+    if (dart.library.js) 'package:phonetowers/ui/map_web.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
+import 'package:phonetowers/utils/app_colors.dart';
 import 'package:phonetowers/utils/geo_hash.dart';
 import 'package:phonetowers/utils/hex_color.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
@@ -42,7 +50,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../helpers/ads_helper.dart';
-import '../model/overlay.dart';
 import '../utils/app_constants.dart';
 
 class MapScreen extends StatefulWidget {
@@ -134,11 +141,12 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
                 child: Column(
                   children: <Widget>[
                     Container(
-                      height: 0,
-                      color: Colors.grey[300],
+                      height: AdsHelper().bannerAd == null ? 0 : 3,
+                      color: Colors.grey[500],
                     ),
                     Container(
-                      height: 50,
+                      height: AdsHelper().bannerAd == null ? 0 : 50,
+                      color: Colors.grey[300],
                     ),
                     OrientationBuilder(
                       builder: (context, orientation) {
@@ -166,7 +174,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
       }
     }
 
-    if (!kIsWeb) {
+    if (!kIsWeb) { // TODO
       if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
         //Show ads only if user has not subscribed to any of remove ads menu item
         AdSize bannerAdSize;
@@ -201,17 +209,13 @@ class MapBody extends StatefulWidget {
   MapBody(this.screenshotController);
 
   @override
-  _MapBodyState createState() => _MapBodyState();
+  MapBodyState createState() => MapBodyState();
 }
 
-class _MapBodyState extends State<MapBody> {
+class MapBodyState extends AbstractMapBodyState {
   /// ******************** State variables ************************************
-  GoogleMapController mapController;
-  Logger logger;
-  Api api;
   Location _locationService = new Location();
   SharedPreferences prefs;
-  CameraPosition lastCameraPosition;
   final TextEditingController _searchTextFilter = new TextEditingController();
   bool isShowCancelSearch = false;
 
@@ -220,14 +224,6 @@ class _MapBodyState extends State<MapBody> {
   * */
   static const androidMethodChannel = const MethodChannel(
       'au.com.bitbot.phonetowers.flutter.provider/screenshot');
-
-  // static const MobileAdTargetingInfo targetingInfo = MobileAdTargetingInfo(
-  //   testDevices: <String>[
-  //     'B5BD02099B12769D58DBD05B64D1DFAF',
-  //     'FD6126EE250BB0AA9187FFE30B3C9EE1',
-  //     'Simulator'
-  //   ],
-  // );
 
   /// ******************** Overrided methods **********************************
   @override
@@ -251,7 +247,7 @@ class _MapBodyState extends State<MapBody> {
       });
     });
 
-    if (!kIsWeb) AdsHelper().initialize();
+    if (!kIsWeb) AdsHelper().initialize(); // TODO
   }
 
   @override
@@ -267,6 +263,15 @@ class _MapBodyState extends State<MapBody> {
                 padding: EdgeInsets.only(bottom: 100, top: 100),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
+                buildingsEnabled: false,
+                compassEnabled: !kIsWeb,
+                myLocationButtonEnabled: true,
+                trafficEnabled: false,
+                rotateGesturesEnabled: true,
+                indoorViewEnabled: false,
+                mapToolbarEnabled: true,
+                zoomControlsEnabled: true,
+                zoomGesturesEnabled: true,
                 initialCameraPosition: CameraPosition(
                   target: kLagLongBathurst,
                   zoom: kDefaultZoom,
@@ -281,8 +286,8 @@ class _MapBodyState extends State<MapBody> {
                         .map((data) => data.polygon)
                         .toSet()
                     : Set(),
-                onMapCreated: _onMapCreated,
-                onCameraMove: _onCameraMove,
+                onMapCreated: onMapCreated,
+                onCameraMove: onCameraMove,
               ),
             ),
             Container(
@@ -347,7 +352,7 @@ class _MapBodyState extends State<MapBody> {
                       textInputAction: TextInputAction.search,
                       onSubmitted: (query) {
                         logger.d('search query is $query');
-                        _handleSearchQuery(query);
+                        handleSearchQuery(query);
                       },
                     ),
               actions: <Widget>[
@@ -419,6 +424,10 @@ class _MapBodyState extends State<MapBody> {
         key: SharedPreferencesHelper.kisVodafoneVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
+    NavigationMenu.isDenseAirVisible = SharedPreferencesHelper.getMenuStatus(
+        key: SharedPreferencesHelper.kisDenseAirVisible, prefs: prefs);
+    Provider.of<SiteHelper>(context, listen: false)
+        .toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
     NavigationMenu.isNBNVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisNBNVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
@@ -545,6 +554,7 @@ class _MapBodyState extends State<MapBody> {
       NavigationMenu.isTelstraVisible = NavigationMenu.isTelstraVisible;
       NavigationMenu.isOptusVisible = NavigationMenu.isOptusVisible;
       NavigationMenu.isVodafoneVisible = NavigationMenu.isVodafoneVisible;
+      NavigationMenu.isDenseAirVisible = NavigationMenu.isDenseAirVisible;
       NavigationMenu.isNBNVisible = NavigationMenu.isNBNVisible;
       NavigationMenu.isOtherVisible = NavigationMenu.isOtherVisible;
       SiteHelper().enableTelcoInUse(true);
@@ -552,6 +562,7 @@ class _MapBodyState extends State<MapBody> {
       NavigationMenu.isTelstraVisible = false;
       NavigationMenu.isOptusVisible = false;
       NavigationMenu.isVodafoneVisible = false;
+      NavigationMenu.isDenseAirVisible = false;
       NavigationMenu.isNBNVisible = false;
       NavigationMenu.isOtherVisible = false;
       SiteHelper().disableTelcos();
@@ -610,9 +621,9 @@ class _MapBodyState extends State<MapBody> {
     setState(() {});
   }
 
-  void _onMapCreated(GoogleMapController controllerParam) {
+  void onMapCreated(dynamic controllerParam) {
     setState(() {
-      mapController = controllerParam;
+      super.mapController = controllerParam;
     });
 
     askForLocationPermission();
@@ -679,13 +690,14 @@ class _MapBodyState extends State<MapBody> {
             alpha: 0.50,
             visible: false);
 
-        //add to map overlay
+        // add to map overlay
         MapOverlay mapOverlay = MapOverlay(marker: marker);
 
-        //add mapoverlay to list
+        // add map overlay to list
         SiteHelper.globalListMapOverlay.add(mapOverlay);
 
-        //move camera to location
+        // move camera to location
+        logger.i('moveCamera: $lat, $long');
         mapController.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -699,43 +711,43 @@ class _MapBodyState extends State<MapBody> {
 
     downloadTowers(geoHash, true);
 
-    //Saving first camera position as last so that reload everything option menu works.
+    // Saving first camera position as last so that reload everything option menu works.
     lastCameraPosition = CameraPosition(
       target: LatLng(lat, long),
       zoom: kDefaultZoom,
     );
 
     // Start loading the first markers
-    _onCameraMove(lastCameraPosition);
+    onCameraMove(lastCameraPosition);
   }
 
   ///Download towers information for either bathurst or user's location
   void downloadTowers(String geoHash, bool expandGeohash) {
     //parse json and get all sites
     Telco.values.forEach((telco) {
-//      if (telco != Telco.Telstra) {
-//        return; //TODO remove this code
-//      }
+      // Only get the currently selected ones!
+      // TODO Remove Dense Air once ready to go
+      if (!SiteHelper.hideTelco.contains(telco) && telco != Telco.Dense_Air) {
+        int expansionAmount = 0;
+        int recursionDepth = 0;
 
-      int expansionAmount = 0;
-      int recursionDepth = 0;
-
-      // Don't download the same area more than once for a given telco
-      if (SiteHelper.downloadedGeohashAlready(geoHash, telco)) {
-        // See if any neighbour sites need downloading and fetch them if required also
-        fetchNeighbourSites(
-            geoHash: geoHash, telco: telco, expandGeohash: expandGeohash);
-      } else {
-        //logger.d('mygeoHash doest not exist');
-        _downloadTowersForSingleTelco(telco, geoHash,
-            expansionAmount: expansionAmount,
-            recursionDepth: recursionDepth,
-            expandGeohash: expandGeohash);
+        // Don't download the same area more than once for a given telco
+        if (SiteHelper.downloadedGeohashAlready(geoHash, telco)) {
+          // See if any neighbour sites need downloading and fetch them if required also
+          fetchNeighbourSites(
+              geoHash: geoHash, telco: telco, expandGeohash: expandGeohash);
+        } else {
+          //logger.d('mygeoHash doest not exist');
+          downloadTowersForSingleTelco(telco, geoHash,
+              expansionAmount: expansionAmount,
+              recursionDepth: recursionDepth,
+              expandGeohash: expandGeohash);
+        }
       }
     });
   }
 
-  Future _downloadTowersForSingleTelco(Telco telco, String geoHash,
+  Future downloadTowersForSingleTelco(Telco telco, String geoHash,
       {String nextPageURL,
       int expansionAmount,
       int recursionDepth,
@@ -743,14 +755,14 @@ class _MapBodyState extends State<MapBody> {
     List<MapOverlay> listOfTowersForSingleTeclo = new List<MapOverlay>();
 
     logger.d(
-        'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}');
+        'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}');
 
     showSnackbar(
         message: "Downloading ${TelcoHelper.getName(telco)} towers...");
 
     SiteReponse rawReponse = await api.getMarkerData(nextPageURL != null
         ? nextPageURL
-        : '/towers/${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash');
+        : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash');
 
     int totalLatLong = rawReponse?.restify?.rows?.length ?? 0;
 
@@ -778,19 +790,19 @@ class _MapBodyState extends State<MapBody> {
           postcode: values.postcode.value,
           elevation: values.elevation.value);
 
-      ///create marker
       Marker marker = Marker(
           markerId: MarkerId(
               "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}"),
           // title: site.name,
           position: LatLng(site.latitude, site.longitude),
-          icon: BitmapDescriptor.defaultMarkerWithHue(site.color),
+          icon:
+              BitmapDescriptor.fromBytes(await site.getIcon()),
           rotation: site.rotation,
           alpha: site.alpha,
           visible: site.shouldBeVisible(),
           //infoWindow: InfoWindow(title: ' ', snippet: 'Site Data \n dsfdf'),
           onTap: () {
-            _showCustomInfoWindowAsBottomSheet(context, site);
+            showCustomInfoWindowAsBottomSheet(context, site);
           });
 
       //add to map overlay
@@ -816,7 +828,7 @@ class _MapBodyState extends State<MapBody> {
     NextPage nextPage = rawReponse.restify.nextPage;
     if (nextPage != null) {
       logger.d("next page exist");
-      _downloadTowersForSingleTelco(telco, geoHash,
+      downloadTowersForSingleTelco(telco, geoHash,
           nextPageURL: nextPage.href,
           expansionAmount: expansionAmount,
           recursionDepth: recursionDepth,
@@ -851,10 +863,10 @@ class _MapBodyState extends State<MapBody> {
       if (TelcoHelper.isTelecommunications(telco)) {
         fields += "%2Cactive";
         url =
-            '/towers/device_details_mobile_${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
+            '/towers/device_details_mobile_${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
       } else {
         url =
-            '/towers/device_details_${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
+            '/towers/device_details_${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=150&_sort=site_id+asc&_fields=$fields&_filter=$site_ids';
       }
 
       //logger.d('get device url for site count $siteCounter');
@@ -896,9 +908,9 @@ class _MapBodyState extends State<MapBody> {
         logger.i(
             "fetchNeighbourSites: recursionDepth=$recursionDepth + telco= ${TelcoHelper.getName(telco)} +  filter= $filter");
         String neightbourURL =
-            '/towers/${TelcoHelper.getNameLowerCase(telco)}/?_view=json&_expand=yes&_count=50&_filter=$filter';
+            '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=$filter';
 
-        _downloadTowersForSingleTelco(telco, geoHash,
+        downloadTowersForSingleTelco(telco, geoHash,
             nextPageURL: neightbourURL,
             expansionAmount: expansionAmount,
             recursionDepth: recursionDepth + 1,
@@ -938,35 +950,6 @@ class _MapBodyState extends State<MapBody> {
     return filter;
   }
 
-  void _onCameraMove(CameraPosition position) {
-    //Store last camera position when map scrolled in order to make clear map option menu work.
-    lastCameraPosition = position;
-    if (!SearchHelper.calculatingSearchResults) {
-      onMapScroll(position);
-    }
-  }
-
-  //Set camera to last location and perform further operations.
-  void onCameraMoveFromLastLocation() {
-    if (lastCameraPosition != null) {
-      if (!SearchHelper.calculatingSearchResults) {
-        onMapScroll(lastCameraPosition);
-      }
-    }
-  }
-
-  void onMapScroll(CameraPosition position) {
-    if (position.zoom < kZoomTooFar) {
-      showSnackbar(message: Strings.zoominFurther, isDismissible: true);
-      return;
-    }
-
-    double lat = position.target.latitude;
-    double long = position.target.longitude;
-    String geoHash = Geohash.encode(lat, long, codeLength: 5);
-    downloadTowers(geoHash, true);
-  }
-
   void showSnackbar(
       {@required String message,
       Duration duration = const Duration(seconds: 1),
@@ -989,15 +972,7 @@ class _MapBodyState extends State<MapBody> {
     Scaffold.of(context).showSnackBar(snackBar);
   }
 
-  void refreshUI({String message = 'Global refresh'}) {
-    //logger.d('$message');
-    if (mounted) {
-      // TODO: This probably wasn't right!
-      //setState(() {});
-    }
-  }
-
-  void _showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {
+  void showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {
     setState(() {
       //Remove any existing polygons first
       //PolygonHelper().globalListPolygons.clear();
@@ -1062,7 +1037,7 @@ class _MapBodyState extends State<MapBody> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset(site.getIconName(), width: 25),
+                    Image.asset(site.getIconFullName(), width: 20),
                     SizedBox(height: 8.0),
                     ...prepareSiteTitleForInforWindow(
                         '${site.getNameFormatted()} ${site.state} ${site.postcode}'),
@@ -1415,26 +1390,6 @@ class _MapBodyState extends State<MapBody> {
       ));
     }
     return siteTitleDetails;
-  }
-
-  void _handleSearchQuery(String query) {
-    // Centre the map on Australia
-    mapController.animateCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: const LatLng(-44, 113),
-          northeast: const LatLng(-10, 154),
-        ),
-        10.0,
-      ),
-    );
-
-    //Clear the map
-    SiteHelper()
-        .clearMap(onCameraMoveFromLastLocation: onCameraMoveFromLastLocation);
-
-    SearchHelper(showSnackBar: showSnackbar, mapController: mapController)
-        .executeSiteSearch(query, downloadTowers);
   }
 
   void takeScreenshot() {

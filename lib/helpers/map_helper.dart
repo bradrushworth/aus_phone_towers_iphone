@@ -1,7 +1,6 @@
-
 import 'package:flutter/material.dart';
 import 'package:geohash/geohash.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
@@ -12,9 +11,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class MapHelper with ChangeNotifier {
   static final MapHelper _singleton = new MapHelper._internal();
+
   factory MapHelper() {
     return _singleton;
   }
+
   MapHelper._internal();
 
   int mapMode = kMapModeTerrain;
@@ -31,29 +32,15 @@ class MapHelper with ChangeNotifier {
   MapType getMapType() {
     switch (mapMode) {
       case 1:
-        {
-          return MapType.terrain;
-        }
-        break;
+        return MapType.terrain;
       case 2:
-        {
-          return MapType.hybrid;
-        }
-        break;
+        return MapType.hybrid;
       case 3:
-        {
-          return MapType.satellite;
-        }
-        break;
+        return MapType.satellite;
       case 4:
-        {
-          return MapType.normal;
-        }
-        break;
+        return MapType.normal;
       default:
-        {
-          return MapType.terrain;
-        }
+        return MapType.terrain;
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/antenna.dart';
 import 'package:phonetowers/model/license.dart';
 import 'package:phonetowers/model/site.dart';
+import 'package:phonetowers/utils/app_constants.dart';
 
 import 'client.dart';
 
@@ -261,14 +262,15 @@ class DeviceDetails {
       beamwidth = antenna.horizontalBeamwidth;
     }
 
-    logger.d(
+    if (AppConstants.isDebug)
+      logger.d(
         'from get power bearing gainDBi=$gainDBi frontToBackRatio=$frontToBackRatio beamwidth=$beamwidth');
 
     double power_dBm = 10 * log10(eirp) + 30; // Convert Watts to dBm
     power_dBm += 3; // Seems to give closer answers to LicenceHRP
 
-    if (getNetworkType == NetworkType.LTE || getNetworkType == NetworkType.NR) {
-      power_dBm += TranslateFrequencies.convertLteRsrpToRssi(bandwidth); // Convert RSRP to RSSI
+    if (NetworkTypeHelper.isRsrp(getNetworkType())) {
+      //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(bandwidth); // Convert RSRP to RSSI
     }
 
     //power_dBm += 30; // Extra FM radio sensitivity (over mobiles)
@@ -297,7 +299,8 @@ class DeviceDetails {
       radiationPatternLoss = frontToBackRatio;
     }
 
-    logger.d(
+    if (AppConstants.isDebug)
+      logger.d(
         'DeviceDetails = getPowerAtBearing(): bearing=$bearing antennaId=$antennaId gainDBi=$gainDBi frontToBackRatio=$frontToBackRatio beamwidth=$beamwidth radiationPatternLoss=$radiationPatternLoss');
 
     power_dBm -= radiationPatternLoss;

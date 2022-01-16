@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
@@ -420,12 +420,6 @@ class PolygonHelper with ChangeNotifier {
       }
 
       double power_dBm = device.getPowerAtBearing(bearing);
-
-      // Convert RSRP to RSSI to get more accurate results
-      if (device.getNetworkType() == NetworkType.LTE) {
-        power_dBm +=
-            TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
-      }
 
       int pos = 0;
       for (int p = 0;

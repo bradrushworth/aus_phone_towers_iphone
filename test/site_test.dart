@@ -166,15 +166,19 @@ void main() {
     // });
 
     test('getAlpha', () {
-      expect(site.getAlpha(), 0.7);
+      expect(site.getAlpha(), 0.95);
     });
 
-    test('getColour', () {
-      expect(site.getColour(), 240.0);
-    });
+    // test('getColour', () {
+    //   expect(site.getColour(), 240.0);
+    // });
 
     test('getRotation', () {
       expect(site.getRotation(), -50.0);
+    });
+
+    test('getIconName', () {
+      expect(site.getIconName(), 'telstra.png');
     });
 
     //   test('getActiveDevicesForArfcnLTE', () {
