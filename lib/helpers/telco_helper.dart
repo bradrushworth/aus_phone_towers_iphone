@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
@@ -53,8 +54,7 @@ class TelcoHelper {
 
   static Future<Uint8List> getBytesFromAsset({String path, int width}) async {
     ByteData data = await rootBundle.load(path);
-    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List(),
-        targetWidth: width);
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     ui.FrameInfo fi = await codec.getNextFrame();
     return await (await fi.image.toByteData(format: ui.ImageByteFormat.png))
         .buffer
@@ -64,30 +64,35 @@ class TelcoHelper {
   static String getIconName(Telco telco) {
     switch (telco) {
       case Telco.Telstra:
-        return 'icons/telstra.png';
+        return 'telstra.png';
       case Telco.Optus:
-        return 'icons/optus.png';
+        return 'optus.png';
       case Telco.Vodafone:
-        return 'icons/vodafone.png';
+        return 'vodafone.png';
       case Telco.NBN:
-        return 'icons/nbn.png';
+        return 'nbn.png';
       case Telco.Dense_Air:
-        return 'icons/dense_air.png';
+        return 'dense_air.png';
       case Telco.Other:
-        return 'icons/other.png';
+        return 'other.png';
       default:
-        return 'icons/non_telco.png';
+        return 'non_telco.png';
     }
   }
 
-  static Future<Uint8List> getIcon(Telco telco, int width) {
-    return getBytesFromAsset(
-        path: 'assets/' + getIconName(telco), width: width);
+  static String getIconFullName(Telco telco) {
+    // Different paths is a weird incompatibility
+    return (kIsWeb ? 'icons_web' : 'assets/icons') + '/' + getIconName(telco);
   }
 
-  static Future<Uint8List> getIconByString(String name, int width) {
-    return getBytesFromAsset(path: 'assets/$name', width: width);
+  static Future<Uint8List> getIconByString(String name) {
+    return getBytesFromAsset(path: name);
   }
+
+  static Future<Uint8List> getIcon(Telco telco) {
+    return getIconByString(getIconFullName(telco));
+  }
+
 
   // static double getColour(Telco telco) {
   //   double colour;
@@ -140,7 +145,7 @@ class TelcoHelper {
   }
 
   static double getAlpha(Telco telco) {
-    double alpha = 0.70;
+    double alpha = 0.95;
     if (telco == Telco.Telstra) {
     } else if (telco == Telco.Optus) {
     } else if (telco == Telco.Vodafone) {

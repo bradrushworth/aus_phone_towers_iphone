@@ -166,7 +166,7 @@ void main() {
     // });
 
     test('getAlpha', () {
-      expect(site.getAlpha(), 0.7);
+      expect(site.getAlpha(), 0.95);
     });
 
     // test('getColour', () {
@@ -178,7 +178,7 @@ void main() {
     });
 
     test('getIconName', () {
-      expect(site.getIconName(), 'icons/telstra.png');
+      expect(site.getIconName(), 'telstra.png');
     });
 
     //   test('getActiveDevicesForArfcnLTE', () {

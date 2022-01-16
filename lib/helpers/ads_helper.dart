@@ -9,7 +9,7 @@ class AdsHelper {
 
   AdsHelper._internal();
 
-  BannerAd _bannerAd;
+  BannerAd bannerAd;
   static String androidAdmobAppId = '';
   static String androidPortraitAdUnitId = '';
   static String androidLandscapeAdUnitId = '';
@@ -43,7 +43,7 @@ class AdsHelper {
     MobileAds.instance.updateRequestConfiguration(requestConfiguration);
 
     Future.delayed(Duration(seconds: 1), () {
-      _bannerAd ??= BannerAd(
+      bannerAd ??= BannerAd(
         adUnitId: adUnitId,
         size: bannerAdSize,
         //targetingInfo: AppConstants.isDebug ? targetingInfo : null,
@@ -53,12 +53,12 @@ class AdsHelper {
         listener: BannerAdListener(),
         request: AdRequest(),
       );
-      _bannerAd..load();
+      bannerAd..load();
     });
   }
 
   void hideBannerAd() async {
-    await _bannerAd?.dispose();
-    _bannerAd = null;
+    await bannerAd?.dispose();
+    bannerAd = null;
   }
 }

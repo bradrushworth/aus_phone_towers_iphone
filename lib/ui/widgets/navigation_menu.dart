@@ -133,17 +133,17 @@ class _NavigationMenuState extends State<NavigationMenu> {
                 setTelecomOption();
               },
             ),
-            LicenceesMenuItem(
-              valueName: Strings.dense_air,
-              telco: Telco.Dense_Air,
-              isValueVisible: NavigationMenu.isDenseAirVisible && false, // TODO
-              prefsKey: SharedPreferencesHelper.kisDenseAirVisible,
-              prefs: prefs,
-              onMenuItemChanged: ({bool itemChanged}) {
-                NavigationMenu.isDenseAirVisible = itemChanged;
-                setTelecomOption();
-              },
-            ),
+            // LicenceesMenuItem( // TODO
+            //   valueName: Strings.dense_air,
+            //   telco: Telco.Dense_Air,
+            //   isValueVisible: NavigationMenu.isDenseAirVisible,
+            //   prefsKey: SharedPreferencesHelper.kisDenseAirVisible,
+            //   prefs: prefs,
+            //   onMenuItemChanged: ({bool itemChanged}) {
+            //     NavigationMenu.isDenseAirVisible = itemChanged;
+            //     setTelecomOption();
+            //   },
+            // ),
             LicenceesMenuItem(
               valueName: Strings.nbn,
               telco: Telco.NBN,

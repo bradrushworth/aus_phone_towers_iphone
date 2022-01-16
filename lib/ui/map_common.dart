@@ -141,11 +141,12 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
                 child: Column(
                   children: <Widget>[
                     Container(
-                      height: 0,
-                      color: Colors.grey[300],
+                      height: AdsHelper().bannerAd == null ? 0 : 3,
+                      color: Colors.grey[500],
                     ),
                     Container(
-                      height: 50,
+                      height: AdsHelper().bannerAd == null ? 0 : 50,
+                      color: Colors.grey[300],
                     ),
                     OrientationBuilder(
                       builder: (context, orientation) {
@@ -173,7 +174,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
       }
     }
 
-    if (!kIsWeb) {
+    if (!kIsWeb) { // TODO
       if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
         //Show ads only if user has not subscribed to any of remove ads menu item
         AdSize bannerAdSize;
@@ -246,7 +247,7 @@ class MapBodyState extends AbstractMapBodyState {
       });
     });
 
-    if (!kIsWeb) AdsHelper().initialize();
+    if (!kIsWeb) AdsHelper().initialize(); // TODO
   }
 
   @override
@@ -262,6 +263,15 @@ class MapBodyState extends AbstractMapBodyState {
                 padding: EdgeInsets.only(bottom: 100, top: 100),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
+                buildingsEnabled: false,
+                compassEnabled: !kIsWeb,
+                myLocationButtonEnabled: true,
+                trafficEnabled: false,
+                rotateGesturesEnabled: true,
+                indoorViewEnabled: false,
+                mapToolbarEnabled: true,
+                zoomControlsEnabled: true,
+                zoomGesturesEnabled: true,
                 initialCameraPosition: CameraPosition(
                   target: kLagLongBathurst,
                   zoom: kDefaultZoom,
@@ -613,7 +623,7 @@ class MapBodyState extends AbstractMapBodyState {
 
   void onMapCreated(dynamic controllerParam) {
     setState(() {
-      mapController = controllerParam;
+      super.mapController = controllerParam;
     });
 
     askForLocationPermission();
@@ -683,10 +693,11 @@ class MapBodyState extends AbstractMapBodyState {
         // add to map overlay
         MapOverlay mapOverlay = MapOverlay(marker: marker);
 
-        // add mapoverlay to list
+        // add map overlay to list
         SiteHelper.globalListMapOverlay.add(mapOverlay);
 
         // move camera to location
+        logger.i('moveCamera: $lat, $long');
         mapController.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -700,7 +711,7 @@ class MapBodyState extends AbstractMapBodyState {
 
     downloadTowers(geoHash, true);
 
-    //Saving first camera position as last so that reload everything option menu works.
+    // Saving first camera position as last so that reload everything option menu works.
     lastCameraPosition = CameraPosition(
       target: LatLng(lat, long),
       zoom: kDefaultZoom,
@@ -785,7 +796,7 @@ class MapBodyState extends AbstractMapBodyState {
           // title: site.name,
           position: LatLng(site.latitude, site.longitude),
           icon:
-              BitmapDescriptor.fromBytes(await site.getIcon(kPlatformIconSize)),
+              BitmapDescriptor.fromBytes(await site.getIcon()),
           rotation: site.rotation,
           alpha: site.alpha,
           visible: site.shouldBeVisible(),
@@ -1026,7 +1037,7 @@ class MapBodyState extends AbstractMapBodyState {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset('assets/' + site.getIconName(), width: 25),
+                    Image.asset(site.getIconFullName(), width: 20),
                     SizedBox(height: 8.0),
                     ...prepareSiteTitleForInforWindow(
                         '${site.getNameFormatted()} ${site.state} ${site.postcode}'),

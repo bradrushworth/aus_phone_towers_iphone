@@ -77,12 +77,16 @@ class Site {
     return TelcoHelper.getAlpha(telco);
   }
 
+  String getIconFullName() {
+    return TelcoHelper.getIconFullName(telco);
+  }
+
   String getIconName() {
     return TelcoHelper.getIconName(telco);
   }
 
-  Future<Uint8List> getIcon(int width) {
-    return TelcoHelper.getIcon(telco, width);
+  Future<Uint8List> getIcon() {
+    return TelcoHelper.getIcon(telco);
   }
 
   List<DeviceDetails> getDeviceDetailsMobile() {

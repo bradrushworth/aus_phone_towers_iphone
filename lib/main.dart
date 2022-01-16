@@ -133,18 +133,18 @@ class AusPhoneTowers extends StatelessWidget {
           appBarTheme: AppBarTheme(
               iconTheme: new IconThemeData(color: Colors.grey, size: 32),
               elevation: 0.0,
-              color: Colors.white.withOpacity(0.7)),
+              color: Colors.white.withOpacity(0.85)),
           textTheme: TextTheme(
               bodyText1: TextStyle(
                   fontFamily: 'RobotoMono',
-                  color: Colors.grey[700],
+                  color: Colors.grey[800],
                   fontSize: 10),
-              button: TextStyle(color: Colors.grey[600])),
+              button: TextStyle(color: Colors.grey[700])),
           inputDecorationTheme: InputDecorationTheme(
             enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey[600])),
+                borderSide: BorderSide(color: Colors.grey[700])),
             focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey[600])),
+                borderSide: BorderSide(color: Colors.grey[700])),
           )),
       home: MapScreen(),
     );

@@ -57,6 +57,8 @@ abstract class AbstractMapBodyState extends State<MapBody> {
 
   void handleSearchQuery(String query) {
     // Centre the map on Australia
+    // TODO: Search feature breaks here
+    // TypeError: Cannot read properties of null (reading 'moveCamera')
     mapController.moveCamera(
       CameraUpdate.newLatLngBounds(
         LatLngBounds(
