@@ -16,8 +16,7 @@ The Android version can identify which towers your phone is using, however this 
 Some relevant links:
 
 * [This repository](https://github.com/bradrushworth/aus_phone_towers_iphone)
-*
-Its [Apple App Store listing](https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332)
+* [Apple App Store listing](https://apps.apple.com/au/app/aus-phone-towers-3g-4g-5g/id1488594332)
 * [Sister app written in native Java code](https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers&hl=en_AU&gl=US)
   This code is not yet open-sourced but will be soon.
 
