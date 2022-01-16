@@ -120,8 +120,8 @@ class NetworkTypeHelper {
     }
   }
 
-  bool isRsrp() {
-    return this == NetworkType.LTE || this == NetworkType.NR;
+  static bool isRsrp(NetworkType nt) {
+    return nt == NetworkType.LTE || nt == NetworkType.NR;
   }
 }
 

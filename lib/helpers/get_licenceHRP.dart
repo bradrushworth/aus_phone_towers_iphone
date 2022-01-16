@@ -91,9 +91,8 @@ class GetLicenceHRP {
       double power_dBm = double.tryParse(values.power.value) ?? 0;
 
       // Convert RSRP to RSSI to get more accurate results
-      if (device.getNetworkType() == NetworkType.LTE) {
-        power_dBm +=
-            TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+      if (NetworkTypeHelper.isRsrp(device.getNetworkType())) {
+        //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
       }
 
       // 1.25 is half of 2.5, which is the measurement resolution with ACMA
