@@ -82,7 +82,7 @@ class TelcoHelper {
 
   static String getIconFullName(Telco telco) {
     // Different paths is a weird incompatibility
-    return (kIsWeb ? 'icons_web' : 'assets/icons') + '/' + getIconName(telco);
+    return (kIsWeb ? 'assets/icons_web' : 'assets/icons') + '/' + getIconName(telco);
   }
 
   static Future<Uint8List> getIconByString(String name) {
