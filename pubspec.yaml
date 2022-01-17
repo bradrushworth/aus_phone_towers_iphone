@@ -111,5 +111,5 @@ flutter_icons:
   ios: true
   image_path: "assets/ItunesArtwork@2x.png"
   remove_alpha_ios: true
-  adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/ItunesArtwork@2x.png"
+  #adaptive_icon_background: "#ffffff"
+  #adaptive_icon_foreground: "assets/ItunesArtwork@2x.png"
