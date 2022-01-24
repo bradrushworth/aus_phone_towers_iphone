@@ -40,7 +40,6 @@ import 'package:phonetowers/ui/map_platform.dart'
     if (dart.library.js) 'package:phonetowers/ui/map_web.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
-import 'package:phonetowers/utils/app_colors.dart';
 import 'package:phonetowers/utils/geo_hash.dart';
 import 'package:phonetowers/utils/hex_color.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
@@ -84,8 +83,9 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   void afterFirstLayout(BuildContext context) async {
     //Show beta launch popup if not displayed.
     prefs = await SharedPreferences.getInstance();
-    if (!SharedPreferencesHelper.getBoolean(
-        SharedPreferencesHelper.betaLaunchPopup, prefs)) {
+    if (kIsWeb &&
+        !SharedPreferencesHelper.getBoolean(
+            SharedPreferencesHelper.betaLaunchPopup, prefs)) {
       _showAlertDialog();
     }
   }
@@ -795,8 +795,7 @@ class MapBodyState extends AbstractMapBodyState {
               "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}"),
           // title: site.name,
           position: LatLng(site.latitude, site.longitude),
-          icon:
-              BitmapDescriptor.fromBytes(await site.getIcon()),
+          icon: BitmapDescriptor.fromBytes(await site.getIcon()),
           rotation: site.rotation,
           alpha: site.alpha,
           visible: site.shouldBeVisible(),

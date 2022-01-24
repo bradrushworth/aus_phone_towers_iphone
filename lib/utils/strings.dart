@@ -97,8 +97,8 @@ class Strings {
   static String sourceCode = 'Source Code';
   static String closeApp = 'Close App';
 
-  static String betaLaunchPopupTitle = 'This is a preview release!';
+  static String betaLaunchPopupTitle = 'This is a preview!';
   static String betaLaunchPopupDesc =
-      'Aus Phone Towers on iPhone is still under development. Please send feedback to bitbot@bitbot.com.au. More features are coming!';
+      'AusPhoneTowers.com.au is still under development. Please send feedback to bitbot@bitbot.com.au. More features are coming!';
   static String betaLaunchPopupAction = 'No Problem';
 }
