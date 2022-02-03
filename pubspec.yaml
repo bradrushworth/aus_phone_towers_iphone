@@ -110,7 +110,7 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/ItunesArtwork@2x.png"
+  image_path: "assets/appicon.png"
   remove_alpha_ios: true
   #adaptive_icon_background: "#ffffff"
   #adaptive_icon_foreground: "assets/ItunesArtwork@2x.png"
