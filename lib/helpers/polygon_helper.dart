@@ -1,13 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
-import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/height_distance_pair.dart';
 import 'package:phonetowers/model/overlay.dart';
@@ -120,7 +120,7 @@ class PolygonHelper with ChangeNotifier {
           site.startedDownloadingElevations = true;
           String positionsString =
               GetElevation.getPositionsString(site.getLatLng());
-          String url =
+          String url = (kIsWeb ? 'https://api.bitbot.com.au/cors/' : '') +
               'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$terrainAwarenessKey';
           GetElevation(site: site, url: url).getElevationData();
         }
