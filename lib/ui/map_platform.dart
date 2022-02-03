@@ -19,7 +19,6 @@ import '../../utils/app_constants.dart';
 //if (dart.library.js) 'package:phonetowers/helpers/map_web.dart';
 
 abstract class AbstractMapBodyState extends State<MapBody> {
-  GoogleMapController mapController;
   CameraPosition lastCameraPosition;
   Logger logger;
   Api api;
@@ -55,7 +54,7 @@ abstract class AbstractMapBodyState extends State<MapBody> {
     downloadTowers(geoHash, true);
   }
 
-  void handleSearchQuery(String query) {
+  void handleSearchQuery(dynamic mapController, String query) {
     // Centre the map on Australia
     mapController.animateCamera(
       CameraUpdate.newLatLngBounds(

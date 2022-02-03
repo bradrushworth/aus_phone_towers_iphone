@@ -121,7 +121,7 @@ class PolygonHelper with ChangeNotifier {
           String positionsString =
               GetElevation.getPositionsString(site.getLatLng());
           String url =
-              'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=${PolygonHelper.terrainAwarenessKey}';
+              'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$terrainAwarenessKey';
           GetElevation(site: site, url: url).getElevationData();
         }
       } catch (e) {

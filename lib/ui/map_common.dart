@@ -9,9 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
-
-//import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
-// import 'package:google_maps/google_maps.dart'
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
@@ -214,6 +211,7 @@ class MapBody extends StatefulWidget {
 
 class MapBodyState extends AbstractMapBodyState {
   /// ******************** State variables ************************************
+  GoogleMapController mapController;
   Location _locationService = new Location();
   SharedPreferences prefs;
   final TextEditingController _searchTextFilter = new TextEditingController();
@@ -352,7 +350,7 @@ class MapBodyState extends AbstractMapBodyState {
                       textInputAction: TextInputAction.search,
                       onSubmitted: (query) {
                         logger.d('search query is $query');
-                        handleSearchQuery(query);
+                        handleSearchQuery(mapController, query);
                       },
                     ),
               actions: <Widget>[
@@ -623,7 +621,7 @@ class MapBodyState extends AbstractMapBodyState {
 
   void onMapCreated(dynamic controllerParam) {
     setState(() {
-      super.mapController = controllerParam;
+      mapController = controllerParam;
     });
 
     askForLocationPermission();
@@ -631,6 +629,7 @@ class MapBodyState extends AbstractMapBodyState {
 //      logger.d('after 2 second delay');
 //      askForLocationPermission();
 //    });
+
   }
 
   Future askForLocationPermission() async {

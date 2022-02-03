@@ -38,14 +38,14 @@ class Api {
     return ElevationResponse.fromJson(responseData);
   }
 
-  ///get Data
+  /// Get marker site data
   Future<Object> getMarkerData(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
       //print("marker data: ${response.data.toString()}");
       //final int statusCode = response.statusCode;
 //      logger.i(
-//          "raw site response ${jsonEncode(SiteReponse.fromJson(response.data))}");
+//          "raw marker response ${jsonEncode(SiteReponse.fromJson(response.data))}");
       //return SiteReponse.fromJson(response.data);
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
@@ -54,37 +54,37 @@ class Api {
       /// Response info, it may be `null` if the request can't reach to
       /// the http server, for example, occurring a dns error, network is not available.
       logger.e('''Error message is ${e.message}
-                  Error type is ${e.type}
-                  Error is ${e.error}
-                  For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+Error type is ${e.type}
+Error is ${e.error}
+For request ${e.requestOptions.path}
+Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
     }
   }
 
-  ///get Data
+  /// Get device data
   Future<Object> getDevicesData(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
-      //print("marker data: ${response.data.toString()}");
+      //print("device data: ${response.data.toString()}");
       final int statusCode = response.statusCode;
       //logger.i("raw device response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
       logger.e('''Error message is ${e.message}
-                  Error type is ${e.type}
-                  Error is ${e.error}
-                  For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+Error type is ${e.type}
+Error is ${e.error}
+For request ${e.requestOptions.path}
+Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
     }
   }
 
-  ///get Data
+  /// Get polygon data
   Future<Object> getLicenceHRPData(String path,
       {CancelToken cancelToken}) async {
     try {
       Response response =
           await dio.get(path, options: Options(), cancelToken: cancelToken);
-      //print("marker data: ${response.data.toString()}");
+      //print("licenceHRP data: ${response.data.toString()}");
       final int statusCode = response.statusCode;
       //logger.i("raw licenceHRP response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
@@ -95,54 +95,54 @@ class Api {
     }
   }
 
-  ///get Data
+  /// Get search data
   Future<Object> getSearchedData(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
-      //print("marker data: ${response.data.toString()}");
+      //print("search data: ${response.data.toString()}");
       final int statusCode = response.statusCode;
       //logger.i("raw search response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
       logger.e('''Error message is ${e.message}
-                  Error type is ${e.type}
-                  Error is ${e.error}
-                  For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+Error type is ${e.type}
+Error is ${e.error}
+For request ${e.requestOptions.path}
+Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
     }
   }
 
-  ///Get Antenna data
+  /// Get antenna data
   Future<Object> getAntennaDataApi(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
-      //print("marker data: ${response.data.toString()}");
+      //print("antenna data: ${response.data.toString()}");
       final int statusCode = response.statusCode;
       //logger.i("raw antenna response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
       logger.e('''Error message is ${e.message}
-                  Error type is ${e.type}
-                  Error is ${e.error}
-                  For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+Error type is ${e.type}
+Error is ${e.error}
+For request ${e.requestOptions.path}
+Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
     }
   }
 
-  ///Get Antenna data
+  /// Get elevation data
   Future<Object> getElevationDataApi(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
-      //print("marker data: ${response.data.toString()}");
+      logger.i("elevation data: ${response.data.toString()}");
       final int statusCode = response.statusCode;
-      //logger.i("raw antenna response ${response.data.toString()}");
+      logger.i("raw elevation response ${response.data.toString()}");
       return compute(parseElevationResponse, response.data);
     } on DioError catch (e) {
       logger.e('''Error message is ${e.message}
-                  Error type is ${e.type}
-                  Error is ${e.error}
-                  For request ${e.requestOptions.path}
-                  And Response ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'request is ${e.requestOptions.path}'}''');
+Error type is ${e.type}
+Error is ${e.error}
+For request ${e.requestOptions.path}
+Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
     }
   }
 }

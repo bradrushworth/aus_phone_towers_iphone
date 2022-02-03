@@ -25,7 +25,7 @@ class Secret {
       iOSAdmobAppId: jsonMap["iOSAdmobAppId"],
       iOSLandscapeAdUnitId: jsonMap["iOSLandscapeAdUnitId"],
       iOSPortraitAdUnitId: jsonMap["iOSPortraitAdUnitId"],
-      terrainAwarenessKey: jsonMap["terrain_awareness_key"],
+      terrainAwarenessKey: jsonMap["terrainAwarenessKey"],
     );
   }
 }

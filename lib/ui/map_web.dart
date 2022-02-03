@@ -19,7 +19,6 @@ import '../../utils/app_constants.dart';
 //if (dart.library.js) 'package:phonetowers/helpers/map_web.dart';
 
 abstract class AbstractMapBodyState extends State<MapBody> {
-  GoogleMapController mapController;
   CameraPosition lastCameraPosition;
   Logger logger;
   Api api;
@@ -55,10 +54,8 @@ abstract class AbstractMapBodyState extends State<MapBody> {
     downloadTowers(geoHash, true);
   }
 
-  void handleSearchQuery(String query) {
+  void handleSearchQuery(dynamic mapController, String query) {
     // Centre the map on Australia
-    // TODO: Search feature breaks here
-    // TypeError: Cannot read properties of null (reading 'moveCamera')
     mapController.moveCamera(
       CameraUpdate.newLatLngBounds(
         LatLngBounds(
