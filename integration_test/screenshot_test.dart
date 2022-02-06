@@ -18,5 +18,5 @@ Future<void> main() async {
     // Trigger a frame.
     await tester.pump(Duration(seconds: 3)); // Render another frame in 3s
     await binding.takeScreenshot('screenshot');
-  });
+  }, timeout: Timeout(Duration(minutes: 2)));
 }

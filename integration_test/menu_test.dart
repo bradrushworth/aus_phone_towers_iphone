@@ -42,5 +42,5 @@ Future<void> main() async {
     //   ),
     //   findsOneWidget,
     // );
-  });
+  }, timeout: Timeout(Duration(minutes: 2)));
 }
