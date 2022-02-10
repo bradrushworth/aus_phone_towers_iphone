@@ -3,6 +3,7 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:after_layout/after_layout.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -323,7 +324,7 @@ class MapBodyState extends AbstractMapBodyState {
                       })
                   : null,
               title: !SearchHelper.calculatingSearchResults
-                  ? Text(
+                  ? AutoSizeText(
                       Strings.app_title,
                       style: TextStyle(color: Colors.grey),
                     )
@@ -629,7 +630,6 @@ class MapBodyState extends AbstractMapBodyState {
 //      logger.d('after 2 second delay');
 //      askForLocationPermission();
 //    });
-
   }
 
   Future askForLocationPermission() async {
@@ -1007,6 +1007,7 @@ class MapBodyState extends AbstractMapBodyState {
   }
 
   void _settingModalBottomSheet(BuildContext context, Site site) {
+    AutoSizeGroup sizeGroup = AutoSizeGroup();
     showDialog(
       context: context,
       builder: (BuildContext bc) {
@@ -1037,7 +1038,7 @@ class MapBodyState extends AbstractMapBodyState {
                   children: <Widget>[
                     Image.asset(site.getIconFullName(), width: 20),
                     SizedBox(height: 8.0),
-                    ...prepareSiteTitleForInforWindow(
+                    ...prepareSiteTitleForInfoWindow(
                         '${site.getNameFormatted()} ${site.state} ${site.postcode}'),
                     SizedBox(height: 8.0),
                     SitePropertiesTableWidget(
@@ -1082,46 +1083,69 @@ class MapBodyState extends AbstractMapBodyState {
                       height: 8.0,
                     ),
                     if (site.getDeviceDetailsMobile().length == 0) ...[
-                      Text(
+                      AutoSizeText(
                         ' Device data still downloading...',
+                        group: sizeGroup,
+                        minFontSize: 8,
+                        maxFontSize: 16,
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
                     ] else if (!TelcoHelper.isTelecommunications(
                         site.getTelco())) ...[
-                      Text(
+                      AutoSizeText(
                         '${TelcoHelper.getName(site.getTelco())} Services',
+                        group: sizeGroup,
+                        minFontSize: 8,
+                        maxFontSize: 16,
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
                       Table(
-                        border: TableBorder(),
+                        columnWidths: {
+                          0: const FixedColumnWidth(60),
+                          1: const FixedColumnWidth(60),
+                          2: const FixedColumnWidth(60),
+                          3: const FixedColumnWidth(60),
+                        },
                         children: [
                           TableRow(
                             children: [
                               Align(
-                                alignment: AlignmentDirectional.topCenter,
-                                child: Text(
+                                alignment: AlignmentDirectional.topStart,
+                                child: AutoSizeText(
                                   'Frequency',
+                                  group: sizeGroup,
+                                  minFontSize: 8,
+                                  maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.topCenter,
-                                child: Text(
+                                alignment: AlignmentDirectional.topEnd,
+                                child: AutoSizeText(
                                   'Emission',
+                                  group: sizeGroup,
+                                  minFontSize: 8,
+                                  maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.topCenter,
-                                child: Text(
+                                alignment: AlignmentDirectional.topEnd,
+                                child: AutoSizeText(
                                   'CallSign',
+                                  group: sizeGroup,
+                                  minFontSize: 8,
+                                  maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.topCenter,
-                                child: Text(
+                                alignment: AlignmentDirectional.topEnd,
+                                child: AutoSizeText(
                                   'Capacity',
+                                  group: sizeGroup,
+                                  minFontSize: 8,
+                                  maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               ),
@@ -1131,19 +1155,22 @@ class MapBodyState extends AbstractMapBodyState {
                         ],
                       ),
                     ] else ...[
-                      Text(
+                      AutoSizeText(
                         '${TelcoHelper.getName(site.getTelco())} Services',
+                        group: sizeGroup,
+                        minFontSize: 8,
+                        maxFontSize: 16,
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
                       SizedBox(height: 8),
                       Table(
                         columnWidths: {
-                          0: IntrinsicColumnWidth(),
-                          1: IntrinsicColumnWidth(),
-                          2: IntrinsicColumnWidth(),
-                          3: IntrinsicColumnWidth(),
-                          4: IntrinsicColumnWidth(),
-                          5: IntrinsicColumnWidth(),
+                          0: const FixedColumnWidth(30),
+                          1: const FixedColumnWidth(60),
+                          2: const FixedColumnWidth(60),
+                          3: const FixedColumnWidth(40),
+                          4: const FixedColumnWidth(30),
+                          5: const FixedColumnWidth(60),
                         },
                         children: [
                           TableRow(
@@ -1151,9 +1178,12 @@ class MapBodyState extends AbstractMapBodyState {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.topCenter,
-                                  child: Text(
+                                  alignment: AlignmentDirectional.topStart,
+                                  child: AutoSizeText(
                                     'Gen',
+                                    group: sizeGroup,
+                                    minFontSize: 8,
+                                    maxFontSize: 16,
                                     style:
                                         Theme.of(context).textTheme.bodyText1,
                                   ),
@@ -1162,9 +1192,12 @@ class MapBodyState extends AbstractMapBodyState {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.topCenter,
-                                  child: Text(
+                                  alignment: AlignmentDirectional.topEnd,
+                                  child: AutoSizeText(
                                     'Freqncy',
+                                    group: sizeGroup,
+                                    minFontSize: 8,
+                                    maxFontSize: 16,
                                     style:
                                         Theme.of(context).textTheme.bodyText1,
                                   ),
@@ -1173,9 +1206,12 @@ class MapBodyState extends AbstractMapBodyState {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.topCenter,
-                                  child: Text(
+                                  alignment: AlignmentDirectional.topEnd,
+                                  child: AutoSizeText(
                                     'Bandwth',
+                                    group: sizeGroup,
+                                    minFontSize: 8,
+                                    maxFontSize: 16,
                                     style:
                                         Theme.of(context).textTheme.bodyText1,
                                   ),
@@ -1184,9 +1220,12 @@ class MapBodyState extends AbstractMapBodyState {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.topCenter,
-                                  child: Text(
+                                  alignment: AlignmentDirectional.topEnd,
+                                  child: AutoSizeText(
                                     'MIMO',
+                                    group: sizeGroup,
+                                    minFontSize: 8,
+                                    maxFontSize: 16,
                                     style:
                                         Theme.of(context).textTheme.bodyText1,
                                   ),
@@ -1195,18 +1234,24 @@ class MapBodyState extends AbstractMapBodyState {
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: Align(
-                                  alignment: AlignmentDirectional.topCenter,
-                                  child: Text(
+                                  alignment: AlignmentDirectional.topEnd,
+                                  child: AutoSizeText(
                                     'LTE',
+                                    group: sizeGroup,
+                                    minFontSize: 8,
+                                    maxFontSize: 16,
                                     style:
                                         Theme.of(context).textTheme.bodyText1,
                                   ),
                                 ),
                               ),
                               Align(
-                                alignment: AlignmentDirectional.topCenter,
-                                child: Text(
+                                alignment: AlignmentDirectional.topEnd,
+                                child: AutoSizeText(
                                   'Capacity',
+                                  group: sizeGroup,
+                                  minFontSize: 8,
+                                  maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodyText1,
                                 ),
                               )
@@ -1225,7 +1270,7 @@ class MapBodyState extends AbstractMapBodyState {
                 onPressed: () {
                   launchURL(site.siteId);
                 },
-                child: Text('ACMA Website'),
+                child: AutoSizeText('ACMA Website'),
               ),
               SizedBox(height: 16),
             ],
@@ -1248,7 +1293,8 @@ class MapBodyState extends AbstractMapBodyState {
     Map<String, MapEntry<DeviceDetails, bool>> freqToDeviceMapping =
         site.getDeviceDetailsMobileBands();
 
-    List<TableRow> listOfTableRows = List<TableRow>();
+    AutoSizeGroup sizeGroup = AutoSizeGroup();
+    List<TableRow> listOfTableRows = <TableRow>[];
 
     for (String bandEmission in freqToDeviceMapping.keys) {
       DeviceDetails d = freqToDeviceMapping[bandEmission].key;
@@ -1262,8 +1308,11 @@ class MapBodyState extends AbstractMapBodyState {
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Text(
+              child: AutoSizeText(
                 '${NetworkTypeHelper.resolveNetworkToName(networkType)}',
+                group: sizeGroup,
+                minFontSize: 8,
+                maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodyText1,
               ),
             ),
@@ -1272,8 +1321,11 @@ class MapBodyState extends AbstractMapBodyState {
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: Text(
+              child: AutoSizeText(
                 '${TranslateFrequencies.formatFrequency(d.frequency, false)}',
+                group: sizeGroup,
+                minFontSize: 8,
+                maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodyText1,
               ),
             ),
@@ -1282,8 +1334,11 @@ class MapBodyState extends AbstractMapBodyState {
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: Text(
+              child: AutoSizeText(
                 '${TranslateFrequencies.formatBandwidth(d.bandwidth, false)}',
+                group: sizeGroup,
+                minFontSize: 8,
+                maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodyText1,
               ),
             ),
@@ -1292,8 +1347,11 @@ class MapBodyState extends AbstractMapBodyState {
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: Text(
+              child: AutoSizeText(
                 '${mimoCount}x',
+                group: sizeGroup,
+                minFontSize: 8,
+                maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodyText1,
               ),
             ),
@@ -1302,16 +1360,22 @@ class MapBodyState extends AbstractMapBodyState {
             padding: const EdgeInsets.only(right: 8.0),
             child: Align(
               alignment: AlignmentDirectional.centerEnd,
-              child: Text(
+              child: AutoSizeText(
                 '${LteTypeHelper.getFirstTwoChars(d.getLteType())}',
+                group: sizeGroup,
+                minFontSize: 8,
+                maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodyText1,
               ),
             ),
           ),
           Align(
             alignment: AlignmentDirectional.centerEnd,
-            child: Text(
+            child: AutoSizeText(
               '${DeviceDetails.formatNetworkSpeed(site.getNetworkCapacity(d))}',
+              group: sizeGroup,
+              minFontSize: 8,
+              maxFontSize: 16,
               style: Theme.of(context).textTheme.bodyText1,
             ),
           ),
@@ -1327,7 +1391,8 @@ class MapBodyState extends AbstractMapBodyState {
     Map<String, MapEntry<DeviceDetails, bool>> freqToDeviceMapping =
         site.getDeviceDetailsMobileBands();
 
-    List<TableRow> listOfTableRows = List<TableRow>();
+    AutoSizeGroup sizeGroup = AutoSizeGroup();
+    List<TableRow> listOfTableRows = <TableRow>[];
 
     for (String bandEmission in freqToDeviceMapping.keys) {
       DeviceDetails d = freqToDeviceMapping[bandEmission].key;
@@ -1335,29 +1400,41 @@ class MapBodyState extends AbstractMapBodyState {
       TableRow singleTableRow = TableRow(children: [
         Align(
           alignment: AlignmentDirectional.centerEnd,
-          child: Text(
+          child: AutoSizeText(
             '${TranslateFrequencies.formatFrequency(d.frequency, true)}',
+            group: sizeGroup,
+            minFontSize: 8,
+            maxFontSize: 16,
             style: Theme.of(context).textTheme.bodyText1,
           ),
         ),
         Align(
           alignment: AlignmentDirectional.centerEnd,
-          child: Text(
+          child: AutoSizeText(
             '${d.emission}',
+            group: sizeGroup,
+            minFontSize: 8,
+            maxFontSize: 16,
             style: Theme.of(context).textTheme.bodyText1,
           ),
         ),
         Align(
           alignment: AlignmentDirectional.centerEnd,
-          child: Text(
+          child: AutoSizeText(
             '${d.callSign}',
+            group: sizeGroup,
+            minFontSize: 8,
+            maxFontSize: 16,
             style: Theme.of(context).textTheme.bodyText1,
           ),
         ),
         Align(
           alignment: AlignmentDirectional.centerEnd,
-          child: Text(
+          child: AutoSizeText(
             '${DeviceDetails.formatNetworkSpeed(site.getNetworkCapacity(d))}',
+            group: sizeGroup,
+            minFontSize: 8,
+            maxFontSize: 16,
             style: Theme.of(context).textTheme.bodyText1,
           ),
         ),
@@ -1379,11 +1456,15 @@ class MapBodyState extends AbstractMapBodyState {
     }
   }
 
-  List<Text> prepareSiteTitleForInforWindow(String text) {
-    List<Text> siteTitleDetails = List<Text>();
+  List<Widget> prepareSiteTitleForInfoWindow(String text) {
+    AutoSizeGroup sizeGroup = AutoSizeGroup();
+    List<Widget> siteTitleDetails = <Widget>[];
     for (String line in text.split(RegExp("\n"))) {
-      siteTitleDetails.add(Text(
+      siteTitleDetails.add(AutoSizeText(
         '$line',
+        group: sizeGroup,
+        minFontSize: 8,
+        maxFontSize: 16,
         style: Theme.of(context).textTheme.bodyText1,
       ));
     }
@@ -1411,8 +1492,9 @@ class SitePropertiesTableWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    AutoSizeGroup sizeGroup = AutoSizeGroup();
     return Table(
-      defaultColumnWidth: FixedColumnWidth(150.0),
+      defaultColumnWidth: FixedColumnWidth(90.0),
       children: data.entries.map(
         (item) {
           return TableRow(
@@ -1421,8 +1503,11 @@ class SitePropertiesTableWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 8.0),
                 child: Align(
                   alignment: AlignmentDirectional.centerEnd,
-                  child: Text(
+                  child: AutoSizeText(
                     '${item.key}',
+                    group: sizeGroup,
+                    minFontSize: 8,
+                    maxFontSize: 16,
                     style: Theme.of(context).textTheme.bodyText1,
                   ),
                 ),
@@ -1431,8 +1516,11 @@ class SitePropertiesTableWidget extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 0),
                 child: Align(
                   alignment: AlignmentDirectional.centerStart,
-                  child: Text(
+                  child: AutoSizeText(
                     '${item.value}',
+                    group: sizeGroup,
+                    minFontSize: 8,
+                    maxFontSize: 16,
                     style: Theme.of(context).textTheme.bodyText1,
                   ),
                 ),
