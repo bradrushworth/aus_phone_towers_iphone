@@ -172,7 +172,8 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
       }
     }
 
-    if (!kIsWeb) { // TODO
+    if (!kIsWeb) {
+      // TODO
       if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
         //Show ads only if user has not subscribed to any of remove ads menu item
         AdSize bannerAdSize;
@@ -1101,10 +1102,10 @@ class MapBodyState extends AbstractMapBodyState {
                       ),
                       Table(
                         columnWidths: {
-                          0: const FixedColumnWidth(60),
-                          1: const FixedColumnWidth(60),
-                          2: const FixedColumnWidth(60),
-                          3: const FixedColumnWidth(60),
+                          0: const FixedColumnWidth(70),
+                          1: const FixedColumnWidth(70),
+                          2: const FixedColumnWidth(70),
+                          3: const FixedColumnWidth(70),
                         },
                         children: [
                           TableRow(
@@ -1165,12 +1166,12 @@ class MapBodyState extends AbstractMapBodyState {
                       SizedBox(height: 8),
                       Table(
                         columnWidths: {
-                          0: const FixedColumnWidth(30),
-                          1: const FixedColumnWidth(60),
-                          2: const FixedColumnWidth(60),
-                          3: const FixedColumnWidth(40),
-                          4: const FixedColumnWidth(30),
-                          5: const FixedColumnWidth(60),
+                          0: const FixedColumnWidth(40),
+                          1: const FixedColumnWidth(70),
+                          2: const FixedColumnWidth(70),
+                          3: const FixedColumnWidth(50),
+                          4: const FixedColumnWidth(40),
+                          5: const FixedColumnWidth(70),
                         },
                         children: [
                           TableRow(
