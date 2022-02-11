@@ -1103,7 +1103,7 @@ class MapBodyState extends AbstractMapBodyState {
                       Table(
                         columnWidths: {
                           0: const FixedColumnWidth(80),
-                          1: const FixedColumnWidth(70),
+                          1: const FixedColumnWidth(80),
                           2: const FixedColumnWidth(70),
                           3: const FixedColumnWidth(70),
                         },
@@ -1167,7 +1167,7 @@ class MapBodyState extends AbstractMapBodyState {
                       Table(
                         columnWidths: {
                           0: const FixedColumnWidth(37),
-                          1: const FixedColumnWidth(64),
+                          1: const FixedColumnWidth(67),
                           2: const FixedColumnWidth(64),
                           3: const FixedColumnWidth(42),
                           4: const FixedColumnWidth(37),
