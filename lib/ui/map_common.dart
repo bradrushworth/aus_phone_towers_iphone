@@ -1023,7 +1023,7 @@ class MapBodyState extends AbstractMapBodyState {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.only(
@@ -1102,7 +1102,7 @@ class MapBodyState extends AbstractMapBodyState {
                       ),
                       Table(
                         columnWidths: {
-                          0: const FixedColumnWidth(70),
+                          0: const FixedColumnWidth(80),
                           1: const FixedColumnWidth(70),
                           2: const FixedColumnWidth(70),
                           3: const FixedColumnWidth(70),
@@ -1111,7 +1111,7 @@ class MapBodyState extends AbstractMapBodyState {
                           TableRow(
                             children: [
                               Align(
-                                alignment: AlignmentDirectional.topStart,
+                                alignment: AlignmentDirectional.topEnd,
                                 child: AutoSizeText(
                                   'Frequency',
                                   group: sizeGroup,
@@ -1166,12 +1166,12 @@ class MapBodyState extends AbstractMapBodyState {
                       SizedBox(height: 8),
                       Table(
                         columnWidths: {
-                          0: const FixedColumnWidth(40),
-                          1: const FixedColumnWidth(70),
-                          2: const FixedColumnWidth(70),
-                          3: const FixedColumnWidth(50),
-                          4: const FixedColumnWidth(40),
-                          5: const FixedColumnWidth(70),
+                          0: const FixedColumnWidth(37),
+                          1: const FixedColumnWidth(64),
+                          2: const FixedColumnWidth(64),
+                          3: const FixedColumnWidth(42),
+                          4: const FixedColumnWidth(37),
+                          5: const FixedColumnWidth(67),
                         },
                         children: [
                           TableRow(

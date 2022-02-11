@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -214,9 +215,10 @@ class Site {
     return LatLng(latitude, longitude);
   }
 
-  Map<String, MapEntry<DeviceDetails, bool>> getDeviceDetailsMobileBands() {
-    Map<String, MapEntry<DeviceDetails, bool>> bands =
-        Map<String, MapEntry<DeviceDetails, bool>>();
+  SplayTreeMap<String, MapEntry<DeviceDetails, bool>>
+      getDeviceDetailsMobileBands() {
+    SplayTreeMap<String, MapEntry<DeviceDetails, bool>> bands =
+        SplayTreeMap<String, MapEntry<DeviceDetails, bool>>();
     for (DeviceDetails d in deviceDetailsMobile) {
       int frequency = d.frequency;
       //if (rounded) frequency = TranslateFrequencies.roundMobileFrequency(frequency);
