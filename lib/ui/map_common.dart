@@ -192,9 +192,8 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
               : AdsHelper.iOSLandscapeAdUnitId;
         }
 
-        AdsHelper()
-          ..hideBannerAd()
-          ..showBannerAd(bannerAdSize, adUnitId);
+        AdsHelper().hideBannerAd();
+        AdsHelper().showBannerAd(bannerAdSize, adUnitId);
       } else {
         AdsHelper().hideBannerAd();
       }
