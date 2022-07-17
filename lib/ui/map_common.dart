@@ -165,8 +165,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
 
   //Ad Integration in the widget
   void configureAds() {
-    if (!kIsWeb && Platform.isAndroid) {
-      //TODO remove this condition when IAP is implemented for iOS
+    if (!kIsWeb) {
       if (!PurchaseHelper().isHasPurchasedProcessed) {
         return;
       }
