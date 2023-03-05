@@ -97,7 +97,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
           title: Text(Strings.betaLaunchPopupTitle),
           content: Text(Strings.betaLaunchPopupDesc),
           actions: <Widget>[
-            FlatButton(
+            TextButton(
               child: Text(Strings.betaLaunchPopupAction),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -960,13 +960,13 @@ class MapBodyState extends AbstractMapBodyState {
               label: Strings.dismiss,
               textColor: Colors.white,
               onPressed: () {
-                Scaffold.of(context)
+                ScaffoldMessenger.of(context)
                     .hideCurrentSnackBar(reason: SnackBarClosedReason.hide);
               })
           : null,
     );
-    Scaffold.of(context).removeCurrentSnackBar();
-    Scaffold.of(context).showSnackBar(snackBar);
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   void showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {

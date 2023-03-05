@@ -43,7 +43,7 @@ class _DialogDemoState extends State<DialogDemo>
             ),
           ),
           actions: <Widget>[
-            FlatButton(
+            TextButton(
               child: Text('Regret'),
               onPressed: () {
                 Navigator.of(context).pop();

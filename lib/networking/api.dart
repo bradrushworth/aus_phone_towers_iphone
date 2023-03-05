@@ -17,8 +17,8 @@ class Api {
     dio = Dio()
       ..options.baseUrl =
           AppConstants.isDebug ? STAGING_BASE_URL : PRODUCTION_BASE_URL
-      ..options.connectTimeout = 60000
-      ..options.receiveTimeout = 60000;
+      ..options.connectTimeout = Duration(milliseconds: 60000)
+      ..options.receiveTimeout = Duration(milliseconds: 60000);
 
     if (AppConstants.isDebug) {
       dio.interceptors

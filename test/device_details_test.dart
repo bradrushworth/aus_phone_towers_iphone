@@ -70,7 +70,7 @@ void main() {
       expect(deviceDetails.isMIMO(), false);
     });
 
-    test('getAntennaCapacityGSM', () {
+    test('getAntennaCapacityGSM', () { // Still at Christmas Island
       deviceDetails.bandwidth = 10000000;
       deviceDetails.emission = "8M40G7E";
       deviceDetails.frequency = 1840000000;
@@ -248,7 +248,7 @@ void main() {
 
     test('getLteType_Vodafone_5G_795', () {
       deviceDetails.emission = "15M0W7D";
-      deviceDetails.frequency = 795500000;
+      deviceDetails.frequency = 795650000;
       deviceDetails.bandwidth = 15000000;
       deviceDetails.setSite(
           new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
@@ -295,9 +295,27 @@ void main() {
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
 
-    test('getLteType_Vodafone_4G', () {
+    test('getLteType_Telstra_4G_2100', () {
       deviceDetails.emission = "5M00W7D";
-      deviceDetails.frequency = 2167500000;
+      deviceDetails.frequency = 2162400000;
+      deviceDetails.setSite(
+          new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      expect(deviceDetails.getNetworkType(), NetworkType.LTE);
+    });
+
+    test('getLteType_Optus_4G_2100', () {
+      deviceDetails.emission = "5M00W7D";
+      deviceDetails.frequency = 2162400000;
+      deviceDetails.setSite(
+          new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      expect(deviceDetails.getNetworkType(), NetworkType.LTE);
+    });
+
+    test('getLteType_Vodafone_4G_2100', () {
+      deviceDetails.emission = "5M00W7D";
+      deviceDetails.frequency = 2162400000;
       deviceDetails.setSite(
           new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
@@ -336,7 +354,7 @@ void main() {
 
     test('getLteType_Optus_5G_2351', () {
       deviceDetails.emission = "98M0W7D";
-      deviceDetails.frequency = 2351000000;
+      deviceDetails.frequency = 2349750000;
       deviceDetails.bandwidth = 98000000;
       deviceDetails
           .setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
@@ -362,6 +380,36 @@ void main() {
           .setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.TD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
+    });
+
+    test('getLteType_Telstra_5G_877', () {
+      deviceDetails.emission = "10M0W7D";
+      deviceDetails.frequency = 877250000;
+      deviceDetails.bandwidth = 10000000;
+      deviceDetails
+          .setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      expect(deviceDetails.getNetworkType(), NetworkType.NR);
+    });
+
+    test('getLteType_Telstra_5G_2662', () {
+      deviceDetails.emission = "10M0W7D";
+      deviceDetails.frequency = 2662950000;
+      deviceDetails.bandwidth = 10000000;
+      deviceDetails
+          .setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      expect(deviceDetails.getNetworkType(), NetworkType.NR);
+    });
+
+    test('getLteType_Telstra_4G_Christmas_Island', () {
+      deviceDetails.emission = "20M0W7D";
+      deviceDetails.frequency = 778000000;
+      deviceDetails.bandwidth = 20000000;
+      deviceDetails
+          .setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
 
     test('getHeight0', () {

@@ -155,12 +155,11 @@ class DeviceDetails {
     return getNetworkTypeStatic(
         emission: emission,
         frequency: frequency,
-        bandwidth: bandwidth,
         telco: site.telco);
   }
 
   static NetworkType getNetworkTypeStatic(
-      {String emission, int frequency, int bandwidth, Telco telco}) {
+      {String emission, int frequency, Telco telco}) {
     if (emission == null || emission.length <= 6) return NetworkType.UNKNOWN;
     String type = emission[6];
     switch (type) {
@@ -178,11 +177,21 @@ class DeviceDetails {
               return NetworkType.NR;
             } else if (frequency >= 24250000000 && frequency < 29500000000) { // n257, n258 (covering 24.25 to 29.5 GHz), <=1000 MHz BW, TDD, LMDS
               return NetworkType.NR;
-            } else if (telco == Telco.Vodafone && frequency >= 758000000 && frequency < 803000000 && bandwidth == 15000000) { // Vodafone (but not TPG) n28 (700MHz), 15 MHz BW, FDD
+            } else if ((telco == Telco.Optus || telco == Telco.Vodafone) && frequency == 795650000) { // Vodafone (but not TPG) n28 (700MHz), 15 MHz BW, FDD
               return NetworkType.NR;
-            } else if (telco == Telco.Optus && frequency >= 2300000000 && frequency < 2400000000 && bandwidth == 98000000) { // Optus n40, 98 MHz BW, TDD
+            } else if (telco == Telco.Optus && (frequency == 942250000)) { // Optus
               return NetworkType.NR;
-            } else if (telco == Telco.Telstra && frequency >= 869000000 && frequency < 894000000 && bandwidth == 10000000) { // Telstra n5 (850MHz), 10 MHz BW, FDD
+            } else if (telco == Telco.Optus && (frequency == 2366450000 || frequency == 2376500000)) { // Optus n40, 98 MHz BW, TDD
+              return NetworkType.NR;
+            } else if (telco == Telco.Optus && (frequency == 2137350000 || frequency == 2139750000 || frequency == 2148250000 || frequency == 2349750000 || frequency == 2349900000 || frequency == 2370000000)) { // Optus n1 2147500000
+              return NetworkType.NR;
+            } else if (telco == Telco.Vodafone && (frequency == 2158950000 || frequency == 2164850000)) { // Vodafone n1
+              return NetworkType.NR;
+            } else if (telco == Telco.Telstra && (frequency == 877250000 || frequency == 877700000 || frequency == 877500000 || frequency == 882050000 || frequency == 882500000)) { // Telstra n5 (850MHz), 10 MHz BW, FDD
+              return NetworkType.NR;
+            } else if (telco == Telco.Telstra && (frequency == 774250000)) {
+              return NetworkType.NR;
+            } else if (telco == Telco.Telstra && (frequency == 2662950000 || frequency == 2635350000)) { // Telstra not published
               return NetworkType.NR;
             }
           }
