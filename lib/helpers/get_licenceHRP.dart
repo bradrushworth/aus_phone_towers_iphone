@@ -20,24 +20,24 @@ typedef void ShowSnackBar({String message});
 class GetLicenceHRP {
   static final double EARTH_MEAN_RADIUS_KILOMETERS = 6371.009;
   static final double HEIGHT_RECEIVER_FROM_GROUND = 1;
-  final ShowSnackBar showSnackBar;
+  final ShowSnackBar? showSnackBar;
   static CityDensity radiationModel = CityDensity.SUBURBAN;
   Logger logger = new Logger();
   Api api = Api.initialize();
 
   Site site;
   DeviceDetails device;
-  List<List<LatLng>> list;
-  bool dataFound = false;
+  List<List<LatLng>>? list;
+  bool dataFound;
   String url;
-  CancelToken cancelToken;
+  CancelToken? cancelToken;
 
   GetLicenceHRP(
-      {@required this.url,
-      @required this.site,
-      @required this.device,
+      {required this.url,
+      required this.site,
+      required this.device,
       this.list,
-      this.dataFound,
+      this.dataFound = false,
       this.showSnackBar,
       this.cancelToken})
       : assert(url != null, "Url should not be empty"),
@@ -53,10 +53,10 @@ class GetLicenceHRP {
       //showSnackBar(message: "Downloading tower radiation patterns...");
     }
 
-    SiteReponse rawReponse =
+    SiteResponse? rawResponse =
         await api.getLicenceHRPData(url, cancelToken: cancelToken);
 
-    int totalRows = rawReponse?.restify?.rows?.length ?? 0;
+    int totalRows = rawResponse?.restify?.rows?.length ?? 0;
 
     //If no data found for this telco then don't do anything
     if (totalRows == 0) {
@@ -65,7 +65,7 @@ class GetLicenceHRP {
 
     dataFound = true;
 
-    double freqInMHz = 1.0 * device.frequency / 1000 / 1000;
+    double freqInMHz = 1.0 * device.frequency! / 1000 / 1000;
 
     int towerHeight = device.getTowerHeight();
 
@@ -85,10 +85,10 @@ class GetLicenceHRP {
 
     for (int i = 0; i < totalRows; i += 2) {
       //Get the row
-      Values values = rawReponse.restify.rows[i].values;
-      double start_angle = double.tryParse(values.startAngle.value) ?? 0;
+      Values? values = rawResponse!.restify!.rows![i].values;
+      double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
       //double stop_angle = row.getJSONObject("stop_angle").getDouble("value");
-      double power_dBm = double.tryParse(values.power.value) ?? 0;
+      double power_dBm = double.tryParse(values.power!.value) ?? 0;
 
       // Convert RSRP to RSSI to get more accurate results
       if (NetworkTypeHelper.isRsrp(device.getNetworkType())) {
@@ -132,7 +132,7 @@ class GetLicenceHRP {
         LatLng latlng = travel(site.getLatLng(), bearing, distanceKm);
         //Log.i("GetLicenceHRP", "2: algorithm=" + radiationModel + " power_dBm="+ power_dBm + " freeSpaceLoss_dBi+dBReduction=" + (freeSpaceLoss_dBi + dBReduction) + " distanceKm=" + distanceKm);
 
-        list[pos].add(latlng);
+        list![pos].add(latlng);
         pos++;
       }
     }
@@ -140,7 +140,7 @@ class GetLicenceHRP {
     device.setBearingToPowerMap(bearingToPower);
 
     //onPostexecute
-    NextPage nextPage = rawReponse.restify.nextPage;
+    NextPage? nextPage = rawResponse!.restify!.nextPage;
     if (nextPage != null) {
       // Calling new async task to get json for next page
       GetLicenceHRP(
@@ -154,10 +154,10 @@ class GetLicenceHRP {
     } else {
       if (dataFound) {
         // Draw the polygon once the whole shape is downloaded
-        PolygonHelper().createPolygon(list, site, device);
+        PolygonHelper().createPolygon(list!, site, device);
       } else {
         // If we can't do any better, lets create a simple circular polygon
-        PolygonHelper().createBasicPolygon(device, site, list);
+        PolygonHelper().createBasicPolygon(device, site, list!);
       }
     }
   }
@@ -184,28 +184,28 @@ class GetLicenceHRP {
       // 3 dB metropolitan areas
       double G = 3;
       // LdB = F + B * log10(R) – E + G
-      double R = math.pow(10, (levelInDb + E - F - G) / B);
+      double R = math.pow(10, (levelInDb + E - F - G) / B) as double;
       return R;
     } else if (density == CityDensity.URBAN && freqInMHz >= 300) {
       // Okumura-Hata model
       // For large cities, fc >= 300MHz
       double E = 3.2 * math.pow(log10(11.7554 * hm), 2) - 4.97;
       // LdB = F + B * log10(R) – E + G
-      double R = math.pow(10, (levelInDb + E - A) / B);
+      double R = math.pow(10, (levelInDb + E - A) / B) as double;
       return R;
     } else if (density == CityDensity.URBAN) {
       // Okumura-Hata model
       // For large cities, fc < 300MHz
       double E = 8.29 * math.pow(log10(1.54 * hm), 2) - 1.1;
       // LdB = F + B * log10(R) – E + G
-      double R = math.pow(10, (levelInDb + E - A) / B);
+      double R = math.pow(10, (levelInDb + E - A) / B) as double;
       return R;
     } else if (density == CityDensity.MEDIUM) {
       // Okumura-Hata model
       // For medium to small cities
       double E = (1.1 * log10(fc) - 0.7) * hm - (1.56 * log10(fc) - 0.8);
       // LdB = A + B * log10(R) - E;
-      double R = math.pow(10, (levelInDb + E - A) / B);
+      double R = math.pow(10, (levelInDb + E - A) / B) as double;
       return R;
     } else if (density == CityDensity.SUBURBAN) {
       // Okumura-Hata model
@@ -215,7 +215,7 @@ class GetLicenceHRP {
       // mean absolute error = 4.42 dB in urban environment
       C -= 4.42;
       // LdB = A + B * log10(R) - C;
-      double R = math.pow(10, (levelInDb + C - A) / B);
+      double R = math.pow(10, (levelInDb + C - A) / B) as double;
       return R;
     } else if (density == CityDensity.OPEN) {
       // Okumura-Hata model
@@ -225,7 +225,7 @@ class GetLicenceHRP {
       // mean absolute error = 4.42 dB in urban environment
       D -= 4.42 * 2;
       // LdB = A + B * log10(R) - D;
-      double R = math.pow(10, (levelInDb + D - A) / B);
+      double R = math.pow(10, (levelInDb + D - A) / B) as double;
       return R;
     } else {
       return 0;

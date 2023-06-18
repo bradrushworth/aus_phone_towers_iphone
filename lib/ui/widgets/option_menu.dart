@@ -20,21 +20,21 @@ typedef void ShowSnackBar({String message});
 
 class OptionsMenu extends StatefulWidget {
   final ShowSnackBar showSnackBar;
-  final Function onCameraMoveFromLastLocation;
-  final Function takeScreenshot;
+  final void Function() onCameraMoveFromLastLocation;
+  final void Function() takeScreenshot;
 
   OptionsMenu(
-      {this.showSnackBar,
-      this.onCameraMoveFromLastLocation,
-      this.takeScreenshot});
+      {required this.showSnackBar,
+      required this.onCameraMoveFromLastLocation,
+      required this.takeScreenshot});
 
   @override
   _OptionsMenuState createState() => _OptionsMenuState();
 }
 
 class _OptionsMenuState extends State<OptionsMenu> {
-  Logger logger;
-  SharedPreferences prefs;
+  late Logger logger;
+  late SharedPreferences prefs;
 
   @override
   void initState() {
@@ -72,7 +72,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
               ),
             );
           }).where((optionItem) {
-            int optionItemPosition = listOptionItem.indexOf(optionItem.value);
+            int optionItemPosition = listOptionItem.indexOf(optionItem.value!);
             if (!kIsWeb && Platform.isAndroid) {
               return SearchHelper.calculatingSearchResults
                   ? optionItemPosition != 1
@@ -192,7 +192,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
 
   Future showSingleRowOptionMenu(
       List<SingleRowItem> listSingleRowItem, int menuType) async {
-    SingleRowItem singleRowItem = await showMenu<SingleRowItem>(
+    SingleRowItem? singleRowItem = await showMenu<SingleRowItem>(
       context: context,
       position: RelativeRect.fromLTRB(0.0, 45.0, -1.0, 0.0),
       items: listSingleRowItem
@@ -209,7 +209,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                 ),
               ] else ...[
-                if (singleRowItem.prefix != null) ...[singleRowItem.prefix],
+                if (singleRowItem.prefix != null) ...[singleRowItem.prefix!],
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.only(
@@ -225,7 +225,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
           ),
         );
       }).where((singleRowItem) {
-        int optionItemPosition = listSingleRowItem.indexOf(singleRowItem.value);
+        int optionItemPosition = listSingleRowItem.indexOf(singleRowItem.value!);
         if (menuType == kRemoveAds) {
           return PurchaseHelper().isShowSubscribePreviousMenuItem
               ? true
@@ -240,7 +240,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
       }).toList(),
     );
 
-    int selectedOptionItem = listSingleRowItem.indexOf(singleRowItem);
+    int selectedOptionItem = listSingleRowItem.indexOf(singleRowItem!);
     switch (menuType) {
       // case kClearMenu: //Clear map menu option
       //   {
@@ -369,7 +369,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
   }
 
   Future showRadioOptionMenu() async {
-    RadioItem radioItem = await showMenu<RadioItem>(
+    RadioItem? radioItem = await showMenu<RadioItem>(
       context: context,
       position: RelativeRect.fromLTRB(0.0, 45.0, -1.0, 0.0),
       items: listRadioItem.map<PopupMenuItem<RadioItem>>((RadioItem radioItem) {
@@ -403,7 +403,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
       }).toList(),
     );
 
-    int selectedOptionItem = listRadioItem.indexOf(radioItem);
+    int selectedOptionItem = listRadioItem.indexOf(radioItem!);
     if (selectedOptionItem != -1) {
       MapHelper().setMapMode(selectedOptionItem, prefs);
       PolygonHelper().refreshPolygons(true);
@@ -413,7 +413,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
 
 //********************** All options ***************************//
 class OptionItem {
-  OptionItem({this.title, this.trailing = false});
+  OptionItem({required this.title, this.trailing = false});
 
   String title;
   final bool trailing;
@@ -441,11 +441,11 @@ List<OptionItem> listOptionItem = <OptionItem>[
 //********************** Clear map ***************************//
 class SingleRowItem {
   SingleRowItem(
-      {this.isTitle = false, this.title, this.prefix, this.isEnabled = true});
+      {this.isTitle = false, required this.title, this.prefix, this.isEnabled = true});
 
   bool isTitle;
   String title;
-  final Widget prefix;
+  final Widget? prefix;
   bool isEnabled;
 }
 
@@ -506,7 +506,7 @@ List<SingleRowItem> listLinksItem = <SingleRowItem>[
 
 //********************** Radio options ***************************//
 class RadioItem {
-  RadioItem({this.isTitle = false, this.title});
+  RadioItem({this.isTitle = false, required this.title});
 
   bool isTitle;
   String title;

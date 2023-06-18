@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
@@ -62,7 +64,7 @@ class MapHelper with ChangeNotifier {
     for (String hash in hashes) {
       // Convert from David Morton's implementation to Silvio Heuberger's implementation
       //Point<double> centre = Geohash.decode(hash);
-      final extents = Geohash.getExtents(hash);
+      final Rectangle<double> extents = Geohash.getExtents(hash);
       List<LatLng> polygonPoints = <LatLng>[];
       polygonPoints.add(LatLng(extents.left, extents.top));
       polygonPoints.add(LatLng(extents.right, extents.top));
@@ -71,7 +73,7 @@ class MapHelper with ChangeNotifier {
 
       Polygon po = Polygon(
         polygonId: PolygonId("polygon_developer_$hash"),
-        strokeColor: Colors.grey[500],
+        strokeColor: Colors.grey[500]!,
         fillColor: Colors.transparent,
         strokeWidth: 2,
         points: polygonPoints,
@@ -88,7 +90,7 @@ class MapHelper with ChangeNotifier {
 
   void removeDeveloperShapes() {
     PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
-      return mapOverlay.polygon.polygonId.value.contains('developer');
+      return mapOverlay.polygon!.polygonId.value.contains('developer');
     });
     notifyListeners();
   }

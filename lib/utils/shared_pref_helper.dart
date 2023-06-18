@@ -48,33 +48,33 @@ class SharedPreferencesHelper {
   ///Dedicated methods
   ///------------------------
   static bool getMenuStatus(
-      {@required String key, @required SharedPreferences prefs}) {
-    return prefs.containsKey(key) ? prefs.getBool(key ?? true) : true;
+      {required String key, required SharedPreferences prefs}) {
+    return prefs.containsKey(key) ? prefs.getBool(key)! : true;
   }
 
   static bool getMenuStatusOtherThanTelco(
-      {@required String key, @required SharedPreferences prefs}) {
-    return prefs.containsKey(key) ? prefs.getBool(key ?? false) : false;
+      {required String key, required SharedPreferences prefs}) {
+    return prefs.containsKey(key) ? prefs.getBool(key)! : false;
   }
 
-  static int getRadiationModel({String key, SharedPreferences prefs}) {
+  static int getRadiationModel({required String key, required SharedPreferences prefs}) {
     //return prefs.getInt(key ?? kSuburbanRadiationModel);
     return prefs.containsKey(key)
-        ? prefs.getInt(key ?? kSuburbanRadiationModel)
+        ? prefs.getInt(key)!
         : kSuburbanRadiationModel;
   }
 
-  static int getSignalStrength({String key, SharedPreferences prefs}) {
+  static int getSignalStrength({required String key, required SharedPreferences prefs}) {
     //return prefs.getInt(key ?? kSuburbanRadiationModel);
     return prefs.containsKey(key)
-        ? prefs.getInt(key ?? kWeakSignalStrength)
+        ? prefs.getInt(key)!
         : kWeakSignalStrength;
   }
 
-  static int getMapMode({String key, SharedPreferences prefs}) {
+  static int getMapMode({required String key, required SharedPreferences prefs}) {
     //return prefs.getInt(key ?? kSuburbanRadiationModel);
     return prefs.containsKey(key)
-        ? prefs.getInt(key ?? kMapModeTerrain)
+        ? prefs.getInt(key)!
         : kMapModeTerrain;
   }
 
@@ -82,13 +82,13 @@ class SharedPreferencesHelper {
   ///Save boolean values
   ///------------------
   static bool getBoolean(String key, SharedPreferences prefs) {
-    return prefs.containsKey(key) ? prefs.getBool(key ?? false) : false;
+    return prefs.containsKey(key) ? prefs.getBool(key)! : false;
   }
 
   static Future<bool> saveBoolean(
-      {@required String key,
-      @required bool value,
-      @required SharedPreferences prefs}) {
+      {required String key,
+      required bool value,
+      required SharedPreferences prefs}) {
     return prefs.setBool(key, value);
   }
 
@@ -96,7 +96,7 @@ class SharedPreferencesHelper {
   /// SAVE STRINGS
   ///--------------------------
   static String getString(String key, SharedPreferences prefs) {
-    return prefs.getString(key ?? '');
+    return prefs.getString(key) ?? '';
   }
 
   static Future<bool> setString(
@@ -107,11 +107,11 @@ class SharedPreferencesHelper {
   ///--------------------------
   /// SAVE INTEGERS
   ///--------------------------
-  static int getInt({String key, SharedPreferences prefs}) {
-    return prefs.getInt(key ?? 0);
+  static int getInt({required String key, required SharedPreferences prefs}) {
+    return prefs.getInt(key) ?? 0;
   }
 
-  static Future<bool> setInt({String key, int value, SharedPreferences prefs}) {
+  static Future<bool> setInt({required String key, required int value, required SharedPreferences prefs}) {
     return prefs.setInt(key, value);
   }
 
@@ -119,7 +119,7 @@ class SharedPreferencesHelper {
   /// SAVE DOUBLE
   ///--------------------------
   static double getDouble(String key, SharedPreferences prefs) {
-    return prefs.getDouble(key ?? 0.0);
+    return prefs.getDouble(key) ?? 0.0;
   }
 
   static Future<bool> setDouble(

@@ -16,7 +16,7 @@ typedef void ShowSnackBar({String message});
 class GetDevices {
   String url;
   Telco telco;
-  List<MapOverlay> listOfTowersForSingleTeclo = List<MapOverlay>();
+  List<MapOverlay> listOfTowersForSingleTelco = [];
   Logger logger = new Logger();
   Api api = Api.initialize();
   Set<Site> siteSeen = Set<Site>();
@@ -25,18 +25,18 @@ class GetDevices {
   final TowerInfoChanged onTowerInfoChanged;
 
   GetDevices(
-      {this.url,
-      this.telco,
-      this.listOfTowersForSingleTeclo,
-      this.showSnackBar,
-      this.onTowerInfoChanged});
+      {required this.url,
+      required this.telco,
+      required this.listOfTowersForSingleTelco,
+      required this.showSnackBar,
+      required this.onTowerInfoChanged});
 
   Future getDevicesData() async {
     //logger.d('get device url $url');
 
     showSnackBar(message: "Downloading tower frequencies...");
 
-    SiteReponse rawReponse = await api.getDevicesData(url);
+    SiteResponse? rawReponse = await api.getDevicesData(url);
 
     int totalLatLong = rawReponse?.restify?.rows?.length ?? 0;
 
@@ -47,32 +47,30 @@ class GetDevices {
 
     for (int i = 0; i <= totalLatLong - 1; i++) {
       //Get the row
-      Values values = rawReponse.restify.rows[i].values;
+      Values? values = rawReponse!.restify!.rows![i].values;
 
-      String siteId = values.siteId.value;
+      String siteId = values!.siteId!.value;
 
       //Prepare device details
       DeviceDetails device = DeviceDetails(
-        sddId: values.sddId.value,
-        deviceRegistrationIdentifier: values.deviceRegistrationIdentifier.value,
+        sddId: values.sddId!.value,
+        deviceRegistrationIdentifier: values.deviceRegistrationIdentifier!.value,
         siteId: siteId,
-        emission: values.emission.value,
-        polarisation: values.polarisation.value,
-        callSign: values.callSign != null ? values.callSign.value : '',
-        active: values.active != null ? values.active.value : '',
-        frequency: int.tryParse(values.frequency.value) ?? 0,
-        bandwidth: int.tryParse(values.bandwidth.value) ?? 0,
-        height: int.tryParse(values.height.value) ?? 0,
-        azimuth: int.tryParse(values.azimuth.value) ?? 0,
-        eirp: double.tryParse(values.eirp.value) ?? 0,
-        antennaId: values.antennaId != null
-            ? int.tryParse(values.antennaId.value) ?? 0
-            : 0,
+        emission: values.emission!.value,
+        polarisation: values.polarisation!.value,
+        callSign: values.callSign != null ? values.callSign!.value : '',
+        active: values.active != null ? values.active!.value : '',
+        frequency: values.frequency != null ? int.tryParse(values.frequency!.value) ?? 0 : 0,
+        bandwidth: values.bandwidth != null ? int.tryParse(values.bandwidth!.value) ?? 0 : 0,
+        height: values.height != null ? int.tryParse(values.height!.value) ?? 0 : 0,
+        azimuth: values.azimuth != null ? int.tryParse(values.azimuth!.value) ?? 0 : 0,
+        eirp: values.eirp != null ? double.tryParse(values.eirp!.value) ?? 0 : 0,
+        antennaId: values.antennaId != null ? int.tryParse(values.antennaId!.value) ?? 0 : 0,
       );
 
       //TODO Prepare license and client
 
-      Site site = getSite(siteId, telco);
+      Site? site = getSite(siteId, telco);
       if (site != null) {
         device.setSite(site);
         site.getDeviceDetailsMobile().add(device);
@@ -88,11 +86,11 @@ class GetDevices {
     for (Site site in siteSeen) {
       for (int i = 0; i < SiteHelper.globalListMapOverlay.length; i++) {
         if (SiteHelper.globalListMapOverlay[i].site != null) {
-          if (SiteHelper.globalListMapOverlay[i].site.siteId == site.siteId &&
-              SiteHelper.globalListMapOverlay[i].site.getTelco() == telco) {
-            final Marker marker = SiteHelper.globalListMapOverlay[i].marker;
+          if (SiteHelper.globalListMapOverlay[i].site!.siteId == site.siteId &&
+              SiteHelper.globalListMapOverlay[i].site!.getTelco() == telco) {
+            final Marker? marker = SiteHelper.globalListMapOverlay[i].marker;
 
-            SiteHelper.globalListMapOverlay[i].marker = marker.copyWith(
+            SiteHelper.globalListMapOverlay[i].marker = marker!.copyWith(
               visibleParam: site.shouldBeVisible(),
             );
 
@@ -110,14 +108,13 @@ class GetDevices {
     //Refresh main UI
     onTowerInfoChanged(message: "Refresh main UI after get devices");
 
-    NextPage nextPage = rawReponse.restify.nextPage;
+    NextPage? nextPage = rawReponse!.restify!.nextPage;
     if (nextPage != null) {
-//        logger.d(
-//            "next page exist for site id  ${values.siteId.value} and url $url");
+      //logger.d("next page exist for telco ${telco} and url $url");
       GetDevices(
               url: nextPage.href,
               telco: telco,
-              listOfTowersForSingleTeclo: listOfTowersForSingleTeclo,
+              listOfTowersForSingleTelco: listOfTowersForSingleTelco,
               showSnackBar: this.showSnackBar,
               onTowerInfoChanged: this.onTowerInfoChanged)
           .getDevicesData();
@@ -148,19 +145,16 @@ class GetDevices {
     }
   }
 
-  Site getSite(String siteId, Telco telco) {
-    MapOverlay mapOverlay = listOfTowersForSingleTeclo.firstWhere(
-        (mo) =>
-            mo.site != null &&
-            mo.site.siteId == siteId &&
-            mo.site.getTelco() == telco,
-        orElse: () => null);
+  Site? getSite(String siteId, Telco telco) {
+    MapOverlay? mapOverlay = listOfTowersForSingleTelco.firstWhere(
+        (MapOverlay mo) =>
+            mo.site != null && mo.site!.siteId == siteId && mo.site!.getTelco() == telco);
     return mapOverlay.site;
   }
 
-  Marker getMarker(Site site) {
-    MapOverlay mapOverlay = listOfTowersForSingleTeclo
-        .firstWhere((mo) => mo.site == site, orElse: () => null);
+  Marker? getMarker(Site site) {
+    MapOverlay? mapOverlay = listOfTowersForSingleTelco
+        .firstWhere((MapOverlay mo) => mo.site == site);
     return mapOverlay.marker;
   }
 }

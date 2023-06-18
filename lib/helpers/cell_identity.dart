@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 class CellIdentity {
   static int CONNECTED_NETWORK_TYPE = 0;
   static int CONNECTED_ARFCN = 0;
-  static int TIMING_ADVANCE;
+  static int? TIMING_ADVANCE;
   static DateFormat SDF = new DateFormat("yyyy-MM-dd HH:mm:ss");
 
   /* static {
@@ -459,7 +459,7 @@ class CellIdentity {
     return (c1 * 1000 * 1000);
   }
 
-  static int calculateGsmBand(int N) {
+  static int? calculateGsmBand(int N) {
     if (N >= 259 && N <= 293) {
       return 450;
     } else if (N >= 306 && N <= 340) {
@@ -482,7 +482,7 @@ class CellIdentity {
     return null;
   }
 
-  static String calculateGsmBandName(int N) {
+  static String? calculateGsmBandName(int N) {
     if (N >= 259 && N <= 293) {
       return "450 GSM";
     } else if (N >= 306 && N <= 340) {
@@ -695,7 +695,7 @@ class CellIdentity {
     return downlinkFrequency;
   }
 
-  static int calculateLteBand(int N) {
+  static int? calculateLteBand(int N) {
     if (N >= 0 && N <= 599) {
       return 1;
     } else if (N >= 600 && N <= 1199) {
@@ -780,7 +780,7 @@ class CellIdentity {
     return null;
   }
 
-  static String calculateLteBandName(int N) {
+  static String? calculateLteBandName(int N) {
     if (N >= 0 && N <= 599) {
       return "2100 IMT";
     } else if (N >= 600 && N <= 1199) {
@@ -996,7 +996,7 @@ class CellIdentity {
   }
 
 // http://www.rfwireless-world.com/Tutorials/UMTS-frequency-bands-UARFCN.html
-  static int calculateUmtsBand(int Ndl) {
+  static int? calculateUmtsBand(int Ndl) {
     if (Ndl >= 10562 && Ndl <= 10838) {
       // FDD
       return 1;
@@ -1062,7 +1062,7 @@ class CellIdentity {
   }
 
 // http://www.rfwireless-world.com/Tutorials/UMTS-frequency-bands-UARFCN.html
-  static String calculateUmtsBandName(int Ndl) {
+  static String? calculateUmtsBandName(int Ndl) {
     if (Ndl >= 10562 && Ndl <= 10838) {
       // FDD
       return "2100 IMT";

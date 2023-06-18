@@ -1,6 +1,6 @@
 class Antenna {
   // Sensible defaults in case we need them
-  double gain;
-  double frontToBack;
-  double horizontalBeamwidth;
+  late double gain;
+  late double frontToBack;
+  late double horizontalBeamwidth;
 }

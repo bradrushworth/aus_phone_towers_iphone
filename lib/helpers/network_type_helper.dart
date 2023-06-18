@@ -1,5 +1,5 @@
 class NetworkTypeHelper {
-  String value;
+  late String value;
 
   static List<int> gsmBars = [-89, -97, -103, -107]; // CellSignalStrengthGsm
   static List<int> umtsBars = [-77, -87,  -97, -107]; // CellSignalStrengthWcdma

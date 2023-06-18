@@ -19,7 +19,7 @@ class AnalyticsHelper {
   }
 
   sendCustomAnalyticsEvent(
-      {@required String eventName, @required Map eventParameters}) {
+      {required String eventName, required Map<String, Object>? eventParameters}) {
     if (!Foundation.kDebugMode) {
       FirebaseAnalytics.instance.logEvent(
         name: 'Flutter_$eventName',

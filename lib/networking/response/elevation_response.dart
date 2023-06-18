@@ -1,14 +1,14 @@
 class ElevationResponse {
-  List<Results> results;
-  String status;
+  List<Results>? results;
+  late String status;
 
-  ElevationResponse({this.results, this.status});
+  ElevationResponse({required this.results, required this.status});
 
   ElevationResponse.fromJson(Map<String, dynamic> json) {
     if (json['results'] != null) {
-      results = new List<Results>();
+      results = [];
       json['results'].forEach((v) {
-        results.add(new Results.fromJson(v));
+        results!.add(new Results.fromJson(v));
       });
     }
     status = json['status'];
@@ -17,7 +17,7 @@ class ElevationResponse {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.results != null) {
-      data['results'] = this.results.map((v) => v.toJson()).toList();
+      data['results'] = this.results!.map((v) => v.toJson()).toList();
     }
     data['status'] = this.status;
     return data;
@@ -25,11 +25,11 @@ class ElevationResponse {
 }
 
 class Results {
-  num elevation;
-  Location location;
-  double resolution;
+  late num elevation;
+  Location? location;
+  late double resolution;
 
-  Results({this.elevation, this.location, this.resolution});
+  Results({required this.elevation, required this.location, required this.resolution});
 
   Results.fromJson(Map<String, dynamic> json) {
     elevation = json['elevation'];
@@ -43,7 +43,7 @@ class Results {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['elevation'] = this.elevation;
     if (this.location != null) {
-      data['location'] = this.location.toJson();
+      data['location'] = this.location!.toJson();
     }
     data['resolution'] = this.resolution;
     return data;
@@ -51,10 +51,10 @@ class Results {
 }
 
 class Location {
-  num lat;
-  num lng;
+  late num lat;
+  late num lng;
 
-  Location({this.lat, this.lng});
+  Location({required this.lat, required this.lng});
 
   Location.fromJson(Map<String, dynamic> json) {
     lat = json['lat'];

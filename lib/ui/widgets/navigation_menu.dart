@@ -13,8 +13,8 @@ import 'package:phonetowers/utils/strings.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-typedef void TowerInfoChanged({String message});
-typedef void MenuItemChanged({bool itemChanged});
+typedef void TowerInfoChanged({required String message});
+typedef void MenuItemChanged({required bool itemChanged});
 
 class NavigationMenu extends StatefulWidget {
   static bool isTelstraVisible = true;
@@ -60,7 +60,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
   double screenWidth = 0.0;
   double screenheight = 0.0;
 
-  SharedPreferences prefs;
+  SharedPreferences? prefs;
 
   @override
   void initState() {
@@ -105,8 +105,8 @@ class _NavigationMenuState extends State<NavigationMenu> {
               telco: Telco.Telstra,
               isValueVisible: NavigationMenu.isTelstraVisible,
               prefsKey: SharedPreferencesHelper.kisTelstraVisible,
-              prefs: prefs,
-              onMenuItemChanged: ({bool itemChanged}) {
+              prefs: prefs!,
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isTelstraVisible = itemChanged;
                 setTelecomOption();
               },
@@ -116,8 +116,8 @@ class _NavigationMenuState extends State<NavigationMenu> {
               telco: Telco.Optus,
               isValueVisible: NavigationMenu.isOptusVisible,
               prefsKey: SharedPreferencesHelper.kisOptusVisible,
-              prefs: prefs,
-              onMenuItemChanged: ({bool itemChanged}) {
+              prefs: prefs!,
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isOptusVisible = itemChanged;
                 setTelecomOption();
               },
@@ -127,8 +127,8 @@ class _NavigationMenuState extends State<NavigationMenu> {
               telco: Telco.Vodafone,
               isValueVisible: NavigationMenu.isVodafoneVisible,
               prefsKey: SharedPreferencesHelper.kisVodafoneVisible,
-              prefs: prefs,
-              onMenuItemChanged: ({bool itemChanged}) {
+              prefs: prefs!,
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isVodafoneVisible = itemChanged;
                 setTelecomOption();
               },
@@ -138,7 +138,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
             //   telco: Telco.Dense_Air,
             //   isValueVisible: NavigationMenu.isDenseAirVisible,
             //   prefsKey: SharedPreferencesHelper.kisDenseAirVisible,
-            //   prefs: prefs,
+            //   prefs: prefs!,
             //   onMenuItemChanged: ({bool itemChanged}) {
             //     NavigationMenu.isDenseAirVisible = itemChanged;
             //     setTelecomOption();
@@ -149,8 +149,8 @@ class _NavigationMenuState extends State<NavigationMenu> {
               telco: Telco.NBN,
               isValueVisible: NavigationMenu.isNBNVisible,
               prefsKey: SharedPreferencesHelper.kisNBNVisible,
-              prefs: prefs,
-              onMenuItemChanged: ({bool itemChanged}) {
+              prefs: prefs!,
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isNBNVisible = itemChanged;
                 setTelecomOption();
               },
@@ -160,8 +160,8 @@ class _NavigationMenuState extends State<NavigationMenu> {
               telco: Telco.Other,
               isValueVisible: NavigationMenu.isOtherVisible,
               prefsKey: SharedPreferencesHelper.kisOtherVisible,
-              prefs: prefs,
-              onMenuItemChanged: ({bool itemChanged}) {
+              prefs: prefs!,
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isOtherVisible = itemChanged;
                 setTelecomOption();
               },
@@ -192,9 +192,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.twoG_GSM,
               isValueVisible: NavigationMenu.is2GVisible,
               networkType: NetworkType.GSM,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kis2GVisible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.is2GVisible = itemChanged;
               },
             ),
@@ -202,9 +202,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.threeG_UMTS,
               isValueVisible: NavigationMenu.is3GVisible,
               networkType: NetworkType.UMTS,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kis3GVisible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.is3GVisible = itemChanged;
               },
             ),
@@ -212,9 +212,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.fourG_LTE,
               isValueVisible: NavigationMenu.is4GVisible,
               networkType: NetworkType.LTE,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kis4GVisible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.is4GVisible = itemChanged;
               },
             ),
@@ -222,9 +222,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.fiveG_NR,
               isValueVisible: NavigationMenu.is5GVisible,
               networkType: NetworkType.NR,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kis5GVisible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.is5GVisible = itemChanged;
               },
             ),
@@ -253,9 +253,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
             MultiplexTypeMenu(
               valueName: Strings.not_lte,
               isValueVisible: NavigationMenu.isNOTLTEVisible,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisNOTLTEVisible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isNOTLTEVisible = itemChanged;
                 PolygonHelper.displayNotLteMultiplex = itemChanged;
               },
@@ -263,9 +263,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
             MultiplexTypeMenu(
               valueName: Strings.fd_lte,
               isValueVisible: NavigationMenu.isFDLTEVisible,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisFDLTEVisible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isFDLTEVisible = itemChanged;
                 PolygonHelper.displayFdMultiplex = itemChanged;
               },
@@ -273,9 +273,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
             MultiplexTypeMenu(
               valueName: Strings.td_lte,
               isValueVisible: NavigationMenu.isTDLTEVisible,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisTDLTEVisible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isTDLTEVisible = itemChanged;
                 PolygonHelper.displayTdMultiplex = itemChanged;
               },
@@ -306,9 +306,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.less_700,
               isValueVisible: NavigationMenu.isLess700Visible,
               frequencyRanges: FrequencyRanges.VERY_LOW,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisLess700Visible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isLess700Visible = itemChanged;
               },
             ),
@@ -316,9 +316,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.between700_1000,
               isValueVisible: NavigationMenu.isBet700_100Visible,
               frequencyRanges: FrequencyRanges.LOW,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisBet700_100Visible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isBet700_100Visible = itemChanged;
               },
             ),
@@ -326,9 +326,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.between1_2,
               isValueVisible: NavigationMenu.isBet1_2Visible,
               frequencyRanges: FrequencyRanges.MEDIUM,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisBet1_2Visible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isBet1_2Visible = itemChanged;
               },
             ),
@@ -336,9 +336,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.between2_3,
               isValueVisible: NavigationMenu.isBet2_3Visible,
               frequencyRanges: FrequencyRanges.HIGH,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisBet2_3Visible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isBet2_3Visible = itemChanged;
               },
             ),
@@ -346,9 +346,9 @@ class _NavigationMenuState extends State<NavigationMenu> {
               valueName: Strings.greater_than_3,
               isValueVisible: NavigationMenu.isGreater3Visible,
               frequencyRanges: FrequencyRanges.VERY_HIGH,
-              prefs: prefs,
+              prefs: prefs!,
               prefsKey: SharedPreferencesHelper.kisGreater3Visible,
-              onMenuItemChanged: ({bool itemChanged}) {
+              onMenuItemChanged: ({required bool itemChanged}) {
                 NavigationMenu.isGreater3Visible = itemChanged;
               },
             ),
@@ -381,7 +381,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.metropolitan,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.radiationModelselection ==
                                 kMetropolitanRadiationModel
                             ? HexColor('3F51B5')
@@ -394,7 +394,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.kradiationModelselection,
                         value: NavigationMenu.radiationModelselection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setRadiationModel(CityDensity.METRO);
                   }
@@ -408,7 +408,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                       : Colors.white,
               child: ListTile(
                 title: Text(Strings.urban,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.radiationModelselection ==
                                 kUrbanRadiationModel
                             ? HexColor('3F51B5')
@@ -421,7 +421,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.kradiationModelselection,
                         value: NavigationMenu.radiationModelselection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setRadiationModel(CityDensity.URBAN);
                   }
@@ -435,7 +435,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.suburban,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.radiationModelselection ==
                                 kSuburbanRadiationModel
                             ? HexColor('3F51B5')
@@ -448,7 +448,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.kradiationModelselection,
                         value: NavigationMenu.radiationModelselection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setRadiationModel(CityDensity.SUBURBAN);
                   }
@@ -462,7 +462,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                       : Colors.white,
               child: ListTile(
                 title: Text(Strings.open,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.radiationModelselection ==
                                 kOpenRadiationModel
                             ? HexColor('3F51B5')
@@ -475,7 +475,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.kradiationModelselection,
                         value: NavigationMenu.radiationModelselection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setRadiationModel(CityDensity.OPEN);
                   }
@@ -511,7 +511,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.maximum_signal,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.signalStrenghtSelection ==
                                 kMaximumSignalStrength
                             ? HexColor('3F51B5')
@@ -524,7 +524,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.ksignalStrenghtSelection,
                         value: NavigationMenu.signalStrenghtSelection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setSignalStrength(kMaximumSignalStrength);
                   }
@@ -538,7 +538,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.strong_signal,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.signalStrenghtSelection ==
                                 kStrongSignalStrength
                             ? HexColor('3F51B5')
@@ -551,7 +551,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.ksignalStrenghtSelection,
                         value: NavigationMenu.signalStrenghtSelection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setSignalStrength(kStrongSignalStrength);
                   }
@@ -565,7 +565,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                       : Colors.white,
               child: ListTile(
                 title: Text(Strings.good_signal,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.signalStrenghtSelection ==
                                 kGoodSignalStrength
                             ? HexColor('3F51B5')
@@ -578,7 +578,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.ksignalStrenghtSelection,
                         value: NavigationMenu.signalStrenghtSelection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setSignalStrength(kGoodSignalStrength);
                   }
@@ -592,7 +592,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                       : Colors.white,
               child: ListTile(
                 title: Text(Strings.weak_signal,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.signalStrenghtSelection ==
                                 kWeakSignalStrength
                             ? HexColor('3F51B5')
@@ -605,7 +605,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                     SharedPreferencesHelper.setInt(
                         key: SharedPreferencesHelper.ksignalStrenghtSelection,
                         value: NavigationMenu.signalStrenghtSelection,
-                        prefs: prefs);
+                        prefs: prefs!);
                     Provider.of<SiteHelper>(context, listen: false)
                         .setSignalStrength(kWeakSignalStrength);
                   }
@@ -640,7 +640,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_telecommunication,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.isTelcoVisible
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -650,7 +650,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   SharedPreferencesHelper.saveBoolean(
                       key: SharedPreferencesHelper.kisTelcoVisible,
                       value: NavigationMenu.isTelcoVisible,
-                      prefs: prefs);
+                      prefs: prefs!);
                   if (NavigationMenu.isTelcoVisible) {
                     NavigationMenu.isTelstraVisible = true;
                     NavigationMenu.isOptusVisible = true;
@@ -677,7 +677,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_radio,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.isRadioVisible
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -687,7 +687,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   SharedPreferencesHelper.saveBoolean(
                       key: SharedPreferencesHelper.kisRadioVisible,
                       value: NavigationMenu.isRadioVisible,
-                      prefs: prefs);
+                      prefs: prefs!);
                   Provider.of<SiteHelper>(context, listen: false)
                       .toggleTelcoMarkers(
                           Telco.Radio, NavigationMenu.isRadioVisible);
@@ -699,7 +699,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   NavigationMenu.isTVVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_tv,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.isTVVisible
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -708,7 +708,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   SharedPreferencesHelper.saveBoolean(
                       key: SharedPreferencesHelper.kisTVVisible,
                       value: NavigationMenu.isTVVisible,
-                      prefs: prefs);
+                      prefs: prefs!);
                   Provider.of<SiteHelper>(context, listen: false)
                       .toggleTelcoMarkers(Telco.TV, NavigationMenu.isTVVisible);
                 },
@@ -720,7 +720,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_civil,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.isCivilVisible
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -730,7 +730,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   SharedPreferencesHelper.saveBoolean(
                       key: SharedPreferencesHelper.kisCivilVisible,
                       value: NavigationMenu.isCivilVisible,
-                      prefs: prefs);
+                      prefs: prefs!);
                   Provider.of<SiteHelper>(context, listen: false)
                       .toggleTelcoMarkers(
                           Telco.Civil, NavigationMenu.isCivilVisible);
@@ -743,7 +743,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_pager,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.isPagerVisible
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -753,7 +753,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   SharedPreferencesHelper.saveBoolean(
                       key: SharedPreferencesHelper.kisPagerVisible,
                       value: NavigationMenu.isPagerVisible,
-                      prefs: prefs);
+                      prefs: prefs!);
                   Provider.of<SiteHelper>(context, listen: false)
                       .toggleTelcoMarkers(
                           Telco.Pager, NavigationMenu.isPagerVisible);
@@ -766,7 +766,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_CBRS,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.isCBRSVisible
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -775,7 +775,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   SharedPreferencesHelper.saveBoolean(
                       key: SharedPreferencesHelper.kisCBRSVisible,
                       value: NavigationMenu.isCBRSVisible,
-                      prefs: prefs);
+                      prefs: prefs!);
                   Provider.of<SiteHelper>(context, listen: false)
                       .toggleTelcoMarkers(
                           Telco.CBRS, NavigationMenu.isCBRSVisible);
@@ -788,7 +788,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_aviation,
-                    style: Theme.of(context).textTheme.button.copyWith(
+                    style: Theme.of(context).textTheme.button!.copyWith (
                         color: NavigationMenu.isAviationVisible
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -798,7 +798,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   SharedPreferencesHelper.saveBoolean(
                       key: SharedPreferencesHelper.kisAviationVisible,
                       value: NavigationMenu.isAviationVisible,
-                      prefs: prefs);
+                      prefs: prefs!);
                   Provider.of<SiteHelper>(context, listen: false)
                       .toggleTelcoMarkers(
                           Telco.Aviation, NavigationMenu.isAviationVisible);
@@ -828,7 +828,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
       SharedPreferencesHelper.saveBoolean(
           key: SharedPreferencesHelper.kisTelcoVisible,
           value: NavigationMenu.isTelcoVisible,
-          prefs: prefs);
+          prefs: prefs!);
     }
   }
 }
@@ -839,15 +839,15 @@ class LicenceesMenuItem extends StatelessWidget {
   bool isValueVisible;
   MenuItemChanged onMenuItemChanged;
   String prefsKey;
-  SharedPreferences prefs;
+  SharedPreferences? prefs;
 
   LicenceesMenuItem(
-      {@required this.valueName,
-      @required this.telco,
-      @required this.isValueVisible,
-      @required this.prefsKey,
-      @required this.prefs,
-      @required this.onMenuItemChanged});
+      {required this.valueName,
+      required this.telco,
+      required this.isValueVisible,
+      required this.prefsKey,
+      required this.prefs,
+      required this.onMenuItemChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -855,13 +855,13 @@ class LicenceesMenuItem extends StatelessWidget {
       color: isValueVisible ? Colors.grey[300] : Colors.white,
       child: ListTile(
         title: Text(valueName,
-            style: Theme.of(context).textTheme.button.copyWith(
+            style: Theme.of(context).textTheme.button!.copyWith(
                 color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
           onMenuItemChanged(itemChanged: isValueVisible);
           SharedPreferencesHelper.saveBoolean(
-              key: prefsKey, value: isValueVisible, prefs: prefs);
+              key: prefsKey, value: isValueVisible, prefs: prefs!);
           Provider.of<SiteHelper>(context, listen: false)
               .toggleTelcoMarkers(telco, isValueVisible);
 
@@ -871,7 +871,7 @@ class LicenceesMenuItem extends StatelessWidget {
             SharedPreferencesHelper.saveBoolean(
                 key: SharedPreferencesHelper.kisTelcoVisible,
                 value: NavigationMenu.isTelcoVisible,
-                prefs: prefs);
+                prefs: prefs!);
           }
         },
       ),
@@ -888,12 +888,12 @@ class NetworkTypeMenu extends StatelessWidget {
   SharedPreferences prefs;
 
   NetworkTypeMenu(
-      {@required this.valueName,
-      @required this.networkType,
-      @required this.isValueVisible,
-      @required this.prefsKey,
-      @required this.prefs,
-      @required this.onMenuItemChanged});
+      {required this.valueName,
+      required this.networkType,
+      required this.isValueVisible,
+      required this.prefsKey,
+      required this.prefs,
+      required this.onMenuItemChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -901,13 +901,13 @@ class NetworkTypeMenu extends StatelessWidget {
       color: isValueVisible ? Colors.grey[300] : Colors.white,
       child: ListTile(
         title: Text(valueName,
-            style: Theme.of(context).textTheme.button.copyWith(
+            style: Theme.of(context).textTheme.button!.copyWith(
                 color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
           onMenuItemChanged(itemChanged: isValueVisible);
           SharedPreferencesHelper.saveBoolean(
-              key: prefsKey, value: isValueVisible, prefs: prefs);
+              key: prefsKey, value: isValueVisible, prefs: prefs!);
           Provider.of<SiteHelper>(context, listen: false)
               .toggleTelcoNetwork(networkType, isValueVisible);
         },
@@ -918,18 +918,18 @@ class NetworkTypeMenu extends StatelessWidget {
 
 class MultiplexTypeMenu extends StatelessWidget {
   String valueName;
-  NetworkType networkType;
+  //NetworkType networkType;
   bool isValueVisible;
   MenuItemChanged onMenuItemChanged;
   String prefsKey;
   SharedPreferences prefs;
 
   MultiplexTypeMenu(
-      {@required this.valueName,
-      @required this.isValueVisible,
-      @required this.prefsKey,
-      @required this.prefs,
-      @required this.onMenuItemChanged});
+      {required this.valueName,
+      required this.isValueVisible,
+      required this.prefsKey,
+      required this.prefs,
+      required this.onMenuItemChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -937,13 +937,13 @@ class MultiplexTypeMenu extends StatelessWidget {
       color: isValueVisible ? Colors.grey[300] : Colors.white,
       child: ListTile(
         title: Text(valueName,
-            style: Theme.of(context).textTheme.button.copyWith(
+            style: Theme.of(context).textTheme.button!.copyWith(
                 color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
           onMenuItemChanged(itemChanged: isValueVisible);
           SharedPreferencesHelper.saveBoolean(
-              key: prefsKey, value: isValueVisible, prefs: prefs);
+              key: prefsKey, value: isValueVisible, prefs: prefs!);
           SiteHelper().refreshSites();
           PolygonHelper().refreshPolygons(!isValueVisible);
         },
@@ -961,12 +961,12 @@ class FrequencyTypeMenu extends StatelessWidget {
   SharedPreferences prefs;
 
   FrequencyTypeMenu(
-      {@required this.valueName,
-      @required this.frequencyRanges,
-      @required this.isValueVisible,
-      @required this.prefsKey,
-      @required this.prefs,
-      @required this.onMenuItemChanged});
+      {required this.valueName,
+      required this.frequencyRanges,
+      required this.isValueVisible,
+      required this.prefsKey,
+      required this.prefs,
+      required this.onMenuItemChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -974,13 +974,13 @@ class FrequencyTypeMenu extends StatelessWidget {
       color: isValueVisible ? Colors.grey[300] : Colors.white,
       child: ListTile(
         title: Text(valueName,
-            style: Theme.of(context).textTheme.button.copyWith(
+            style: Theme.of(context).textTheme.button!.copyWith(
                 color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
           onMenuItemChanged(itemChanged: isValueVisible);
           SharedPreferencesHelper.saveBoolean(
-              key: prefsKey, value: isValueVisible, prefs: prefs);
+              key: prefsKey, value: isValueVisible, prefs: prefs!);
           Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
               isValueVisible, FrequencyRangesHelper.getValue(frequencyRanges));
         },
@@ -997,11 +997,11 @@ class FrequencyTypeMenu extends StatelessWidget {
 //  SharedPreferences prefs;
 //
 //  RadiationModelTypeMenu(
-//      {@required this.valueName,
-//      @required this.modelSelection,
-//      @required this.prefsKey,
-//      @required this.prefs,
-//      @required this.onMenuItemChanged});
+//      {required this.valueName,
+//      required this.modelSelection,
+//      required this.prefsKey,
+//      required this.prefs,
+//      required this.onMenuItemChanged});
 //
 //  @override
 //  Widget build(BuildContext context) {
@@ -1011,7 +1011,7 @@ class FrequencyTypeMenu extends StatelessWidget {
 //          : Colors.white,
 //      child: ListTile(
 //        title: Text(valueName,
-//            style: Theme.of(context).textTheme.button.copyWith(
+//            style: Theme.of(context).textTheme.button!.copyWith (
 //                color: NavigationMenu.radiationModelselection == modelSelection
 //                    ? HexColor('3F51B5')
 //                    : Colors.black)),
@@ -1020,7 +1020,7 @@ class FrequencyTypeMenu extends StatelessWidget {
 //            NavigationMenu.radiationModelselection = modelSelection;
 //            onMenuItemChanged(itemChanged: modelSelection);
 //            SharedPreferencesHelper.setInt(
-//                key: prefsKey, value: modelSelection, prefs: prefs);
+//                key: prefsKey, value: modelSelection, prefs: prefs!);
 //            Provider.of<SiteHelper>(context, listen: false)
 //                .setRadiationModel(CityDensity.METRO);
 //          }

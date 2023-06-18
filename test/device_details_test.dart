@@ -8,8 +8,8 @@ import 'package:phonetowers/model/site.dart';
 
 void main() {
   group('DeviceDetailsTest', () {
-    Site site;
-    DeviceDetails deviceDetails;
+    late Site site;
+    late DeviceDetails deviceDetails;
 
     setUp(() {
       site = new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN);

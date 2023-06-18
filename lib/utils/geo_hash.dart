@@ -90,7 +90,7 @@ class GeoHashUtil {
     var hashValue = 0;
     for (var i = 0, l = hashString.length; i < l; i++) {
       var code = hashString[i].toLowerCase();
-      hashValue = base32CodesDic[code];
+      hashValue = base32CodesDic[code]!;
 
       for (var bits = 4; bits >= 0; bits--) {
         var bit = (hashValue >> bits) & 1;
@@ -144,9 +144,9 @@ class GeoHashUtil {
   String neighbor(String hashString, var direction) {
     var lonLat = decode(hashString);
     var neighborLat =
-        lonLat['latitude'] + direction[0] * lonLat['latitudeError'] * 2;
+        lonLat['latitude']! + direction[0] * lonLat['latitudeError'] * 2;
     var neighborLon =
-        lonLat['longitude'] + direction[1] * lonLat['longitudeError'] * 2;
+        lonLat['longitude']! + direction[1] * lonLat['longitudeError'] * 2;
     return encode(neighborLat, neighborLon, hashString.length);
   }
 
@@ -159,10 +159,10 @@ class GeoHashUtil {
   List<String> neighbors(String hashString) {
     int hashStringLength = hashString.length;
     var lonlat = decode(hashString);
-    double lat = lonlat['latitude'];
-    double lon = lonlat['longitude'];
-    double latErr = lonlat['latitudeError'] * 2;
-    double lonErr = lonlat['longitudeError'] * 2;
+    double lat = lonlat['latitude']!;
+    double lon = lonlat['longitude']!;
+    double latErr = lonlat['latitudeError']! * 2;
+    double lonErr = lonlat['longitudeError']! * 2;
 
     var neighborLat, neighborLon;
 

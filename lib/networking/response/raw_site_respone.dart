@@ -1,7 +1,7 @@
 class RawSiteResponse {
-  Restify restify;
+  Restify? restify;
 
-  RawSiteResponse({this.restify});
+  RawSiteResponse({required this.restify});
 
   RawSiteResponse.fromJson(Map<String, dynamic> json) {
     restify =
@@ -11,22 +11,22 @@ class RawSiteResponse {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.restify != null) {
-      data['restify'] = this.restify.toJson();
+      data['restify'] = this.restify!.toJson();
     }
     return data;
   }
 }
 
 class Restify {
-  List<Rows> rows;
+  List<Rows>? rows;
 
-  Restify({this.rows});
+  Restify({required this.rows});
 
   Restify.fromJson(Map<String, dynamic> json) {
     if (json['rows'] != null) {
-      rows = new List<Rows>();
+      rows = [];
       json['rows'].forEach((v) {
-        rows.add(new Rows.fromJson(v));
+        rows!.add(new Rows.fromJson(v));
       });
     }
   }
@@ -34,15 +34,15 @@ class Restify {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.rows != null) {
-      data['rows'] = this.rows.map((v) => v.toJson()).toList();
+      data['rows'] = this.rows!.map((v) => v.toJson()).toList();
     }
     return data;
   }
 }
 
 class Rows {
-  String href;
-  Values values;
+  String? href;
+  Values? values;
 
   Rows({this.href, this.values});
 
@@ -56,7 +56,7 @@ class Rows {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['href'] = this.href;
     if (this.values != null) {
-      data['values'] = this.values.toJson();
+      data['values'] = this.values!.toJson();
     }
     return data;
   }
@@ -64,8 +64,8 @@ class Rows {
 
 class Values {
   //SiteId siteId;
-  Latitude latitude;
-  Longitude longitude;
+  Latitude? latitude;
+  Longitude? longitude;
 //  Name name;
 //  SiteState state;
 //  LicensingAreaId licensingAreaId;
@@ -77,8 +77,8 @@ class Values {
 
   Values({
     //this.siteId,
-    this.latitude,
-    this.longitude,
+    required this.latitude,
+    required this.longitude,
 //      this.name,
 //      this.state,
 //      this.licensingAreaId,
@@ -128,10 +128,10 @@ class Values {
 //    }
 
     if (this.latitude != null) {
-      data['latitude'] = this.latitude.toJson();
+      data['latitude'] = this.latitude!.toJson();
     }
     if (this.longitude != null) {
-      data['longitude'] = this.longitude.toJson();
+      data['longitude'] = this.longitude!.toJson();
     }
 
 //    if (this.name != null) {
@@ -164,9 +164,9 @@ class Values {
 }
 
 class Latitude {
-  String value;
+  late String value;
 
-  Latitude({this.value});
+  Latitude({required this.value});
 
   Latitude.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -180,9 +180,9 @@ class Latitude {
 }
 
 class Longitude {
-  String value;
+  late String value;
 
-  Longitude({this.value});
+  Longitude({required this.value});
 
   Longitude.fromJson(Map<String, dynamic> json) {
     value = json['value'];

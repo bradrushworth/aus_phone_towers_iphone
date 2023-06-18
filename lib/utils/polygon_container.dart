@@ -5,7 +5,7 @@ class PolygonContainer {
   Polygon polygon;
   //List<GroundOverlay> overlays;
 
-  PolygonContainer({this.order, this.polygon});
+  PolygonContainer({required this.order, required this.polygon});
 
   int getOrder() {
     return order;

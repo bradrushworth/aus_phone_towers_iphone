@@ -33,7 +33,7 @@ class GetElevation {
   Api api = Api.initialize();
   String url;
 
-  GetElevation({this.url, this.site});
+  GetElevation({required this.url, required this.site});
 
   static String getPositionsString(LatLng latLng) {
     StringBuffer sb = StringBuffer();
@@ -75,15 +75,15 @@ class GetElevation {
   }
 
   Future getElevationData() async {
-    ElevationResponse elevationResponse = await api.getElevationDataApi(url);
-    List<Results> rows = elevationResponse.results;
+    ElevationResponse? elevationResponse = await api.getElevationDataApi(url);
+    List<Results>? rows = elevationResponse!.results;
 
     // looping through rows
-    for (int i = 0; i < rows.length; i++) {
+    for (int i = 0; i < rows!.length; i++) {
       Results row = rows[i];
       double elevation = row.elevation.toDouble();
-      double lat = row.location.lat.toDouble();
-      double lng = row.location.lng.toDouble();
+      double lat = row.location!.lat.toDouble();
+      double lng = row.location!.lng.toDouble();
       site.addElevation(LatLng(lat, lng), elevation);
       if (i == rows.length - 1) {
         site.finishedDownloadingElevations = true;

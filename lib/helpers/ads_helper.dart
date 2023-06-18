@@ -9,7 +9,7 @@ class AdsHelper {
 
   AdsHelper._internal();
 
-  BannerAd bannerAd;
+  BannerAd? bannerAd;
   static String androidAdmobAppId = '';
   static String androidPortraitAdUnitId = '';
   static String androidLandscapeAdUnitId = '';
@@ -53,7 +53,7 @@ class AdsHelper {
         listener: BannerAdListener(),
         request: AdRequest(),
       );
-      bannerAd..load();
+      bannerAd?..load();
     });
   }
 

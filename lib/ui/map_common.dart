@@ -57,7 +57,7 @@ class MapScreen extends StatefulWidget {
 class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   double screenWidth = 0.0;
   double screenHeight = 0.0;
-  Logger logger;
+  late Logger logger;
 
   //Create an instance of ScreenshotController
   ScreenshotController screenshotController = ScreenshotController();
@@ -65,7 +65,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   //media_query class : enum orientation { portrait,landscape}
   Orientation screenOrientation = Orientation.portrait;
 
-  SharedPreferences prefs;
+  late SharedPreferences prefs;
 
   @override
   void initState() {
@@ -126,6 +126,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
             Consumer<SiteHelper>(
                 builder: (context, siteHelper, child) => Expanded(
                       child: Screenshot(
+                        key: Key('screenshotKey'),
                         controller: screenshotController,
                         child: Scaffold(
                           drawer: NavigationMenu(),
@@ -211,9 +212,9 @@ class MapBody extends StatefulWidget {
 
 class MapBodyState extends AbstractMapBodyState {
   /// ******************** State variables ************************************
-  GoogleMapController mapController;
+  late GoogleMapController mapController;
   Location _locationService = new Location();
-  SharedPreferences prefs;
+  late SharedPreferences prefs;
   final TextEditingController _searchTextFilter = new TextEditingController();
   bool isShowCancelSearch = false;
 
@@ -276,12 +277,12 @@ class MapBodyState extends AbstractMapBodyState {
                 ),
                 markers: SiteHelper.globalListMapOverlay.isNotEmpty
                     ? SiteHelper.globalListMapOverlay
-                        .map((data) => data.marker)
+                        .map((data) => data.marker!)
                         .toSet()
                     : Set(),
                 polygons: PolygonHelper.globalListPolygons.isNotEmpty
                     ? PolygonHelper.globalListPolygons
-                        .map((data) => data.polygon)
+                        .map((data) => data.polygon!)
                         .toSet()
                     : Set(),
                 onMapCreated: onMapCreated,
@@ -649,8 +650,8 @@ class MapBodyState extends AbstractMapBodyState {
           //get actual lat long from actual user's location and download towers for the area
           LocationData location = await _locationService.getLocation();
           //create GeoHash for Actual location
-          lat = location.latitude;
-          long = location.longitude;
+          lat = location.latitude!;
+          long = location.longitude!;
           logger.d("lat $lat and long is $long");
           geoHash = Geohash.encode(lat, long, codeLength: 5);
         } else {
@@ -716,7 +717,7 @@ class MapBodyState extends AbstractMapBodyState {
     );
 
     // Start loading the first markers
-    onCameraMove(lastCameraPosition);
+    onCameraMove(lastCameraPosition!);
   }
 
   ///Download towers information for either bathurst or user's location
@@ -746,11 +747,11 @@ class MapBodyState extends AbstractMapBodyState {
   }
 
   Future downloadTowersForSingleTelco(Telco telco, String geoHash,
-      {String nextPageURL,
-      int expansionAmount,
-      int recursionDepth,
-      bool expandGeohash}) async {
-    List<MapOverlay> listOfTowersForSingleTeclo = new List<MapOverlay>();
+      {String? nextPageURL,
+      required int expansionAmount,
+      required int recursionDepth,
+      required bool expandGeohash}) async {
+    List<MapOverlay> listOfTowersForSingleTeclo = [];
 
     logger.d(
         'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}');
@@ -758,41 +759,45 @@ class MapBodyState extends AbstractMapBodyState {
     showSnackbar(
         message: "Downloading ${TelcoHelper.getName(telco)} towers...");
 
-    SiteReponse rawReponse = await api.getMarkerData(nextPageURL != null
+    SiteResponse? rawResponse = await api.getMarkerData(nextPageURL != null
         ? nextPageURL
         : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash');
 
-    int totalLatLong = rawReponse?.restify?.rows?.length ?? 0;
+    int totalLatLong = rawResponse!.restify?.rows?.length ?? 0;
 
     //If no data found for this telco then don't do anything
     if (totalLatLong == 0) {
       return;
     }
 
+    // What is the correct CityDensity for this Telco/GeoHash?
+    CityDensity cityDensity = CityDensity.METRO; // TODO
+
     //1) Start displaying markers
     for (int i = 0; i <= totalLatLong - 1; i++) {
       //Get the row
-      Values values = rawReponse.restify.rows[i].values;
+      Values? values = rawResponse.restify?.rows?[i].values;
 
       //Create site from row
       Site site = Site(
           telco: telco,
-          siteId: values.siteId.value,
-          name: values.name.value,
+          cityDensity: cityDensity,
+          siteId: values!.siteId!.value,
+          name: values.name!.value,
           licensingAreaId: values.licensingAreaId != null
-              ? int.parse(values.licensingAreaId.value)
+              ? int.parse(values.licensingAreaId!.value)
               : 0,
-          latitude: double.parse(values.latitude.value),
-          longitude: double.parse(values.longitude.value),
-          state: values.state.value,
-          postcode: values.postcode.value,
-          elevation: values.elevation.value);
+          latitude: double.parse(values.latitude!.value),
+          longitude: double.parse(values.longitude!.value),
+          state: values.state!.value,
+          postcode: values.postcode!.value,
+          elevation: values.elevation!.value);
 
       Marker marker = Marker(
           markerId: MarkerId(
               "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}"),
           // title: site.name,
-          position: LatLng(site.latitude, site.longitude),
+          position: LatLng(site.latitude!, site.longitude!),
           icon: BitmapDescriptor.fromBytes(await site.getIcon()),
           rotation: site.rotation,
           alpha: site.alpha,
@@ -822,7 +827,7 @@ class MapBodyState extends AbstractMapBodyState {
     expansionAmount = expansionAmount + totalLatLong;
 
     //2) Download next page towers if exist
-    NextPage nextPage = rawReponse.restify.nextPage;
+    NextPage? nextPage = rawResponse.restify!.nextPage;
     if (nextPage != null) {
       logger.d("next page exist");
       downloadTowersForSingleTelco(telco, geoHash,
@@ -840,11 +845,11 @@ class MapBodyState extends AbstractMapBodyState {
 
     //3) Prepare to query for the devices at the site
     String site_ids = "";
-    //int siteCounter = 0;
+    int siteCounter = 0;
     listOfTowersForSingleTeclo.forEach((MapOverlay mapOverlay) {
       if (mapOverlay.site != null) {
-        site_ids = site_ids + 'site_id%3D%3D${mapOverlay.site.siteId}||';
-        //siteCounter++;
+        site_ids = site_ids + 'site_id%3D%3D${mapOverlay.site!.siteId}||';
+        siteCounter++;
       }
     });
     if (site_ids.length > 2) {
@@ -870,7 +875,7 @@ class MapBodyState extends AbstractMapBodyState {
       GetDevices(
               url: url,
               telco: telco,
-              listOfTowersForSingleTeclo: listOfTowersForSingleTeclo,
+              listOfTowersForSingleTelco: listOfTowersForSingleTeclo,
               showSnackBar: showSnackbar,
               onTowerInfoChanged: refreshUI)
           .getDevicesData();
@@ -888,9 +893,9 @@ class MapBodyState extends AbstractMapBodyState {
   void fetchNeighbourSites(
       {int expansionAmount = 0,
       int recursionDepth = 0,
-      String geoHash,
-      Telco telco,
-      bool expandGeohash}) {
+      required String geoHash,
+        required Telco telco,
+        required bool expandGeohash}) {
     // See if any neighbour sites need downloading and fetch them if required also
     if (expandGeohash &&
         expansionAmount < SiteHelper.EXPANSION_LIMIT &&
@@ -948,11 +953,11 @@ class MapBodyState extends AbstractMapBodyState {
   }
 
   void showSnackbar(
-      {@required String message,
+      {String? message,
       Duration duration = const Duration(seconds: 1),
       bool isDismissible = false}) {
     final SnackBar snackBar = SnackBar(
-      content: Text(message),
+      content: Text(message!),
       duration: duration,
       backgroundColor: HexColor('3F51B5').withOpacity(0.8),
       action: isDismissible
@@ -974,7 +979,7 @@ class MapBodyState extends AbstractMapBodyState {
       //Remove any existing polygons first
       //PolygonHelper().globalListPolygons.clear();
       PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
-        return !mapOverlay.polygon.polygonId.value.contains('developer');
+        return !mapOverlay.polygon!.polygonId.value.contains('developer');
       });
     });
 
@@ -1045,7 +1050,7 @@ class MapBodyState extends AbstractMapBodyState {
                         'Site ID:': '${site.siteId}',
                         'Latitude:': '${site.latitude}',
                         'Longitude:': '${site.longitude}',
-                        if (site.elevation.isNotEmpty)
+                        if (site.elevation!.isNotEmpty)
                           'Elevation:': '${site.elevation} metres',
                         if (getTowerHeightFromDeviceDetails(
                                 site.getDeviceDetailsMobile()) >
@@ -1267,7 +1272,7 @@ class MapBodyState extends AbstractMapBodyState {
               ElevatedButton(
                 style: Theme.of(context).elevatedButtonTheme.style,
                 onPressed: () {
-                  launchURL(site.siteId);
+                  launchURL(site.siteId!);
                 },
                 child: AutoSizeText('ACMA Website'),
               ),
@@ -1296,7 +1301,7 @@ class MapBodyState extends AbstractMapBodyState {
     List<TableRow> listOfTableRows = <TableRow>[];
 
     for (String bandEmission in freqToDeviceMapping.keys) {
-      DeviceDetails d = freqToDeviceMapping[bandEmission].key;
+      DeviceDetails d = freqToDeviceMapping[bandEmission]!.key;
       //Boolean active = freqToDeviceMapping.get(bandEmission).second;
       NetworkType networkType = d.getNetworkType();
       int mimoCount = site.countNumberAntennaPaths(d);
@@ -1321,7 +1326,7 @@ class MapBodyState extends AbstractMapBodyState {
             child: Align(
               alignment: AlignmentDirectional.centerEnd,
               child: AutoSizeText(
-                '${TranslateFrequencies.formatFrequency(d.frequency, false)}',
+                '${TranslateFrequencies.formatFrequency(d.frequency!, false)}',
                 group: sizeGroup,
                 minFontSize: 8,
                 maxFontSize: 16,
@@ -1334,7 +1339,7 @@ class MapBodyState extends AbstractMapBodyState {
             child: Align(
               alignment: AlignmentDirectional.centerEnd,
               child: AutoSizeText(
-                '${TranslateFrequencies.formatBandwidth(d.bandwidth, false)}',
+                '${TranslateFrequencies.formatBandwidth(d.bandwidth!, false)}',
                 group: sizeGroup,
                 minFontSize: 8,
                 maxFontSize: 16,
@@ -1394,13 +1399,13 @@ class MapBodyState extends AbstractMapBodyState {
     List<TableRow> listOfTableRows = <TableRow>[];
 
     for (String bandEmission in freqToDeviceMapping.keys) {
-      DeviceDetails d = freqToDeviceMapping[bandEmission].key;
+      DeviceDetails d = freqToDeviceMapping[bandEmission]!.key;
       //Boolean active = freqToDeviceMapping.get(bandEmission).second;
       TableRow singleTableRow = TableRow(children: [
         Align(
           alignment: AlignmentDirectional.centerEnd,
           child: AutoSizeText(
-            '${TranslateFrequencies.formatFrequency(d.frequency, true)}',
+            '${TranslateFrequencies.formatFrequency(d.frequency!, true)}',
             group: sizeGroup,
             minFontSize: 8,
             maxFontSize: 16,
@@ -1485,8 +1490,8 @@ class SitePropertiesTableWidget extends StatelessWidget {
   final Map<String, String> data;
 
   const SitePropertiesTableWidget({
-    Key key,
-    @required this.data,
+    Key? key,
+    required this.data,
   }) : super(key: key);
 
   @override

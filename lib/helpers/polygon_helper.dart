@@ -49,19 +49,19 @@ class PolygonHelper with ChangeNotifier {
   static Set<PolygonContainer> allPolygons = new Set<PolygonContainer>();
   static Map<Site, Map<DeviceDetails, Set<PolygonContainer>>> sitesPolygons =
       new Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>();
-  static Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>
+  static late Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>
       sitesPolygonsOppositeTerrain;
   static bool drawPolygonsOnClick = true;
   static Logger logger = Logger();
 
   //static Set<Polygon> globalPolygons = Set<Polygon>();
-  static List<MapOverlay> globalListPolygons = List<MapOverlay>();
-  static CancelToken cancelFetchingPolygonRequestToken;
+  static List<MapOverlay> globalListPolygons = [];
+  static CancelToken? cancelFetchingPolygonRequestToken;
   static String terrainAwarenessKey = '';
 
   void queryForSignalPolygon(
       Site site, bool refreshingPolygons, bool cachingPolygons,
-      {Set<DeviceDetails> specificDevices, ShowSnackBar showSnackBar}) {
+      {Set<DeviceDetails>? specificDevices, ShowSnackBar? showSnackBar}) {
     // If we have decided not to refresh (because we are loading a saved state for instance)
     logger.d('inside query for signal polygon');
 
@@ -83,11 +83,11 @@ class PolygonHelper with ChangeNotifier {
     if (sitesPolygons.containsKey(site)) {
       //Remove any existing polygons first
       globalListPolygons.removeWhere((mapOverlay) {
-        return !mapOverlay.polygon.polygonId.value.contains('developer');
+        return !mapOverlay.polygon!.polygonId.value.contains('developer');
       });
 
-      for (DeviceDetails device in sitesPolygons[site].keys) {
-        Set<PolygonContainer> polygons = sitesPolygons[site][device];
+      for (DeviceDetails device in sitesPolygons[site]!.keys) {
+        Set<PolygonContainer> polygons = sitesPolygons[site]![device]!;
         //TODO implement below for loop
 //        for (PolygonContainer polygonContainer in polygons) {
 //          // Remove from map display
@@ -124,7 +124,7 @@ class PolygonHelper with ChangeNotifier {
               'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$terrainAwarenessKey';
           GetElevation(site: site, url: url).getElevationData();
         }
-      } catch (e) {
+      } catch (e, stack) {
         site.startedDownloadingElevations = false;
         e.printStackTrace();
         return;
@@ -132,8 +132,8 @@ class PolygonHelper with ChangeNotifier {
     }
 
     // Prepare for the download
-    if (!sitesPolygons.containsKey(site)) {
-      sitesPolygons[site] = Map<DeviceDetails, Set<PolygonContainer>>();
+    if (!sitesPolygons!.containsKey(site)) {
+      sitesPolygons![site] = Map<DeviceDetails, Set<PolygonContainer>>();
     }
 
     //This is helpful in cancelling all apis which refers to this token
@@ -142,7 +142,7 @@ class PolygonHelper with ChangeNotifier {
     // Download the polygon data
     deviceLoop:
     for (DeviceDetails d in site.getDeviceDetailsMobile()) {
-      int frequency = d.frequency / 1000 ~/ 1000;
+      int frequency = d.frequency! / 1000 ~/ 1000;
 
       // Don't download devices we are not interested in
       //Log.d("PolygonHelper", "queryForSignalPolygon: specificDevices=" + specificDevices);
@@ -201,8 +201,8 @@ class PolygonHelper with ChangeNotifier {
         // Draw the polygon, no need to download it again. However we do have to calculate it
         // again because the input parameters may have changed (like user settings).
         List<List<LatLng>> data = [];
-        for (PolygonContainer polygonContainer in polygonCache[d]) {
-          data.add(polygonContainer.getPolygon().points);
+        for (PolygonContainer? polygonContainer in polygonCache[d]!) {
+          data.add(polygonContainer!.getPolygon().points);
         }
         createPolygon(
           data,
@@ -224,7 +224,7 @@ class PolygonHelper with ChangeNotifier {
         results.insert(i, []);
       }
 
-      String dri = d.deviceRegistrationIdentifier;
+      String? dri = d.deviceRegistrationIdentifier;
       if (dri == null || dri.isEmpty || MapHelper().developerMode) {
         //if (!site.getTelco().isTelecommunications()) {
         // If we can't do any better, lets create a simple circular polygon
@@ -245,7 +245,7 @@ class PolygonHelper with ChangeNotifier {
               device: d,
               list: results,
               url: url,
-              showSnackBar: showSnackBar,
+              showSnackBar: showSnackBar!,
               cancelToken: cancelFetchingPolygonRequestToken)
           .getLicenceHRPData();
     }
@@ -291,7 +291,7 @@ class PolygonHelper with ChangeNotifier {
         points: data[i],
       );
 
-      if (PolygonHelper.sitesPolygons.containsKey(site)) {
+      if (PolygonHelper.sitesPolygons!.containsKey(site)) {
 //        List<GroundOverlay> overlays = new ArrayList<>();
 //
 //                // Only draw frequency on the outer most polygon
@@ -344,10 +344,10 @@ class PolygonHelper with ChangeNotifier {
     }
 
     // Be prepared for other threads removing the site
-    if (sitesPolygons.containsKey(site)) {
+    if (sitesPolygons!.containsKey(site)) {
       // Save the polygons
       allPolygons.addAll(polygons);
-      sitesPolygons[site][device] = polygons;
+      sitesPolygons[site]![device] = polygons;
     } else {
       //PolygonHelper.globalPolygons.clear();
       // Clean up polygons that were received too late for the map
@@ -360,8 +360,8 @@ class PolygonHelper with ChangeNotifier {
     }
 
     if (data.length > 0) {
-      Map<String, dynamic> eventMap = Map<String, dynamic>();
-      eventMap['site_id'] = site.siteId;
+      Map<String, Object> eventMap = Map<String, Object>();
+      eventMap['site_id'] = site.siteId!;
       eventMap['site_telco'] = TelcoHelper.getName(site.getTelco());
       eventMap['device_lteType'] = LteTypeHelper.getName(device.getLteType());
       eventMap['device_networkType'] =
@@ -389,14 +389,14 @@ class PolygonHelper with ChangeNotifier {
 //
 //    //Double power = d.power; // Watts
 
-    int freqInMHz = device.frequency / 1000 ~/ 1000;
+    int freqInMHz = device.frequency! / 1000 ~/ 1000;
 
     // Draw appropriate signal strength
     List<int> polygons =
         NetworkTypeHelper.getNetworkBars(device.getNetworkType());
 
     int towerHeight = 0;
-    towerHeight = device.height;
+    towerHeight = device.height!;
     if (towerHeight < 10) {
       // Sensible default value
       towerHeight = 10;
@@ -461,11 +461,11 @@ class PolygonHelper with ChangeNotifier {
   }
 
   void clearSitePatterns(bool cancelAllTaskTypes,
-      {Site skipSite, ShowSnackBar showSnackBar}) {
+      {Site? skipSite, ShowSnackBar? showSnackBar}) {
     // Cancel pending REST requests for polygons
     if (cancelFetchingPolygonRequestToken != null) {
-      if (!cancelFetchingPolygonRequestToken.isCancelled) {
-        cancelFetchingPolygonRequestToken
+      if (!cancelFetchingPolygonRequestToken!.isCancelled) {
+        cancelFetchingPolygonRequestToken!
             .cancel("future reuqest for signal polygon have been cancelled");
       }
     }
@@ -473,7 +473,8 @@ class PolygonHelper with ChangeNotifier {
     // Signal that the polygons have changed
     PolygonHelper.switchingBetweenTerrainAwareness = false;
 
-    // Clear all polygons, except maybe skipSite
+    // Clear all polygons, except maybe skipSite.
+    // Does not use iterator to avoid "Concurrent modification during iteration"
     for (int i = 0; i < PolygonHelper.sitesPolygons.keys.length; i++) {
       Site s = PolygonHelper.sitesPolygons.keys.elementAt(i);
       if (s != skipSite) {
@@ -493,8 +494,8 @@ class PolygonHelper with ChangeNotifier {
 
     // Cancel pending REST requests for polygons
     if (cancelFetchingPolygonRequestToken != null) {
-      if (!cancelFetchingPolygonRequestToken.isCancelled) {
-        cancelFetchingPolygonRequestToken
+      if (!cancelFetchingPolygonRequestToken!.isCancelled) {
+        cancelFetchingPolygonRequestToken!
             .cancel("future reuqest for signal polygon have been cancelled");
       }
     }
@@ -517,7 +518,7 @@ class PolygonHelper with ChangeNotifier {
         clearSitePatterns(false);
       }
 
-      Map<Site, Map<DeviceDetails, Set<PolygonContainer>>> switcher =
+      Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>? switcher =
           PolygonHelper.sitesPolygonsOppositeTerrain;
       PolygonHelper.sitesPolygonsOppositeTerrain = PolygonHelper.sitesPolygons;
       PolygonHelper.sitesPolygons = switcher;
@@ -543,9 +544,9 @@ class PolygonHelper with ChangeNotifier {
         PolygonHelper.sitesPolygons;
 
     for (Site site in oldSitesPolygons.keys) {
-      for (DeviceDetails deviceDetails in oldSitesPolygons[site].keys) {
+      for (DeviceDetails deviceDetails in oldSitesPolygons[site]!.keys) {
         Set<PolygonContainer> oldPolygons =
-            oldSitesPolygons[site][deviceDetails];
+            oldSitesPolygons[site]![deviceDetails]!;
         redrawPolygons(site, deviceDetails, oldPolygons);
       }
     }

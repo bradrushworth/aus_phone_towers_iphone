@@ -9,8 +9,8 @@ class Api {
   final String STAGING_BASE_URL = "https://api.bitbot.com.au/api";
   final String PRODUCTION_BASE_URL = "https://api.bitbot.com.au/api";
   //String url = '';
-  Dio dio;
-  Logger logger;
+  late Dio dio;
+  late Logger logger;
 
   Api.initialize() {
     //url = AppConstants.isDebug ? STAGING_BASE_URL : PRODUCTION_BASE_URL;
@@ -29,8 +29,8 @@ class Api {
   }
 
   // A function that will convert a response body into a SiteReponse
-  static SiteReponse parseSiteResponse(var responseData) {
-    return SiteReponse.fromJson(responseData);
+  static SiteResponse parseSiteResponse(var responseData) {
+    return SiteResponse.fromJson(responseData);
   }
 
   // A function that will convert a response body into a ElevationReponse
@@ -39,7 +39,7 @@ class Api {
   }
 
   /// Get marker site data
-  Future<Object> getMarkerData(String path) async {
+  Future<SiteResponse?> getMarkerData(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
       //print("marker data: ${response.data.toString()}");
@@ -57,16 +57,16 @@ class Api {
 Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
-Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
+Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
     }
   }
 
   /// Get device data
-  Future<Object> getDevicesData(String path) async {
+  Future<SiteResponse?> getDevicesData(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
       //print("device data: ${response.data.toString()}");
-      final int statusCode = response.statusCode;
+      final int? statusCode = response.statusCode;
       //logger.i("raw device response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
@@ -74,18 +74,18 @@ Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.re
 Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
-Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
+Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
     }
   }
 
   /// Get polygon data
-  Future<Object> getLicenceHRPData(String path,
-      {CancelToken cancelToken}) async {
+  Future<SiteResponse?> getLicenceHRPData(String path,
+      {CancelToken? cancelToken}) async {
     try {
       Response response =
           await dio.get(path, options: Options(), cancelToken: cancelToken);
       //print("licenceHRP data: ${response.data.toString()}");
-      final int statusCode = response.statusCode;
+      final int? statusCode = response.statusCode;
       //logger.i("raw licenceHRP response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
@@ -96,11 +96,11 @@ Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.re
   }
 
   /// Get search data
-  Future<Object> getSearchedData(String path) async {
+  Future<SiteResponse?> getSearchedData(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
       //print("search data: ${response.data.toString()}");
-      final int statusCode = response.statusCode;
+      final int? statusCode = response.statusCode;
       //logger.i("raw search response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
@@ -108,16 +108,16 @@ Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.re
 Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
-Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
+Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
     }
   }
 
   /// Get antenna data
-  Future<Object> getAntennaDataApi(String path) async {
+  Future<SiteResponse?> getAntennaDataApi(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
       //print("antenna data: ${response.data.toString()}");
-      final int statusCode = response.statusCode;
+      final int? statusCode = response.statusCode;
       //logger.i("raw antenna response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
     } on DioError catch (e) {
@@ -125,16 +125,16 @@ Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.re
 Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
-Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
+Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
     }
   }
 
   /// Get elevation data
-  Future<Object> getElevationDataApi(String path) async {
+  Future<ElevationResponse?> getElevationDataApi(String path) async {
     try {
       Response response = await dio.get(path, options: Options());
       logger.i("elevation data: ${response.data.toString()}");
-      final int statusCode = response.statusCode;
+      final int? statusCode = response.statusCode;
       logger.i("raw elevation response ${response.data.toString()}");
       return compute(parseElevationResponse, response.data);
     } on DioError catch (e) {
@@ -142,7 +142,7 @@ Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.re
 Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
-Response is ${e.response != null ? 'data => ${e.response.data} headers => ${e.response.headers}' : 'empty'}''');
+Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
     }
   }
 }

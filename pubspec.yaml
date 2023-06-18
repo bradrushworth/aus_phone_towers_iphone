@@ -14,20 +14,22 @@ description: Aus Phone Towers
 version: 1.5.3+51
 
 environment:
-  sdk: ">=2.2.2 <3.0.0"
+  sdk: '>=2.19.6 <3.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  google_maps_flutter_platform_interface: ^2.2.0
-  google_maps_flutter_web: ^0.4.0
-  google_maps_flutter: ^2.1.8
+  google_maps_flutter_platform_interface: ^2.2.6
+  google_maps_flutter_web: ^0.5.0
+  google_maps_flutter: ^2.2.6
   cupertino_icons: ^1.0.4
-  http: ^0.13.4
+  http: ^1.0.0
   dio: ^5.0.1
   logger: ^1.1.0
   permission_handler: ^10.0.0
-  geohash: ^0.2.1
+  geohash:
+    git: https://github.com/bradrushworth/dart-geohash.git
+    #path: ../geohash
   location: ^4.4.0
   json_annotation: ^4.0.1
   intl: ^0.18.0
@@ -39,9 +41,9 @@ dependencies:
   #firebase_core: ^1.24.0
   firebase_analytics: ^10.1.4 #9.3.8
   firebase_crashlytics: ^3.0.15 #2.9.0
-  in_app_purchase: ^3.0.6
+  in_app_purchase: ^3.1.5
   #590 was merged and update_version branch of https://github.com/jjliu15/googleads-mobile-flutter-1 has been deleted. So, current workaround is here:
-  google_mobile_ads: ^2.3.0
+  google_mobile_ads: ^3.0.0
   #    git:
 #      url: https://github.com/googleads/googleads-mobile-flutter
 #      ref: 356875362ddb2ac2e0056385d2729c093722fb8d
@@ -57,7 +59,7 @@ dependencies:
 
 dev_dependencies:
   build_runner: ^2.1.7
-  flutter_launcher_icons: ^0.12.0 # Causes some dependency conflicts
+  flutter_launcher_icons: ^0.13.1 # Causes some dependency conflicts
   flutter_test:
     sdk: flutter
   integration_test:

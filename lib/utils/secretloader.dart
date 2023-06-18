@@ -12,7 +12,7 @@ import 'secret.dart';
 class SecretLoader {
   final String secretPath;
 
-  SecretLoader({this.secretPath});
+  SecretLoader({required this.secretPath});
 
   Future<Secret> load() {
     return rootBundle.loadStructuredData<Secret>(this.secretPath,

@@ -22,7 +22,7 @@ class SiteHelper with ChangeNotifier {
   static Set<String> downloadedGeohashes = new Set<String>();
   static final int EXPANSION_LIMIT = 20;
   static final int RECURSION_LIMIT = 3;
-  static List<MapOverlay> globalListMapOverlay = List<MapOverlay>();
+  static List<MapOverlay> globalListMapOverlay = [];
   static Set<Telco> hideTelco = Set<Telco>();
   static Set<NetworkType> hideNetworkType = Set<NetworkType>();
 
@@ -61,9 +61,9 @@ class SiteHelper with ChangeNotifier {
     // Add/Remove markers
     for (int i = 0; i < SiteHelper.globalListMapOverlay.length; i++) {
       if (SiteHelper.globalListMapOverlay[i].site != null) {
-        if (SiteHelper.globalListMapOverlay[i].site.getTelco() == telco) {
-          final Marker marker = SiteHelper.globalListMapOverlay[i].marker;
-          SiteHelper.globalListMapOverlay[i].marker = marker.copyWith(
+        if (SiteHelper.globalListMapOverlay[i].site!.getTelco() == telco) {
+          final Marker? marker = SiteHelper.globalListMapOverlay[i].marker;
+          SiteHelper.globalListMapOverlay[i].marker = marker!.copyWith(
             visibleParam: enable,
           );
         }
@@ -73,8 +73,8 @@ class SiteHelper with ChangeNotifier {
     // Add/Remove polygons
     if (PolygonHelper.globalListPolygons.isNotEmpty) {
       PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
-        return !mapOverlay.polygon.polygonId.value.contains('developer') &&
-            mapOverlay.site.getTelco() == telco;
+        return !mapOverlay.polygon!.polygonId.value.contains('developer') &&
+            mapOverlay.site!.getTelco() == telco;
       });
     }
 
@@ -85,10 +85,10 @@ class SiteHelper with ChangeNotifier {
     // Add/Remove markers
     for (int i = 0; i < SiteHelper.globalListMapOverlay.length; i++) {
       if (SiteHelper.globalListMapOverlay[i].site != null) {
-        final Marker marker = SiteHelper.globalListMapOverlay[i].marker;
-        SiteHelper.globalListMapOverlay[i].marker = marker.copyWith(
+        final Marker? marker = SiteHelper.globalListMapOverlay[i].marker;
+        SiteHelper.globalListMapOverlay[i].marker = marker!.copyWith(
           visibleParam:
-              SiteHelper.globalListMapOverlay[i].site.shouldBeVisible(),
+              SiteHelper.globalListMapOverlay[i].site!.shouldBeVisible(),
         );
       }
     }
@@ -135,7 +135,7 @@ class SiteHelper with ChangeNotifier {
 
   void enableTelcoInUse(bool drawDefaultTelco) {
     if (drawDefaultTelco) {
-      Telco telcoInUse; // I want to show all of the telcos now
+      Telco? telcoInUse; // I want to show all of the telcos now
       if (telcoInUse == null || telcoInUse == Telco.Telstra)
         toggleTelcoMarkers(Telco.Telstra, NavigationMenu.isTelstraVisible);
       if (telcoInUse == null || telcoInUse == Telco.Optus)
@@ -176,7 +176,7 @@ class SiteHelper with ChangeNotifier {
     //TODO code for currently connected tower
   }
 
-  void clearMap({void Function() onCameraMoveFromLastLocation}) {
+  void clearMap({required void Function() onCameraMoveFromLastLocation}) {
     PolygonHelper().clearSitePatterns(true);
     //For markers
     downloadedGeohashes.clear();
@@ -184,7 +184,7 @@ class SiteHelper with ChangeNotifier {
     //For polygons
     siteDownloadSinceLastClick.clear();
     PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
-      return !mapOverlay.polygon.polygonId.value.contains('developer');
+      return !mapOverlay.polygon!.polygonId.value.contains('developer');
     });
     PolygonHelper.sitesPolygons.clear();
     PolygonHelper.allPolygons.clear();
@@ -201,7 +201,7 @@ class SiteHelper with ChangeNotifier {
     //For polygons
     siteDownloadSinceLastClick.clear();
     PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
-      return !mapOverlay.polygon.polygonId.value.contains('developer');
+      return !mapOverlay.polygon!.polygonId.value.contains('developer');
     });
     PolygonHelper.sitesPolygons.clear();
     PolygonHelper.allPolygons.clear();

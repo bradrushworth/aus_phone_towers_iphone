@@ -17,7 +17,7 @@ class SearchHelper with ChangeNotifier {
   static final String DB_WILD_CARD = "%25";
   Logger logger = new Logger();
   Api api = Api.initialize();
-  final ShowSnackBar showSnackBar;
+  final ShowSnackBar? showSnackBar;
   dynamic mapController; // Could be a platform or web Google map controller
   List<LatLng> listLatLongBounds = [];
 
@@ -36,11 +36,11 @@ class SearchHelper with ChangeNotifier {
     String filter;
     if (RegExp(r'\d{4}').hasMatch(query)) {
       filter = 'postcode~~$query';
-      showSnackBar(
+      showSnackBar!(
           message: 'Searching for postcode: $query', isDismissible: true);
     } else {
       filter = 'name~~$DB_WILD_CARD${Uri.encodeFull(query)}$DB_WILD_CARD';
-      showSnackBar(message: 'Searching for sites: $query', isDismissible: true);
+      showSnackBar!(message: 'Searching for sites: $query', isDismissible: true);
     }
     String fields = "geohash";
     String url =
@@ -52,20 +52,20 @@ class SearchHelper with ChangeNotifier {
       void Function(String geoHash, bool expandGeohash) downloadTowers) async {
     Set<String> geohashes = Set<String>();
     logger.d('get search url $url');
-    SiteReponse rawReponse = await api.getSearchedData(url);
+    SiteResponse? rawResponse = await api.getSearchedData(url);
 
-    int totalRows = rawReponse?.restify?.rows?.length ?? 0;
+    int totalRows = rawResponse?.restify?.rows?.length ?? 0;
 
     //If no data found for this telco then don't do anything
     if (totalRows == 0) {
-      showSnackBar(message: 'No search results found!', isDismissible: true);
+      showSnackBar!(message: 'No search results found!', isDismissible: true);
       return;
     }
 
     for (int i = 0; i < totalRows; i++) {
       //Get the row
-      String geoHashFromAPI = rawReponse.restify.rows[i].values.geohash.value;
-      geohashes.add(geoHashFromAPI);
+      String? geoHashFromAPI = rawResponse?.restify?.rows?[i].values?.geohash?.value;
+      geohashes.add(geoHashFromAPI!);
     }
 
     for (String geohash in geohashes) {
@@ -85,8 +85,8 @@ class SearchHelper with ChangeNotifier {
     Future.delayed(Duration(seconds: 6), () {
       for (int i = 0; i < SiteHelper.globalListMapOverlay.length; i++) {
         if (SiteHelper.globalListMapOverlay[i].site != null) {
-          final Marker marker = SiteHelper.globalListMapOverlay[i].marker;
-          listLatLongBounds.add(marker.position);
+          final Marker? marker = SiteHelper.globalListMapOverlay[i].marker;
+          listLatLongBounds.add(marker!.position);
         }
       }
 
@@ -108,24 +108,24 @@ class SearchHelper with ChangeNotifier {
         ),
       );
 
-      showSnackBar(message: 'Searching is finished!');
+      showSnackBar!(message: 'Searching is finished!');
     });
   }
 
   LatLngBounds boundsFromLatLngList(List<LatLng> list) {
     assert(list.isNotEmpty);
-    double x0, x1, y0, y1;
+    double? x0, x1, y0, y1;
     for (LatLng latLng in list) {
       if (x0 == null) {
         x0 = x1 = latLng.latitude;
         y0 = y1 = latLng.longitude;
       } else {
-        if (latLng.latitude > x1) x1 = latLng.latitude;
+        if (latLng.latitude > x1!) x1 = latLng.latitude;
         if (latLng.latitude < x0) x0 = latLng.latitude;
-        if (latLng.longitude > y1) y1 = latLng.longitude;
-        if (latLng.longitude < y0) y0 = latLng.longitude;
+        if (latLng.longitude > y1!) y1 = latLng.longitude;
+        if (latLng.longitude < y0!) y0 = latLng.longitude;
       }
     }
-    return LatLngBounds(southwest: LatLng(x0, y0), northeast: LatLng(x1, y1));
+    return LatLngBounds(southwest: LatLng(x0!, y0!), northeast: LatLng(x1!, y1!));
   }
 }

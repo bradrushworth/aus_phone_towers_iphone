@@ -33,7 +33,7 @@ Future<void> main() async {
 
   await integrationDriver(
     //driver: ,
-    onScreenshot: (String screenshotName, List<int> screenshotBytes) async {
+    onScreenshot: (String screenshotName, List<int> screenshotBytes, [Map<String, Object?>? args]) async {
       final File image = File('$screenshotName.png');
       image.writeAsBytesSync(screenshotBytes);
       // Return false if the screenshot is invalid.

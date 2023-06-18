@@ -26,69 +26,68 @@ import 'utils/secret.dart';
 Logger logger = new Logger();
 
 Future<void> main() async {
-
   // Set `enableInDevMode` to true to see reports while in debug mode
   // This is only to be used for confirming that reports are being
   // submitted as expected. It is not intended to be used for everyday
   // development.
-  await WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  if (!kIsWeb) {
-    if (!Foundation.kDebugMode) {
-      // Mobile version gets them from GoogleService-Info.plist or google-services.json
-      await Firebase.initializeApp();
-    }
-  } else {
-    // Web version needs the parameters sent though here
-    await Firebase.initializeApp(
-        // Replace with actual values
-        options: FirebaseOptions(
-            apiKey: "AIzaSyDSjVeI6yRIbl_VtihyNEe-JgxEl_LCupA",
-            authDomain: "aus-phone-towers-7d175.firebaseapp.com",
-            databaseURL: "https://aus-phone-towers-7d175.firebaseio.com",
-            projectId: "aus-phone-towers-7d175",
-            storageBucket: "aus-phone-towers-7d175.appspot.com",
-            messagingSenderId: "742739090143",
-            appId: "1:742739090143:web:a7d35db594855884b2a76a",
-            measurementId: "G-WT4TEP3Z7X"));
-  }
+  runZoned<Future<void>>(() async {
+    await WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialise Crashlytics
-  if (!kIsWeb) {
-    if (!Foundation.kDebugMode) {
-      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-
-      // Pass all uncaught errors to Crashlytics.
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+    // Initialize Firebase
+    if (!kIsWeb) {
+      if (!Foundation.kDebugMode) {
+        // Mobile version gets them from GoogleService-Info.plist or google-services.json
+        //await Firebase.initializeApp(); // TODO
+      }
+    } else {
+      // Web version needs the parameters sent though here
+      await Firebase.initializeApp(
+          // Replace with actual values
+          options: FirebaseOptions(
+              apiKey: "AIzaSyDSjVeI6yRIbl_VtihyNEe-JgxEl_LCupA",
+              authDomain: "aus-phone-towers-7d175.firebaseapp.com",
+              databaseURL: "https://aus-phone-towers-7d175.firebaseio.com",
+              projectId: "aus-phone-towers-7d175",
+              storageBucket: "aus-phone-towers-7d175.appspot.com",
+              messagingSenderId: "742739090143",
+              appId: "1:742739090143:web:a7d35db594855884b2a76a",
+              measurementId: "G-WT4TEP3Z7X"));
     }
 
-    if (Platform.isIOS) {
-      // Show tracking authorization dialog and ask for permission
-      final status = await AppTrackingTransparency
-          .requestTrackingAuthorization();
+    // Initialise Crashlytics
+    if (!kIsWeb) {
+      if (!Foundation.kDebugMode) {
+        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false); // TODO
+
+        // Pass all uncaught errors to Crashlytics.
+        //FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError; // TODO
+      }
+
+      if (Platform.isIOS) {
+        // Show tracking authorization dialog and ask for permission
+        final status = await AppTrackingTransparency.requestTrackingAuthorization();
+      }
+
+      // Initialize admob
+      AdsHelper().initialize();
+
+      // Initialize In App Purchase (No longer required?)
+      //InAppPurchaseConnection.enablePendingPurchases();
     }
 
-    // Initialize admob
-    await AdsHelper().initialize();
+    //Load secrets
+    Secret secret = await SecretLoader(secretPath: 'assets/json/secrets.json').load();
+    AdsHelper.androidAdmobAppId = secret.androidAdmobAppId;
+    AdsHelper.androidPortraitAdUnitId = secret.androidPortraitAdUnitId;
+    AdsHelper.androidLandscapeAdUnitId = secret.androidLandscapeAdUnitId;
+    AdsHelper.iOSAdmobAppId = secret.iOSAdmobAppId;
+    AdsHelper.iOSPortraitAdUnitId = secret.iOSPortraitAdUnitId;
+    AdsHelper.iOSLandscapeAdUnitId = secret.iOSLandscapeAdUnitId;
+    PolygonHelper.terrainAwarenessKey = secret.terrainAwarenessKey;
+    //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
 
-    // Initialize In App Purchase (No longer required?)
-    //InAppPurchaseConnection.enablePendingPurchases();
-  }
-
-  //Load secrets
-  Secret secret =
-  await SecretLoader(secretPath: 'assets/json/secrets.json').load();
-  AdsHelper.androidAdmobAppId = secret.androidAdmobAppId;
-  AdsHelper.androidPortraitAdUnitId = secret.androidPortraitAdUnitId;
-  AdsHelper.androidLandscapeAdUnitId = secret.androidLandscapeAdUnitId;
-  AdsHelper.iOSAdmobAppId = secret.iOSAdmobAppId;
-  AdsHelper.iOSPortraitAdUnitId = secret.iOSPortraitAdUnitId;
-  AdsHelper.iOSLandscapeAdUnitId = secret.iOSLandscapeAdUnitId;
-  PolygonHelper.terrainAwarenessKey = secret.terrainAwarenessKey;
-  //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
-
-  /*
+    /*
   * runZoned Provides monitoring on whole app and reporting to the FireBase.
   *
   *
@@ -99,7 +98,6 @@ Future<void> main() async {
   *
   *
   *  */
-  runZoned<Future<void>>(() async {
     runApp(MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -121,18 +119,18 @@ Future<void> main() async {
       child: AusPhoneTowers(),
     ));
   },
-      onError: kIsWeb || Foundation.kDebugMode
-          ? (exception, stack) {}
-          : await FirebaseCrashlytics.instance.recordError);
+      // onError: kIsWeb || Foundation.kDebugMode // TODO
+      //     ? (exception, stack) {}
+      //     : await FirebaseCrashlytics.instance.recordError
+  );
 }
 
 class AusPhoneTowers extends StatelessWidget {
   // This widget is the root of the application.
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark));
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark
+        .copyWith(statusBarColor: Colors.white, statusBarIconBrightness: Brightness.dark));
 
     return MaterialApp(
       title: Strings.app_title,
@@ -143,16 +141,11 @@ class AusPhoneTowers extends StatelessWidget {
               elevation: 0.0,
               color: Colors.white.withOpacity(0.85)),
           textTheme: TextTheme(
-              bodyText1: TextStyle(
-                  fontFamily: 'RobotoMono',
-                  color: Colors.grey[800],
-                  fontSize: 10),
+              bodyText1: TextStyle(fontFamily: 'RobotoMono', color: Colors.grey[800], fontSize: 10),
               button: TextStyle(color: Colors.grey[700])),
           inputDecorationTheme: InputDecorationTheme(
-            enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey[700])),
-            focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.grey[700])),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
           )),
       home: MapScreen(),
     );

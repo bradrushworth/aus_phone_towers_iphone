@@ -2,7 +2,7 @@ class HeightDistancePair extends Comparable<HeightDistancePair> {
   final double height;
   final double distance;
 
-  HeightDistancePair({this.height, this.distance});
+  HeightDistancePair({required this.height, required this.distance});
 
   @override
   bool operator ==(other) {

@@ -6,8 +6,8 @@ import 'package:phonetowers/model/site.dart';
 
 void main() {
   group('SiteTest', () {
-    Site site;
-    DeviceDetails device1, device2, device3, device4;
+    late Site site;
+    late DeviceDetails device1, device2, device3, device4;
 
     setUp(() {
       site = new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN);

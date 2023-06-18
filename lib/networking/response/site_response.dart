@@ -1,11 +1,11 @@
 import 'package:json_annotation/json_annotation.dart';
 
-class SiteReponse {
-  Restify restify;
+class SiteResponse {
+  Restify? restify;
 
-  SiteReponse({this.restify});
+  SiteResponse({this.restify});
 
-  SiteReponse.fromJson(Map<String, dynamic> json) {
+  SiteResponse.fromJson(Map<String, dynamic> json) {
     restify =
         json['restify'] != null ? new Restify.fromJson(json['restify']) : null;
   }
@@ -13,39 +13,39 @@ class SiteReponse {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.restify != null) {
-      data['restify'] = this.restify.toJson();
+      data['restify'] = this.restify!.toJson();
     }
     return data;
   }
 }
 
 class Restify {
-  Self self;
-  Parent parent;
-  int rowCount;
-  int start;
-  int offset;
-  int currentPage;
-  int pageCount;
-  NextPage nextPage;
-  FirstPage firstPage;
-  LastPage lastPage;
-  String ownFields;
-  List<Rows> rows;
+  Self? self;
+  Parent? parent;
+  int? rowCount;
+  int? start;
+  int? offset;
+  int? currentPage;
+  int? pageCount;
+  NextPage? nextPage;
+  FirstPage? firstPage;
+  LastPage? lastPage;
+  String? ownFields;
+  List<Rows>? rows;
 
   Restify(
-      {this.self,
-      this.parent,
-      this.rowCount,
-      this.start,
-      this.offset,
-      this.currentPage,
-      this.pageCount,
-      this.nextPage,
-      this.firstPage,
-      this.lastPage,
-      this.ownFields,
-      this.rows});
+      {required this.self,
+      required this.parent,
+      required this.rowCount,
+      required this.start,
+      required this.offset,
+      required this.currentPage,
+      required this.pageCount,
+      required this.nextPage,
+      required this.firstPage,
+      required this.lastPage,
+      required this.ownFields,
+      required this.rows});
 
   Restify.fromJson(Map<String, dynamic> json) {
     self = json['self'] != null ? new Self.fromJson(json['self']) : null;
@@ -67,9 +67,9 @@ class Restify {
         : null;
     ownFields = json['ownFields'];
     if (json['rows'] != null) {
-      rows = new List<Rows>();
+      rows = [];
       json['rows'].forEach((v) {
-        rows.add(new Rows.fromJson(v));
+        rows!.add(new Rows.fromJson(v));
       });
     }
   }
@@ -77,10 +77,10 @@ class Restify {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.self != null) {
-      data['self'] = this.self.toJson();
+      data['self'] = this.self!.toJson();
     }
     if (this.parent != null) {
-      data['parent'] = this.parent.toJson();
+      data['parent'] = this.parent!.toJson();
     }
     data['rowCount'] = this.rowCount;
     data['start'] = this.start;
@@ -88,27 +88,27 @@ class Restify {
     data['currentPage'] = this.currentPage;
     data['pageCount'] = this.pageCount;
     if (this.nextPage != null) {
-      data['nextPage'] = this.nextPage.toJson();
+      data['nextPage'] = this.nextPage!.toJson();
     }
     if (this.firstPage != null) {
-      data['firstPage'] = this.firstPage.toJson();
+      data['firstPage'] = this.firstPage!.toJson();
     }
     if (this.lastPage != null) {
-      data['lastPage'] = this.lastPage.toJson();
+      data['lastPage'] = this.lastPage!.toJson();
     }
     data['ownFields'] = this.ownFields;
     if (this.rows != null) {
-      data['rows'] = this.rows.map((v) => v.toJson()).toList();
+      data['rows'] = this.rows!.map((v) => v.toJson()).toList();
     }
     return data;
   }
 }
 
 class Self {
-  String href;
-  String name;
+  late String href;
+  late String name;
 
-  Self({this.href, this.name});
+  Self({required this.href, required this.name});
 
   Self.fromJson(Map<String, dynamic> json) {
     href = json['href'];
@@ -124,10 +124,10 @@ class Self {
 }
 
 class Parent {
-  String href;
-  String name;
+  late String href;
+  late String name;
 
-  Parent({this.href, this.name});
+  Parent({required this.href, required this.name});
 
   Parent.fromJson(Map<String, dynamic> json) {
     href = json['href'];
@@ -143,8 +143,8 @@ class Parent {
 }
 
 class NextPage {
-  String href;
-  NextPage({this.href});
+  late String href;
+  NextPage({required this.href});
 
   NextPage.fromJson(Map<String, dynamic> json) {
     href = json['href'];
@@ -158,9 +158,9 @@ class NextPage {
 }
 
 class FirstPage {
-  String href;
+  late String href;
 
-  FirstPage({this.href});
+  FirstPage({required this.href});
 
   FirstPage.fromJson(Map<String, dynamic> json) {
     href = json['href'];
@@ -174,9 +174,9 @@ class FirstPage {
 }
 
 class LastPage {
-  String href;
+  late String href;
 
-  LastPage({this.href});
+  LastPage({required this.href});
 
   LastPage.fromJson(Map<String, dynamic> json) {
     href = json['href'];
@@ -190,62 +190,62 @@ class LastPage {
 }
 
 class Rows {
-  String href;
-  Values values;
+  String? href;
+  Values? values;
 
-  Rows({this.href, this.values});
+  Rows({required this.href, required this.values});
 
   Rows.fromJson(Map<String, dynamic> json) {
     href = json['href'];
     values =
-        json['values'] != null ? new Values.fromJson(json['values']) : null;
+        (json['values'] != null ? new Values.fromJson(json['values']) : null);
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     data['href'] = this.href;
     if (this.values != null) {
-      data['values'] = this.values.toJson();
+      data['values'] = this.values!.toJson();
     }
     return data;
   }
 }
 
 class Values {
-  SiteId siteId;
-  Latitude latitude;
-  Longitude longitude;
+  SiteId? siteId;
+  Latitude? latitude;
+  Longitude? longitude;
   @JsonKey(name: 'name')
-  SiteName name;
+  SiteName? name;
   @JsonKey(name: 'state')
-  SiteState state;
-  LicensingAreaId licensingAreaId;
-  Postcode postcode;
-  SitePrecision sitePrecision;
-  Elevation elevation;
-  HcisL2 hcisL2;
+  SiteState? state;
+  LicensingAreaId? licensingAreaId;
+  Postcode? postcode;
+  SitePrecision? sitePrecision;
+  Elevation? elevation;
+  HcisL2? hcisL2;
   @JsonKey(name: 'geohash')
-  SiteGeohash geohash;
-  SddId sddId;
-  DeviceRegistrationIdentifier deviceRegistrationIdentifier;
-  Frequency frequency;
-  Bandwidth bandwidth;
-  Emission emission;
-  Polarisation polarisation;
-  Azimuth azimuth;
-  Height height;
-  Eirp eirp;
-  CallSign callSign;
-  Active active;
-  StartAngle startAngle;
-  Power power;
-  AntennaId antennaId;
-  FrontToBack frontToBack;
-  Gain gain;
-  HBeamWidth hBeamwidth;
+  SiteGeohash? geohash;
+  SddId? sddId;
+  DeviceRegistrationIdentifier? deviceRegistrationIdentifier;
+  Frequency? frequency;
+  Bandwidth? bandwidth;
+  Emission? emission;
+  Polarisation? polarisation;
+  Azimuth? azimuth;
+  Height? height;
+  Eirp? eirp;
+  CallSign? callSign;
+  Active? active;
+  StartAngle? startAngle;
+  Power? power;
+  AntennaId? antennaId;
+  FrontToBack? frontToBack;
+  Gain? gain;
+  HBeamWidth? hBeamwidth;
 
   Values(
-      {this.siteId,
+      {required this.siteId,
       this.latitude,
       this.longitude,
       this.name,
@@ -348,98 +348,98 @@ class Values {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
     if (this.siteId != null) {
-      data['site_id'] = this.siteId.toJson();
+      data['site_id'] = this.siteId!.toJson();
     }
     if (this.latitude != null) {
-      data['latitude'] = this.latitude.toJson();
+      data['latitude'] = this.latitude!.toJson();
     }
     if (this.longitude != null) {
-      data['longitude'] = this.longitude.toJson();
+      data['longitude'] = this.longitude!.toJson();
     }
     if (this.name != null) {
-      data['name'] = this.name.toJson();
+      data['name'] = this.name!.toJson();
     }
     if (this.state != null) {
-      data['state'] = this.state.toJson();
+      data['state'] = this.state!.toJson();
     }
     if (this.licensingAreaId != null) {
-      data['licensing_area_id'] = this.licensingAreaId.toJson();
+      data['licensing_area_id'] = this.licensingAreaId!.toJson();
     }
     if (this.postcode != null) {
-      data['postcode'] = this.postcode.toJson();
+      data['postcode'] = this.postcode!.toJson();
     }
     if (this.sitePrecision != null) {
-      data['site_precision'] = this.sitePrecision.toJson();
+      data['site_precision'] = this.sitePrecision!.toJson();
     }
     if (this.elevation != null) {
-      data['elevation'] = this.elevation.toJson();
+      data['elevation'] = this.elevation!.toJson();
     }
     if (this.hcisL2 != null) {
-      data['hcis_l2'] = this.hcisL2.toJson();
+      data['hcis_l2'] = this.hcisL2!.toJson();
     }
     if (this.geohash != null) {
-      data['geohash'] = this.geohash.toJson();
+      data['geohash'] = this.geohash!.toJson();
     }
     if (this.sddId != null) {
-      data['sdd_id'] = this.sddId.toJson();
+      data['sdd_id'] = this.sddId!.toJson();
     }
     if (this.deviceRegistrationIdentifier != null) {
       data['device_registration_identifier'] =
-          this.deviceRegistrationIdentifier.toJson();
+          this.deviceRegistrationIdentifier!.toJson();
     }
     if (this.frequency != null) {
-      data['frequency'] = this.frequency.toJson();
+      data['frequency'] = this.frequency!.toJson();
     }
     if (this.bandwidth != null) {
-      data['bandwidth'] = this.bandwidth.toJson();
+      data['bandwidth'] = this.bandwidth!.toJson();
     }
     if (this.emission != null) {
-      data['emission'] = this.emission.toJson();
+      data['emission'] = this.emission!.toJson();
     }
     if (this.polarisation != null) {
-      data['polarisation'] = this.polarisation.toJson();
+      data['polarisation'] = this.polarisation!.toJson();
     }
     if (this.azimuth != null) {
-      data['azimuth'] = this.azimuth.toJson();
+      data['azimuth'] = this.azimuth!.toJson();
     }
     if (this.height != null) {
-      data['height'] = this.height.toJson();
+      data['height'] = this.height!.toJson();
     }
     if (this.eirp != null) {
-      data['eirp'] = this.eirp.toJson();
+      data['eirp'] = this.eirp!.toJson();
     }
     if (this.callSign != null) {
-      data['call_sign'] = this.callSign.toJson();
+      data['call_sign'] = this.callSign!.toJson();
     }
     if (this.active != null) {
-      data['active'] = this.active.toJson();
+      data['active'] = this.active!.toJson();
     }
     if (this.startAngle != null) {
-      data['start_angle'] = this.startAngle.toJson();
+      data['start_angle'] = this.startAngle!.toJson();
     }
     if (this.power != null) {
-      data['power'] = this.power.toJson();
+      data['power'] = this.power!.toJson();
     }
     if (this.antennaId != null) {
-      data['antenna_id'] = this.antennaId.toJson();
+      data['antenna_id'] = this.antennaId!.toJson();
     }
     if (this.frontToBack != null) {
-      data['front_to_back'] = this.frontToBack.toJson();
+      data['front_to_back'] = this.frontToBack!.toJson();
     }
     if (this.gain != null) {
-      data['gain'] = this.gain.toJson();
+      data['gain'] = this.gain!.toJson();
     }
     if (this.hBeamwidth != null) {
-      data['h_beamwidth'] = this.hBeamwidth.toJson();
+      data['h_beamwidth'] = this.hBeamwidth!.toJson();
     }
     return data;
   }
 }
 
 class SiteId {
-  String value;
+  late String value;
 
-  SiteId({this.value});
+  SiteId({required this.value});
 
   SiteId.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -453,9 +453,9 @@ class SiteId {
 }
 
 class Latitude {
-  String value;
+  late String value;
 
-  Latitude({this.value});
+  Latitude({required this.value});
 
   Latitude.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -469,9 +469,9 @@ class Latitude {
 }
 
 class Longitude {
-  String value;
+  late String value;
 
-  Longitude({this.value});
+  Longitude({required this.value});
 
   Longitude.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -485,9 +485,9 @@ class Longitude {
 }
 
 class SiteName {
-  String value;
+  late String value;
 
-  SiteName({this.value});
+  SiteName({required this.value});
 
   SiteName.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -501,9 +501,9 @@ class SiteName {
 }
 
 class SiteState {
-  String value;
+  late String value;
 
-  SiteState({this.value});
+  SiteState({required this.value});
 
   SiteState.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -517,9 +517,9 @@ class SiteState {
 }
 
 class LicensingAreaId {
-  String value;
+  late String value;
 
-  LicensingAreaId({this.value});
+  LicensingAreaId({required this.value});
 
   LicensingAreaId.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -533,9 +533,9 @@ class LicensingAreaId {
 }
 
 class Postcode {
-  String value;
+  late String value;
 
-  Postcode({this.value});
+  Postcode({required this.value});
 
   Postcode.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -549,9 +549,9 @@ class Postcode {
 }
 
 class SitePrecision {
-  String value;
+  late String value;
 
-  SitePrecision({this.value});
+  SitePrecision({required this.value});
 
   SitePrecision.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -565,9 +565,9 @@ class SitePrecision {
 }
 
 class HcisL2 {
-  String value;
+  late String value;
 
-  HcisL2({this.value});
+  HcisL2({required this.value});
 
   HcisL2.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -581,9 +581,9 @@ class HcisL2 {
 }
 
 class Elevation {
-  String value;
+  late String value;
 
-  Elevation({this.value});
+  Elevation({required this.value});
 
   Elevation.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -597,9 +597,9 @@ class Elevation {
 }
 
 class SiteGeohash {
-  String value;
+  late String value;
 
-  SiteGeohash({this.value});
+  SiteGeohash({required this.value});
 
   SiteGeohash.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -613,9 +613,9 @@ class SiteGeohash {
 }
 
 class SddId {
-  String value;
+  late String value;
 
-  SddId({this.value});
+  SddId({required this.value});
 
   SddId.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -629,9 +629,9 @@ class SddId {
 }
 
 class DeviceRegistrationIdentifier {
-  String value;
+  late String value;
 
-  DeviceRegistrationIdentifier({this.value});
+  DeviceRegistrationIdentifier({required this.value});
 
   DeviceRegistrationIdentifier.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -645,9 +645,9 @@ class DeviceRegistrationIdentifier {
 }
 
 class Frequency {
-  String value;
+  late String value;
 
-  Frequency({this.value});
+  Frequency({required this.value});
 
   Frequency.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -661,9 +661,9 @@ class Frequency {
 }
 
 class Bandwidth {
-  String value;
+  late String value;
 
-  Bandwidth({this.value});
+  Bandwidth({required this.value});
 
   Bandwidth.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -677,9 +677,9 @@ class Bandwidth {
 }
 
 class Emission {
-  String value;
+  late String value;
 
-  Emission({this.value});
+  Emission({required this.value});
 
   Emission.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -693,9 +693,9 @@ class Emission {
 }
 
 class Polarisation {
-  String value;
+  late String value;
 
-  Polarisation({this.value});
+  Polarisation({required this.value});
 
   Polarisation.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -709,9 +709,9 @@ class Polarisation {
 }
 
 class Azimuth {
-  String value;
+  late String value;
 
-  Azimuth({this.value});
+  Azimuth({required this.value});
 
   Azimuth.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -725,9 +725,9 @@ class Azimuth {
 }
 
 class Height {
-  String value;
+  late String value;
 
-  Height({this.value});
+  Height({required this.value});
 
   Height.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -741,9 +741,9 @@ class Height {
 }
 
 class Eirp {
-  String value;
+  late String value;
 
-  Eirp({this.value});
+  Eirp({required this.value});
 
   Eirp.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -757,9 +757,9 @@ class Eirp {
 }
 
 class CallSign {
-  String value;
+  late String value;
 
-  CallSign({this.value});
+  CallSign({required this.value});
 
   CallSign.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -773,9 +773,9 @@ class CallSign {
 }
 
 class Active {
-  String value;
+  late String value;
 
-  Active({this.value});
+  Active({required this.value});
 
   Active.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -789,9 +789,9 @@ class Active {
 }
 
 class StartAngle {
-  String value;
+  late String value;
 
-  StartAngle({this.value});
+  StartAngle({required this.value});
 
   StartAngle.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -805,9 +805,9 @@ class StartAngle {
 }
 
 class Power {
-  String value;
+  late String value;
 
-  Power({this.value});
+  Power({required this.value});
 
   Power.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -821,9 +821,9 @@ class Power {
 }
 
 class AntennaId {
-  String value;
+  late String value;
 
-  AntennaId({this.value});
+  AntennaId({required this.value});
 
   AntennaId.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -837,9 +837,9 @@ class AntennaId {
 }
 
 class Gain {
-  String value;
+  late String value;
 
-  Gain({this.value});
+  Gain({required this.value});
 
   Gain.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -853,9 +853,9 @@ class Gain {
 }
 
 class FrontToBack {
-  String value;
+  late String value;
 
-  FrontToBack({this.value});
+  FrontToBack({required this.value});
 
   FrontToBack.fromJson(Map<String, dynamic> json) {
     value = json['value'];
@@ -869,9 +869,9 @@ class FrontToBack {
 }
 
 class HBeamWidth {
-  String value;
+  late String value;
 
-  HBeamWidth({this.value});
+  HBeamWidth({required this.value});
 
   HBeamWidth.fromJson(Map<String, dynamic> json) {
     value = json['value'];

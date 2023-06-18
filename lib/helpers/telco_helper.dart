@@ -52,11 +52,11 @@ class TelcoHelper {
     }
   }
 
-  static Future<Uint8List> getBytesFromAsset({String path, int width}) async {
+  static Future<Uint8List> getBytesFromAsset({required String path, int? width}) async {
     ByteData data = await rootBundle.load(path);
     ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     ui.FrameInfo fi = await codec.getNextFrame();
-    return await (await fi.image.toByteData(format: ui.ImageByteFormat.png))
+    return await (await fi.image.toByteData(format: ui.ImageByteFormat.png))!
         .buffer
         .asUint8List();
   }
@@ -169,7 +169,7 @@ class TelcoHelper {
     }
   }
 
-  static Telco getTelco(int mnc) {
+  static Telco? getTelco(int mnc) {
     switch (mnc) {
       case 1:
         return Telco.Telstra;

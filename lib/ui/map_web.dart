@@ -19,9 +19,9 @@ import '../../utils/app_constants.dart';
 //if (dart.library.js) 'package:phonetowers/helpers/map_web.dart';
 
 abstract class AbstractMapBodyState extends State<MapBody> {
-  CameraPosition lastCameraPosition;
-  Logger logger;
-  Api api;
+  CameraPosition? lastCameraPosition;
+  late Logger logger;
+  late Api api;
 
   void onMapCreated(dynamic controllerParam);
 
@@ -37,7 +37,7 @@ abstract class AbstractMapBodyState extends State<MapBody> {
   void onCameraMoveFromLastLocation() {
     if (lastCameraPosition != null) {
       if (!SearchHelper.calculatingSearchResults) {
-        onMapScroll(lastCameraPosition);
+        onMapScroll(lastCameraPosition!);
       }
     }
   }
