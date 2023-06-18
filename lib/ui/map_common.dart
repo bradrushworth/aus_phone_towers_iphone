@@ -845,11 +845,11 @@ class MapBodyState extends AbstractMapBodyState {
 
     //3) Prepare to query for the devices at the site
     String site_ids = "";
-    int siteCounter = 0;
+    //int siteCounter = 0;
     listOfTowersForSingleTeclo.forEach((MapOverlay mapOverlay) {
       if (mapOverlay.site != null) {
         site_ids = site_ids + 'site_id%3D%3D${mapOverlay.site!.siteId}||';
-        siteCounter++;
+        //siteCounter++;
       }
     });
     if (site_ids.length > 2) {

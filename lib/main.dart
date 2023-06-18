@@ -24,6 +24,7 @@ import 'helpers/polygon_helper.dart';
 import 'utils/secret.dart';
 
 Logger logger = new Logger();
+final bool useFirebase = (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
 
 Future<void> main() async {
   // Set `enableInDevMode` to true to see reports while in debug mode
@@ -31,37 +32,41 @@ Future<void> main() async {
   // submitted as expected. It is not intended to be used for everyday
   // development.
 
-  runZoned<Future<void>>(() async {
+  runZonedGuarded(() async {
     await WidgetsFlutterBinding.ensureInitialized();
 
     // Initialize Firebase
-    if (!kIsWeb) {
-      if (!Foundation.kDebugMode) {
-        // Mobile version gets them from GoogleService-Info.plist or google-services.json
-        //await Firebase.initializeApp(); // TODO
+    if (useFirebase) {
+      if (!kIsWeb) {
+        if (!Foundation.kDebugMode) {
+          // Mobile version gets them from GoogleService-Info.plist or google-services.json
+          await Firebase.initializeApp();
+        }
+      } else {
+        // Web version needs the parameters sent though here
+        await Firebase.initializeApp(
+            // Replace with actual values
+            options: FirebaseOptions(
+                apiKey: "AIzaSyDSjVeI6yRIbl_VtihyNEe-JgxEl_LCupA",
+                authDomain: "aus-phone-towers-7d175.firebaseapp.com",
+                databaseURL: "https://aus-phone-towers-7d175.firebaseio.com",
+                projectId: "aus-phone-towers-7d175",
+                storageBucket: "aus-phone-towers-7d175.appspot.com",
+                messagingSenderId: "742739090143",
+                appId: "1:742739090143:web:a7d35db594855884b2a76a",
+                measurementId: "G-WT4TEP3Z7X"));
       }
-    } else {
-      // Web version needs the parameters sent though here
-      await Firebase.initializeApp(
-          // Replace with actual values
-          options: FirebaseOptions(
-              apiKey: "AIzaSyDSjVeI6yRIbl_VtihyNEe-JgxEl_LCupA",
-              authDomain: "aus-phone-towers-7d175.firebaseapp.com",
-              databaseURL: "https://aus-phone-towers-7d175.firebaseio.com",
-              projectId: "aus-phone-towers-7d175",
-              storageBucket: "aus-phone-towers-7d175.appspot.com",
-              messagingSenderId: "742739090143",
-              appId: "1:742739090143:web:a7d35db594855884b2a76a",
-              measurementId: "G-WT4TEP3Z7X"));
     }
 
     // Initialise Crashlytics
     if (!kIsWeb) {
-      if (!Foundation.kDebugMode) {
-        await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false); // TODO
+      if (useFirebase) {
+        if (!Foundation.kDebugMode) {
+          await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
 
-        // Pass all uncaught errors to Crashlytics.
-        //FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError; // TODO
+          // Pass all uncaught errors to Crashlytics.
+          FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
+        }
       }
 
       if (Platform.isIOS) {
@@ -118,11 +123,13 @@ Future<void> main() async {
       ],
       child: AusPhoneTowers(),
     ));
-  },
-      // onError: kIsWeb || Foundation.kDebugMode // TODO
-      //     ? (exception, stack) {}
-      //     : await FirebaseCrashlytics.instance.recordError
-  );
+  }, (error, stackTrace) {
+    if (useFirebase && !Foundation.kDebugMode) {
+      FirebaseCrashlytics.instance.recordError(error, stackTrace);
+    } else {
+      throw error;
+    }
+  });
 }
 
 class AusPhoneTowers extends StatelessWidget {

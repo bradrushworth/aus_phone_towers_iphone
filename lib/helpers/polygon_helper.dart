@@ -126,7 +126,7 @@ class PolygonHelper with ChangeNotifier {
         }
       } catch (e, stack) {
         site.startedDownloadingElevations = false;
-        e.printStackTrace();
+        print(stack);
         return;
       }
     }
