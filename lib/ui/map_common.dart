@@ -82,8 +82,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     //Show beta launch popup if not displayed.
     prefs = await SharedPreferences.getInstance();
     if (kIsWeb &&
-        !SharedPreferencesHelper.getBoolean(
-            SharedPreferencesHelper.betaLaunchPopup, prefs)) {
+        !SharedPreferencesHelper.getBoolean(SharedPreferencesHelper.betaLaunchPopup, prefs)) {
       _showAlertDialog();
     }
   }
@@ -102,9 +101,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
                 SharedPreferencesHelper.saveBoolean(
-                    key: SharedPreferencesHelper.betaLaunchPopup,
-                    value: true,
-                    prefs: prefs);
+                    key: SharedPreferencesHelper.betaLaunchPopup, value: true, prefs: prefs);
               },
             ),
           ],
@@ -221,8 +218,8 @@ class MapBodyState extends AbstractMapBodyState {
   /*
   * Method channel for taking screenshots
   * */
-  static const androidMethodChannel = const MethodChannel(
-      'au.com.bitbot.phonetowers.flutter.provider/screenshot');
+  static const androidMethodChannel =
+      const MethodChannel('au.com.bitbot.phonetowers.flutter.provider/screenshot');
 
   /// ******************** Overrided methods **********************************
   @override
@@ -257,8 +254,7 @@ class MapBodyState extends AbstractMapBodyState {
           alignment: AlignmentDirectional.bottomCenter,
           children: <Widget>[
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
-              builder: (context, polygonHelper, siteHelper, mapHelper, child) =>
-                  GoogleMap(
+              builder: (context, polygonHelper, siteHelper, mapHelper, child) => GoogleMap(
                 padding: EdgeInsets.only(bottom: 100, top: 100),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
@@ -276,14 +272,10 @@ class MapBodyState extends AbstractMapBodyState {
                   zoom: kDefaultZoom,
                 ),
                 markers: SiteHelper.globalListMapOverlay.isNotEmpty
-                    ? SiteHelper.globalListMapOverlay
-                        .map((data) => data.marker!)
-                        .toSet()
+                    ? SiteHelper.globalListMapOverlay.map((data) => data.marker!).toSet()
                     : Set(),
                 polygons: PolygonHelper.globalListPolygons.isNotEmpty
-                    ? PolygonHelper.globalListPolygons
-                        .map((data) => data.polygon!)
-                        .toSet()
+                    ? PolygonHelper.globalListPolygons.map((data) => data.polygon!).toSet()
                     : Set(),
                 onMapCreated: onMapCreated,
                 onCameraMove: onCameraMove,
@@ -319,8 +311,7 @@ class MapBodyState extends AbstractMapBodyState {
                   ? IconButton(
                       icon: Icon(Icons.arrow_back),
                       onPressed: () {
-                        Provider.of<SearchHelper>(context, listen: false)
-                            .setSearchStatus(false);
+                        Provider.of<SearchHelper>(context, listen: false).setSearchStatus(false);
                       })
                   : null,
               title: !SearchHelper.calculatingSearchResults
@@ -370,8 +361,7 @@ class MapBodyState extends AbstractMapBodyState {
                         : 'assets/images/ic_terrain_unselected.png'),
                     tooltip: Strings.calculate_terrain,
                     onPressed: () {
-                      PolygonHelper.calculateTerrain =
-                          !PolygonHelper.calculateTerrain;
+                      PolygonHelper.calculateTerrain = !PolygonHelper.calculateTerrain;
                       SharedPreferencesHelper.saveBoolean(
                           key: SharedPreferencesHelper.kcalculateTerrain,
                           value: PolygonHelper.calculateTerrain,
@@ -470,23 +460,19 @@ class MapBodyState extends AbstractMapBodyState {
     NavigationMenu.isLess700Visible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisLess700Visible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isLess700Visible,
-        FrequencyRangesHelper.getValue(FrequencyRanges.VERY_LOW));
+        NavigationMenu.isLess700Visible, FrequencyRangesHelper.getValue(FrequencyRanges.VERY_LOW));
     NavigationMenu.isBet700_100Visible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisBet700_100Visible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isBet700_100Visible,
-        FrequencyRangesHelper.getValue(FrequencyRanges.LOW));
+        NavigationMenu.isBet700_100Visible, FrequencyRangesHelper.getValue(FrequencyRanges.LOW));
     NavigationMenu.isBet1_2Visible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisBet1_2Visible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isBet1_2Visible,
-        FrequencyRangesHelper.getValue(FrequencyRanges.MEDIUM));
+        NavigationMenu.isBet1_2Visible, FrequencyRangesHelper.getValue(FrequencyRanges.MEDIUM));
     NavigationMenu.isBet2_3Visible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisBet2_3Visible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isBet2_3Visible,
-        FrequencyRangesHelper.getValue(FrequencyRanges.HIGH));
+        NavigationMenu.isBet2_3Visible, FrequencyRangesHelper.getValue(FrequencyRanges.HIGH));
     NavigationMenu.isGreater3Visible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisGreater3Visible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
@@ -496,29 +482,23 @@ class MapBodyState extends AbstractMapBodyState {
     //CityDensities
     NavigationMenu.isMetroVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisMetroVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
-        NavigationMenu.isMetroVisible,
-        CityDensity.METRO);
+    Provider.of<SiteHelper>(context, listen: false)
+        .toggleCityDensity(NavigationMenu.isMetroVisible, CityDensity.METRO);
     NavigationMenu.isUrbanVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisUrbanVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
-        NavigationMenu.isUrbanVisible,
-        CityDensity.URBAN);
+    Provider.of<SiteHelper>(context, listen: false)
+        .toggleCityDensity(NavigationMenu.isUrbanVisible, CityDensity.URBAN);
     NavigationMenu.isSuburbanVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisSuburbanVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
-        NavigationMenu.isSuburbanVisible,
-        CityDensity.SUBURBAN);
+    Provider.of<SiteHelper>(context, listen: false)
+        .toggleCityDensity(NavigationMenu.isSuburbanVisible, CityDensity.SUBURBAN);
     NavigationMenu.isOpenVisible = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kisOpenVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
-        NavigationMenu.isOpenVisible,
-        CityDensity.OPEN);
+    Provider.of<SiteHelper>(context, listen: false)
+        .toggleCityDensity(NavigationMenu.isOpenVisible, CityDensity.OPEN);
 
-    NavigationMenu.signalStrengthSelection =
-        SharedPreferencesHelper.getSignalStrength(
-            key: SharedPreferencesHelper.ksignalStrengthSelection,
-            prefs: prefs);
+    NavigationMenu.signalStrengthSelection = SharedPreferencesHelper.getSignalStrength(
+        key: SharedPreferencesHelper.ksignalStrengthSelection, prefs: prefs);
     switch (NavigationMenu.signalStrengthSelection) {
       case 0:
         {
@@ -562,39 +542,33 @@ class MapBodyState extends AbstractMapBodyState {
       SiteHelper().disableTelcos();
     }
 
-    NavigationMenu.isRadioVisible =
-        SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-            key: SharedPreferencesHelper.kisRadioVisible, prefs: prefs);
+    NavigationMenu.isRadioVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
+        key: SharedPreferencesHelper.kisRadioVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.Radio, NavigationMenu.isRadioVisible);
 
-    NavigationMenu.isTVVisible =
-        SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-            key: SharedPreferencesHelper.kisTVVisible, prefs: prefs);
+    NavigationMenu.isTVVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
+        key: SharedPreferencesHelper.kisTVVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.TV, NavigationMenu.isTVVisible);
 
-    NavigationMenu.isCivilVisible =
-        SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-            key: SharedPreferencesHelper.kisCivilVisible, prefs: prefs);
+    NavigationMenu.isCivilVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
+        key: SharedPreferencesHelper.kisCivilVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.Civil, NavigationMenu.isCivilVisible);
 
-    NavigationMenu.isPagerVisible =
-        SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-            key: SharedPreferencesHelper.kisPagerVisible, prefs: prefs);
+    NavigationMenu.isPagerVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
+        key: SharedPreferencesHelper.kisPagerVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.Pager, NavigationMenu.isPagerVisible);
 
-    NavigationMenu.isCBRSVisible =
-        SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-            key: SharedPreferencesHelper.kisCBRSVisible, prefs: prefs);
+    NavigationMenu.isCBRSVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
+        key: SharedPreferencesHelper.kisCBRSVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.CBRS, NavigationMenu.isCBRSVisible);
 
-    NavigationMenu.isAviationVisible =
-        SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-            key: SharedPreferencesHelper.kisAviationVisible, prefs: prefs);
+    NavigationMenu.isAviationVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
+        key: SharedPreferencesHelper.kisAviationVisible, prefs: prefs);
     Provider.of<SiteHelper>(context, listen: false)
         .toggleTelcoMarkers(Telco.Aviation, NavigationMenu.isAviationVisible);
 
@@ -602,15 +576,14 @@ class MapBodyState extends AbstractMapBodyState {
     PolygonHelper.showPolygonBorders = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kshowPolygonBorders, prefs: prefs);
 
-    MapHelper().mapMode = SharedPreferencesHelper.getMapMode(
-        key: SharedPreferencesHelper.kMapMode, prefs: prefs);
+    MapHelper().mapMode =
+        SharedPreferencesHelper.getMapMode(key: SharedPreferencesHelper.kMapMode, prefs: prefs);
 
     PolygonHelper.drawPolygonsOnClick = SharedPreferencesHelper.getMenuStatus(
         key: SharedPreferencesHelper.kdrawPolygonsOnClick, prefs: prefs);
 
-    PolygonHelper.calculateTerrain =
-        SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-            key: SharedPreferencesHelper.kcalculateTerrain, prefs: prefs);
+    PolygonHelper.calculateTerrain = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
+        key: SharedPreferencesHelper.kcalculateTerrain, prefs: prefs);
 
     setState(() {});
   }
@@ -634,8 +607,7 @@ class MapBodyState extends AbstractMapBodyState {
     String geoHash = Geohash.encode(lat, long, codeLength: 5);
 
     try {
-      bool _permission = await _locationService.requestPermission() ==
-          PermissionStatus.granted;
+      bool _permission = await _locationService.requestPermission() == PermissionStatus.granted;
       //print("Permission: $_permission");
       if (_permission) {
         bool serviceStatus = await _locationService.serviceEnabled();
@@ -658,9 +630,7 @@ class MapBodyState extends AbstractMapBodyState {
         }
       } else {
         logger.w('Location permissions were denied by the user!');
-        showSnackbar(
-            message: 'Location permissions were denied by the user!',
-            isDismissible: true);
+        showSnackbar(message: 'Location permissions were denied by the user!', isDismissible: true);
         AnalyticsHelper().log('Location permissions were denied by the user!');
       }
     } on PlatformException catch (e) {
@@ -678,8 +648,7 @@ class MapBodyState extends AbstractMapBodyState {
         Marker marker = Marker(
             markerId: MarkerId("My Location"),
             position: LatLng(lat, long),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-                BitmapDescriptor.hueAzure),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
             rotation: 0,
             alpha: 0.50,
             visible: false);
@@ -728,8 +697,7 @@ class MapBodyState extends AbstractMapBodyState {
         // Don't download the same area more than once for a given telco
         if (SiteHelper.downloadedGeohashAlready(geoHash, telco)) {
           // See if any neighbour sites need downloading and fetch them if required also
-          fetchNeighbourSites(
-              geoHash: geoHash, telco: telco, expandGeohash: expandGeohash);
+          fetchNeighbourSites(geoHash: geoHash, telco: telco, expandGeohash: expandGeohash);
         } else {
           //logger.d('mygeoHash doest not exist');
           downloadTowersForSingleTelco(telco, geoHash,
@@ -751,8 +719,7 @@ class MapBodyState extends AbstractMapBodyState {
     logger.d(
         'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}');
 
-    showSnackbar(
-        message: "Downloading ${TelcoHelper.getName(telco)} towers...");
+    showSnackbar(message: "Downloading ${TelcoHelper.getName(telco)} towers...");
 
     SiteResponse? rawResponse = await api.getMarkerData(nextPageURL != null
         ? nextPageURL
@@ -779,9 +746,8 @@ class MapBodyState extends AbstractMapBodyState {
           cityDensity: cityDensity,
           siteId: values!.siteId!.value,
           name: values.name!.value,
-          licensingAreaId: values.licensingAreaId != null
-              ? int.parse(values.licensingAreaId!.value)
-              : 0,
+          licensingAreaId:
+              values.licensingAreaId != null ? int.parse(values.licensingAreaId!.value) : 0,
           latitude: double.parse(values.latitude!.value),
           longitude: double.parse(values.longitude!.value),
           state: values.state!.value,
@@ -889,19 +855,17 @@ class MapBodyState extends AbstractMapBodyState {
       {int expansionAmount = 0,
       int recursionDepth = 0,
       required String geoHash,
-        required Telco telco,
-        required bool expandGeohash}) {
+      required Telco telco,
+      required bool expandGeohash}) {
     // See if any neighbour sites need downloading and fetch them if required also
     if (expandGeohash &&
         expansionAmount < SiteHelper.EXPANSION_LIMIT &&
         recursionDepth < SiteHelper.RECURSION_LIMIT) {
-      String filter =
-          getNeighbourRing(recursionDepth + 1, geoHash, telco).toString();
+      String filter = getNeighbourRing(recursionDepth + 1, geoHash, telco).toString();
       if (filter.length > 2) {
         // Trim the last two "||" characters
         filter = filter.substring(0, filter.length - 2);
-        logger.d(
-            'neighbour ring is $filter for telco ${TelcoHelper.getName(telco)}');
+        logger.d('neighbour ring is $filter for telco ${TelcoHelper.getName(telco)}');
         logger.i(
             "fetchNeighbourSites: recursionDepth=$recursionDepth + telco= ${TelcoHelper.getName(telco)} +  filter= $filter");
         String neightbourURL =
@@ -1045,13 +1009,12 @@ class MapBodyState extends AbstractMapBodyState {
                         'Site ID:': '${site.siteId}',
                         'Latitude:': '${site.latitude}',
                         'Longitude:': '${site.longitude}',
-                        if (site.elevation!.isNotEmpty)
-                          'Elevation:': '${site.elevation} metres',
-                        if (getTowerHeightFromDeviceDetails(
-                                site.getDeviceDetailsMobile()) >
-                            0)
+                        if (site.elevation!.isNotEmpty) 'Elevation:': '${site.elevation} metres',
+                        if (getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile()) > 0)
                           'Tower Height:':
                               '${getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile())} metres',
+                        if (getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile()) > 0)
+                          'City Density:': '${Site.getCityDensityName(site.getCityDensity())}',
                       },
                     ),
                     // Text(
@@ -1089,8 +1052,7 @@ class MapBodyState extends AbstractMapBodyState {
                         maxFontSize: 16,
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
-                    ] else if (!TelcoHelper.isTelecommunications(
-                        site.getTelco())) ...[
+                    ] else if (!TelcoHelper.isTelecommunications(site.getTelco())) ...[
                       AutoSizeText(
                         '${TelcoHelper.getName(site.getTelco())} Services',
                         group: sizeGroup,
@@ -1183,8 +1145,7 @@ class MapBodyState extends AbstractMapBodyState {
                                     group: sizeGroup,
                                     minFontSize: 8,
                                     maxFontSize: 16,
-                                    style:
-                                        Theme.of(context).textTheme.bodyText1,
+                                    style: Theme.of(context).textTheme.bodyText1,
                                   ),
                                 ),
                               ),
@@ -1197,8 +1158,7 @@ class MapBodyState extends AbstractMapBodyState {
                                     group: sizeGroup,
                                     minFontSize: 8,
                                     maxFontSize: 16,
-                                    style:
-                                        Theme.of(context).textTheme.bodyText1,
+                                    style: Theme.of(context).textTheme.bodyText1,
                                   ),
                                 ),
                               ),
@@ -1211,8 +1171,7 @@ class MapBodyState extends AbstractMapBodyState {
                                     group: sizeGroup,
                                     minFontSize: 8,
                                     maxFontSize: 16,
-                                    style:
-                                        Theme.of(context).textTheme.bodyText1,
+                                    style: Theme.of(context).textTheme.bodyText1,
                                   ),
                                 ),
                               ),
@@ -1225,8 +1184,7 @@ class MapBodyState extends AbstractMapBodyState {
                                     group: sizeGroup,
                                     minFontSize: 8,
                                     maxFontSize: 16,
-                                    style:
-                                        Theme.of(context).textTheme.bodyText1,
+                                    style: Theme.of(context).textTheme.bodyText1,
                                   ),
                                 ),
                               ),
@@ -1239,8 +1197,7 @@ class MapBodyState extends AbstractMapBodyState {
                                     group: sizeGroup,
                                     minFontSize: 8,
                                     maxFontSize: 16,
-                                    style:
-                                        Theme.of(context).textTheme.bodyText1,
+                                    style: Theme.of(context).textTheme.bodyText1,
                                   ),
                                 ),
                               ),
@@ -1473,8 +1430,7 @@ class MapBodyState extends AbstractMapBodyState {
   void takeScreenshot() {
     widget.screenshotController.capture(pixelRatio: 1).then((File image) {
       logger.d("File Saved to Gallery ${image.path}");
-      androidMethodChannel.invokeMethod(
-          'takeScreenshot', onlyPath.basename(image.path));
+      androidMethodChannel.invokeMethod('takeScreenshot', onlyPath.basename(image.path));
     }).catchError((onError) {
       print(onError);
     });

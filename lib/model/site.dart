@@ -296,6 +296,23 @@ class Site {
     cityDensity = getCityDensityStatic(numSitesInGeohash);
   }
 
+  static String getCityDensityName(CityDensity? density) {
+    switch (density) {
+      case CityDensity.METRO:
+        return 'Metro';
+      case CityDensity.URBAN:
+        return 'Urban';
+      case CityDensity.MEDIUM:
+        return 'Medium';
+      case CityDensity.SUBURBAN:
+        return 'Suburban';
+      case CityDensity.OPEN:
+        return 'Open';
+      default:
+        return 'Unknown';
+    }
+  }
+
   void addElevation(LatLng latLng, double elevation) {
     elevations.putIfAbsent(latLng, () => elevation);
   }
