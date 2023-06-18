@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
-import 'package:phonetowers/helpers/polygon_helper.dart';
-import 'package:phonetowers/helpers/telco_helper.dart';
-import 'package:phonetowers/model/overlay.dart';
-import 'package:phonetowers/model/site.dart';
-import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 
-import 'get_licenceHRP.dart';
+import '../model/overlay.dart';
+import '../model/site.dart';
+import '../restful/get_licenceHRP.dart';
+import '../ui/widgets/navigation_menu.dart';
 import 'network_type_helper.dart';
+import 'polygon_helper.dart';
+import 'telco_helper.dart';
 
 class SiteHelper with ChangeNotifier {
   static final SiteHelper _singleton = new SiteHelper._internal();

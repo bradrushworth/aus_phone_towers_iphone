@@ -5,20 +5,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
-import 'package:phonetowers/helpers/get_licenceHRP.dart';
-import 'package:phonetowers/helpers/site_helper.dart';
-import 'package:phonetowers/helpers/telco_helper.dart';
-import 'package:phonetowers/model/device_detail.dart';
-import 'package:phonetowers/model/height_distance_pair.dart';
-import 'package:phonetowers/model/overlay.dart';
-import 'package:phonetowers/model/site.dart';
-import 'package:phonetowers/utils/polygon_container.dart';
 
+import '../model/device_detail.dart';
+import '../model/height_distance_pair.dart';
+import '../model/overlay.dart';
+import '../model/site.dart';
+import '../restful/get_elevation.dart';
+import '../restful/get_licenceHRP.dart';
+import '../utils/polygon_container.dart';
 import 'analytics_helper.dart';
-import 'get_elevation.dart';
 import 'let_type_helper.dart';
 import 'map_helper.dart';
 import 'network_type_helper.dart';
+import 'site_helper.dart';
+import 'telco_helper.dart';
 
 typedef void ShowSnackBar({String message});
 

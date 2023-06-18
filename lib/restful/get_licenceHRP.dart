@@ -4,7 +4,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
-import 'package:phonetowers/helpers/get_elevation.dart';
+import 'package:phonetowers/helpers/translate_frequencies.dart';
+import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/model/device_detail.dart';
@@ -12,8 +13,6 @@ import 'package:phonetowers/model/height_distance_pair.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
-
-import 'translate_frequencies.dart';
 
 typedef void ShowSnackBar({String message});
 

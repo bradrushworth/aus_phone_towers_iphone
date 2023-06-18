@@ -9,8 +9,8 @@ enum Telco {
   Telstra,
   Optus,
   Vodafone,
-  NBN,
   Dense_Air,
+  NBN,
   Other,
   Radio,
   TV,
@@ -56,9 +56,7 @@ class TelcoHelper {
     ByteData data = await rootBundle.load(path);
     ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     ui.FrameInfo fi = await codec.getNextFrame();
-    return await (await fi.image.toByteData(format: ui.ImageByteFormat.png))!
-        .buffer
-        .asUint8List();
+    return await (await fi.image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
   }
 
   static String getIconName(Telco telco) {
@@ -93,7 +91,6 @@ class TelcoHelper {
     return getIconByString(getIconFullName(telco));
   }
 
-
   // static double getColour(Telco telco) {
   //   double colour;
   //   if (telco == Telco.Telstra) {
@@ -115,22 +112,22 @@ class TelcoHelper {
   static double getRotation(Telco telco) {
     double rotation = 0;
     if (telco == Telco.Telstra) {
-      rotation = -50;
+      rotation = -60;
     } else if (telco == Telco.Optus) {
       rotation = 0;
     } else if (telco == Telco.Vodafone) {
-      rotation = 50;
+      rotation = 60;
+    } else if (telco == Telco.NBN) {
+      rotation = 120;
     } else if (telco == Telco.Dense_Air) {
       rotation = 75;
-    } else if (telco == Telco.NBN) {
-      rotation = 100;
     } else if (telco == Telco.Other) {
-      rotation = -100;
+      rotation = -120;
     } else {
       if (telco == Telco.Radio) {
-        rotation = 150;
+        rotation = 160;
       } else if (telco == Telco.TV) {
-        rotation = -150;
+        rotation = -160;
       } else if (telco == Telco.CBRS) {
         rotation = -120;
       } else if (telco == Telco.Civil) {
@@ -172,14 +169,25 @@ class TelcoHelper {
   static Telco? getTelco(int mnc) {
     switch (mnc) {
       case 1:
+      case 19: // Lycamobile
+      case 90:
         return Telco.Telstra;
       case 2:
+      case 17: // Vivid Wireless
         return Telco.Optus;
       case 3:
+      case 14: // TPG Telecom
         return Telco.Vodafone;
-      case 13:
-      case 14:
+      case 13: // RailCorp
+      case 16: // VicTrack
+      case 23: // Challenge Networks Pty Ltd
+      case 34: // Santos Limited
+      case 38: // Truphone
+      case 52: // OptiTel Australia
         return Telco.Other;
+      case 62: // NBN
+      case 68: // NBN
+        return Telco.NBN;
       default:
         return null;
     }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:phonetowers/helpers/frequency_range_helper.dart';
-import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
+import 'package:phonetowers/restful/get_licenceHRP.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/hex_color.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';

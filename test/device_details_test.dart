@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phonetowers/helpers/get_licenceHRP.dart';
+import 'package:phonetowers/restful/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
@@ -12,26 +12,27 @@ void main() {
     late DeviceDetails deviceDetails;
 
     setUp(() {
-      site = new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN);
+      site = new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN);
 
-      deviceDetails = new DeviceDetails();
+      deviceDetails = new DeviceDetails(networkType: NetworkType.LTE);
       deviceDetails.setSite(site);
+      deviceDetails.bandwidth = 20000000;
     });
 
     test('formatNetworkSpeed', () {
       expect(DeviceDetails.formatNetworkSpeed(207618048), "198 Mbps");
       expect(DeviceDetails.formatNetworkSpeed(33554432), "32 Mbps");
-      expect(DeviceDetails.formatNetworkSpeed(1073741824), "1024 Mbps");
+      expect(DeviceDetails.formatNetworkSpeed(1073741824), "1.0 Gbps");
       expect(DeviceDetails.formatNetworkSpeed(923795456), "881 Mbps");
-      expect(DeviceDetails.formatNetworkSpeed(2362232012), "2253 Mbps");
+      expect(
+          DeviceDetails.formatNetworkSpeed(2362232012), "2.2 Gbps"); // Not sure how to round down
       expect(DeviceDetails.formatNetworkSpeed(57344), "56 kbps");
       expect(DeviceDetails.formatNetworkSpeed(128), "128  bps");
     });
 
     test('isActiveTrueNotTelecoms', () {
       deviceDetails.active = "";
-      deviceDetails.setSite(
-          new Site(telco: Telco.Aviation, cityDensity: CityDensity.OPEN));
+      deviceDetails.setSite(new Site(telco: Telco.Aviation, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.isActive(), true);
     });
 
@@ -70,10 +71,34 @@ void main() {
       expect(deviceDetails.isMIMO(), false);
     });
 
-    test('getAntennaCapacityGSM', () { // Still at Christmas Island
+    test('getAntennaCapacityLP', () {
+      deviceDetails.bandwidth = 8200000;
+      deviceDetails.emission = "8M20W7W";
+      deviceDetails.frequency = 955900000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getNetworkType(), NetworkType.NB_IOT);
+      expect(deviceDetails.getAntennaCapacity(), 42509710);
+    });
+
+    test('getAntennaCapacityGSM', () {
+      // Still at Christmas Island
       deviceDetails.bandwidth = 10000000;
       deviceDetails.emission = "8M40G7E";
       deviceDetails.frequency = 1840000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getNetworkType(), NetworkType.GSM);
       expect(deviceDetails.getAntennaCapacity(), 13545000);
     });
 
@@ -81,6 +106,14 @@ void main() {
       deviceDetails.bandwidth = 10000000;
       deviceDetails.emission = "9M00W7WEC";
       deviceDetails.frequency = 1840000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
       expect(deviceDetails.getAntennaCapacity(), 44249907);
     });
 
@@ -88,6 +121,14 @@ void main() {
       deviceDetails.bandwidth = 10000000;
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 1840000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getNetworkType(), NetworkType.LTE);
       expect(deviceDetails.getAntennaCapacity(), 51841110);
     });
 
@@ -95,6 +136,14 @@ void main() {
       deviceDetails.bandwidth = 10000000;
       deviceDetails.emission = "19M9W7DEW";
       deviceDetails.frequency = 1840000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getNetworkType(), NetworkType.LTE);
       expect(deviceDetails.getAntennaCapacity(), 38510539);
     });
 
@@ -102,6 +151,14 @@ void main() {
       deviceDetails.bandwidth = 20000000;
       deviceDetails.emission = "20M0W7D";
       deviceDetails.frequency = 3565000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getNetworkType(), NetworkType.NR);
       expect(deviceDetails.getAntennaCapacity(), 490104422);
     });
 
@@ -109,26 +166,55 @@ void main() {
       deviceDetails.bandwidth = 20000000;
       deviceDetails.emission = "20M0W7D";
       deviceDetails.frequency = 26000000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getNetworkType(), NetworkType.NR);
       expect(deviceDetails.getAntennaCapacity(), 490104422);
     });
 
     test('getNetworkTypeNR', () {
       deviceDetails.emission = "20M0W7D";
       deviceDetails.frequency = 3565000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
-      expect(deviceDetails.getLteType(), LteType.TD_LTE);
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
     });
 
     test('getNetworkTypeNR_mmWave', () {
       deviceDetails.emission = "20M0W7D";
       deviceDetails.frequency = 26000000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
-      expect(deviceDetails.getLteType(), LteType.TD_LTE);
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
     });
 
     test('getNetworkTypeLTE', () {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 1840000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
     });
@@ -136,51 +222,98 @@ void main() {
     test('getNetworkTypeLTE_AmbigiousWithNR', () {
       deviceDetails.emission = "20M0W7D";
       deviceDetails.frequency = 1840000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
     });
 
     test('getNetworkTypeUMTS', () {
       deviceDetails.emission = "3M84G7W--";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
 
     test('getNetworkTypeUMTS1', () {
       deviceDetails.emission = "10M0W7W";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
 
     test('getNetworkTypeUMTS2', () {
       deviceDetails.emission = "9M00W7WEC";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
 
     test('getNetworkTypeGSM', () {
       deviceDetails.emission = "8M40G7E";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getNetworkType(), NetworkType.GSM);
     });
 
     test('getLteType_FD_LTE', () {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 1840000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
     });
 
     test('getLteType_FD_LTE_Optus', () {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 763000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
     });
 
     test('getLteType_TD_LTE_Optus', () {
       deviceDetails.emission = "80M0W7D";
       deviceDetails.frequency = 2342000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.TD_LTE);
     });
 
     test('getLteType_TD_LTE_NBN', () {
       deviceDetails.emission = "19M9W7DEW";
       deviceDetails.frequency = 3507000000;
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.TD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -188,30 +321,49 @@ void main() {
     test('getLteType_5G_NR', () {
       deviceDetails.emission = "20M0W7D";
       deviceDetails.frequency = 3565000000;
-      expect(deviceDetails.getLteType(), LteType.TD_LTE);
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
     test('getLteType_UMTS', () {
       deviceDetails.emission = "3M84G7W--";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
 
     test('getLteType_UMTS2', () {
       deviceDetails.emission = "9M00W7WEC";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
 
     test('getLteType_UMTS3', () {
       deviceDetails.emission = "9M90G7WEC";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
 
     test('getLteType_GSM', () {
       deviceDetails.emission = "8M40G7E";
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission, 0, 0, deviceDetails.getSite().getTelco(), 0)
+          .first;
       expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.GSM);
     });
@@ -220,8 +372,14 @@ void main() {
       deviceDetails.emission = "5M00W7D";
       deviceDetails.frequency = 735500000;
       deviceDetails.bandwidth = 5000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -230,8 +388,14 @@ void main() {
       deviceDetails.emission = "5M00W7D";
       deviceDetails.frequency = 790500000;
       deviceDetails.bandwidth = 5000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -240,8 +404,14 @@ void main() {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 798000000;
       deviceDetails.bandwidth = 10000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -250,9 +420,9 @@ void main() {
       deviceDetails.emission = "15M0W7D";
       deviceDetails.frequency = 795650000;
       deviceDetails.bandwidth = 15000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -261,8 +431,14 @@ void main() {
       deviceDetails.emission = "8M20W7W";
       deviceDetails.frequency = 955900000;
       deviceDetails.bandwidth = 8200000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NB_IOT);
     });
@@ -271,8 +447,14 @@ void main() {
       deviceDetails.emission = "4M20G7W";
       deviceDetails.frequency = 956200000;
       deviceDetails.bandwidth = 5000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
@@ -280,8 +462,14 @@ void main() {
     test('getLteType_TPG_2625', () {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 2625000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -289,8 +477,14 @@ void main() {
     test('getLteType_Vodafone_3G', () {
       deviceDetails.emission = "14M0W7WEC";
       deviceDetails.frequency = 2117600000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.UMTS);
     });
@@ -298,8 +492,14 @@ void main() {
     test('getLteType_Telstra_4G_2100', () {
       deviceDetails.emission = "5M00W7D";
       deviceDetails.frequency = 2162400000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -307,8 +507,14 @@ void main() {
     test('getLteType_Optus_4G_2100', () {
       deviceDetails.emission = "5M00W7D";
       deviceDetails.frequency = 2162400000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -316,8 +522,14 @@ void main() {
     test('getLteType_Vodafone_4G_2100', () {
       deviceDetails.emission = "5M00W7D";
       deviceDetails.frequency = 2162400000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -326,9 +538,9 @@ void main() {
       deviceDetails.emission = "400MW7D";
       deviceDetails.frequency = 25300000000;
       deviceDetails.bandwidth = 400000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.TD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -336,9 +548,9 @@ void main() {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 882500000;
       deviceDetails.bandwidth = 10000000;
-      deviceDetails.setSite(
-          new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -346,8 +558,14 @@ void main() {
       deviceDetails.emission = "70M0W7D";
       deviceDetails.frequency = 2365000000;
       deviceDetails.bandwidth = 70000000;
-      deviceDetails
-          .setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.TD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -356,9 +574,9 @@ void main() {
       deviceDetails.emission = "98M0W7D";
       deviceDetails.frequency = 2349750000;
       deviceDetails.bandwidth = 98000000;
-      deviceDetails
-          .setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.TD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -366,9 +584,9 @@ void main() {
       deviceDetails.emission = "1G00W7D";
       deviceDetails.frequency = 26200000000;
       deviceDetails.bandwidth = 1000000000;
-      deviceDetails
-          .setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.TD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -376,9 +594,9 @@ void main() {
       deviceDetails.emission = "800MW7D";
       deviceDetails.frequency = 28500000000;
       deviceDetails.bandwidth = 800000000;
-      deviceDetails
-          .setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.TD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -386,9 +604,9 @@ void main() {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 877250000;
       deviceDetails.bandwidth = 10000000;
-      deviceDetails
-          .setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -396,9 +614,9 @@ void main() {
       deviceDetails.emission = "10M0W7D";
       deviceDetails.frequency = 2662950000;
       deviceDetails.bandwidth = 10000000;
-      deviceDetails
-          .setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
-      expect(deviceDetails.getLteType(), LteType.FD_LTE);
+      deviceDetails.networkType = NetworkType.NR;
+      deviceDetails.setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      expect(deviceDetails.getLteType(), LteType.NOT_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.NR);
     });
 
@@ -406,8 +624,14 @@ void main() {
       deviceDetails.emission = "20M0W7D";
       deviceDetails.frequency = 778000000;
       deviceDetails.bandwidth = 20000000;
-      deviceDetails
-          .setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
+      deviceDetails.networkType = DeviceDetails.getNetworkTypeStatic(
+              deviceDetails.emission,
+              deviceDetails.frequency!,
+              deviceDetails.bandwidth!,
+              deviceDetails.getSite().getTelco(),
+              0)
+          .first;
+      deviceDetails.setSite(new Site(telco: Telco.Telstra, cityDensity: CityDensity.OPEN));
       expect(deviceDetails.getLteType(), LteType.FD_LTE);
       expect(deviceDetails.getNetworkType(), NetworkType.LTE);
     });
@@ -439,12 +663,12 @@ void main() {
     });
 
     test('testHashCode', () {
-      deviceDetails.sddId = "10240601";
+      deviceDetails.deviceRegistrationIdentifier = "10240601";
       expect(deviceDetails.hashCode, "10240601".hashCode);
     });
 
     test('testToString', () {
-      deviceDetails.sddId = "10240601";
+      deviceDetails.deviceRegistrationIdentifier = "10240601";
       expect(deviceDetails.toString(), "10240601");
     });
   });

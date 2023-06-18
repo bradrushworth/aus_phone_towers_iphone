@@ -8,7 +8,8 @@ import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 
-import 'get_antenna.dart';
+import '../helpers/network_type_helper.dart';
+import '../restful/get_antenna.dart';
 
 typedef void TowerInfoChanged({String message});
 typedef void ShowSnackBar({String message});
@@ -50,33 +51,47 @@ class GetDevices {
       Values? values = rawReponse!.restify!.rows![i].values;
 
       String siteId = values!.siteId!.value;
+      String emission = values.emission!.value;
+      String polarisation = values.polarisation!.value;
+      String callSign = values.callSign != null ? values.callSign!.value : '';
+      String active = values.active != null ? values.active!.value : '';
+      int frequency = values.frequency != null ? int.tryParse(values.frequency!.value) ?? 0 : 0;
+      int bandwidth = values.bandwidth != null ? int.tryParse(values.bandwidth!.value) ?? 0 : 0;
+      int height = values.height != null ? int.tryParse(values.height!.value) ?? 0 : 0;
+      int azimuth = values.azimuth != null ? int.tryParse(values.azimuth!.value) ?? 0 : 0;
+      double eirp = values.eirp != null ? double.tryParse(values.eirp!.value) ?? 0.0 : 0.0;
+      int antennaId = values.antennaId != null ? int.tryParse(values.antennaId!.value) ?? 0 : 0;
 
-      //Prepare device details
-      DeviceDetails device = DeviceDetails(
-        sddId: values.sddId!.value,
-        deviceRegistrationIdentifier: values.deviceRegistrationIdentifier!.value,
-        siteId: siteId,
-        emission: values.emission!.value,
-        polarisation: values.polarisation!.value,
-        callSign: values.callSign != null ? values.callSign!.value : '',
-        active: values.active != null ? values.active!.value : '',
-        frequency: values.frequency != null ? int.tryParse(values.frequency!.value) ?? 0 : 0,
-        bandwidth: values.bandwidth != null ? int.tryParse(values.bandwidth!.value) ?? 0 : 0,
-        height: values.height != null ? int.tryParse(values.height!.value) ?? 0 : 0,
-        azimuth: values.azimuth != null ? int.tryParse(values.azimuth!.value) ?? 0 : 0,
-        eirp: values.eirp != null ? double.tryParse(values.eirp!.value) ?? 0 : 0,
-        antennaId: values.antennaId != null ? int.tryParse(values.antennaId!.value) ?? 0 : 0,
-      );
+      for (NetworkType networkType
+          in DeviceDetails.getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId)) {
+        //Prepare device details
+        DeviceDetails device = DeviceDetails(
+          sddId: values.sddId!.value,
+          deviceRegistrationIdentifier: values.deviceRegistrationIdentifier!.value,
+          siteId: siteId,
+          emission: emission,
+          polarisation: polarisation,
+          callSign: callSign,
+          active: active,
+          frequency: frequency,
+          bandwidth: bandwidth,
+          networkType: networkType,
+          height: height,
+          azimuth: azimuth,
+          eirp: eirp,
+          antennaId: antennaId,
+        );
 
-      //TODO Prepare license and client
+        //TODO Prepare license and client
 
-      Site? site = getSite(siteId, telco);
-      if (site != null) {
-        device.setSite(site);
-        site.getDeviceDetailsMobile().add(device);
-        site.appendActive(device.isActive());
-        siteSeen.add(site);
-        devicesSeen.add(device);
+        Site? site = getSite(siteId, telco);
+        if (site != null) {
+          device.setSite(site);
+          site.getDeviceDetailsMobile().add(device);
+          site.appendActive(device.isActive());
+          siteSeen.add(site);
+          devicesSeen.add(device);
+        }
       }
     }
 
@@ -146,15 +161,14 @@ class GetDevices {
   }
 
   Site? getSite(String siteId, Telco telco) {
-    MapOverlay? mapOverlay = listOfTowersForSingleTelco.firstWhere(
-        (MapOverlay mo) =>
-            mo.site != null && mo.site!.siteId == siteId && mo.site!.getTelco() == telco);
+    MapOverlay? mapOverlay = listOfTowersForSingleTelco.firstWhere((MapOverlay mo) =>
+        mo.site != null && mo.site!.siteId == siteId && mo.site!.getTelco() == telco);
     return mapOverlay.site;
   }
 
   Marker? getMarker(Site site) {
-    MapOverlay? mapOverlay = listOfTowersForSingleTelco
-        .firstWhere((MapOverlay mo) => mo.site == site);
+    MapOverlay? mapOverlay =
+        listOfTowersForSingleTelco.firstWhere((MapOverlay mo) => mo.site == site);
     return mapOverlay.marker;
   }
 }

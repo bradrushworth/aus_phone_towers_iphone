@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:phonetowers/helpers/get_licenceHRP.dart';
+import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/site.dart';
+import 'package:phonetowers/restful/get_licenceHRP.dart';
 
 void main() {
   group('SiteTest', () {
@@ -17,7 +18,7 @@ void main() {
       site.name =
           'Optus Site Port Waratah Coal Joint Venture Lot 666 Cormorant Rd KOORAGANG ISLAND';
 
-      device1 = new DeviceDetails();
+      device1 = new DeviceDetails(networkType: NetworkType.UNKNOWN);
       device1.setSite(site);
       device1.emission = '10M0W7D'; // FD_LTE
       device1.frequency = 1840000000;
@@ -25,8 +26,11 @@ void main() {
       device1.bandwidth = 10000000;
       device1.active = 'active';
       device1.sddId = '11111111';
+      device1.networkType = DeviceDetails.getNetworkTypeStatic(
+              device1.emission, device1.frequency!, device1.bandwidth!, site.telco, 0)
+          .first;
 
-      device2 = new DeviceDetails();
+      device2 = new DeviceDetails(networkType: NetworkType.UNKNOWN);
       device2.setSite(site);
       device2.emission = '8M40G7E'; // GSM
       device2.frequency = 1840000000;
@@ -34,8 +38,11 @@ void main() {
       device2.bandwidth = 10000000;
       device2.active = 'active';
       device2.sddId = '22222222';
+      device2.networkType = DeviceDetails.getNetworkTypeStatic(
+              device2.emission, device2.frequency!, device2.bandwidth!, site.telco, 0)
+          .first;
 
-      device3 = new DeviceDetails();
+      device3 = new DeviceDetails(networkType: NetworkType.UNKNOWN);
       device3.setSite(site);
       device3.emission = '10M0W7D'; // FD_LTE
       device3.frequency = 1840000000;
@@ -43,8 +50,11 @@ void main() {
       device3.bandwidth = 40000000;
       device3.active = 'active';
       device3.sddId = '33333333';
+      device3.networkType = DeviceDetails.getNetworkTypeStatic(
+              device3.emission, device3.frequency!, device3.bandwidth!, site.telco, 0)
+          .first;
 
-      device4 = new DeviceDetails();
+      device4 = new DeviceDetails(networkType: NetworkType.UNKNOWN);
       device4.setSite(site);
       device4.emission = '3M84G7W'; // UMTS
       device4.frequency = 947600000;
@@ -52,6 +62,9 @@ void main() {
       device4.bandwidth = 3840000;
       device4.active = ''; // false
       device4.sddId = '44444444';
+      device4.networkType = DeviceDetails.getNetworkTypeStatic(
+              device4.emission, device4.frequency!, device4.bandwidth!, site.telco, 0)
+          .first;
 
       List<DeviceDetails> deviceDetailsMobile = site.getDeviceDetailsMobile();
       deviceDetailsMobile.add(device1);
@@ -62,8 +75,7 @@ void main() {
 
     test('centerEachLine', () {
       expect(
-        Site.centerEachLine(
-            "Telstra Exchange\n5321 Casterton-Edenhope Road\nKadnook"),
+        Site.centerEachLine("Telstra Exchange\n5321 Casterton-Edenhope Road\nKadnook"),
         "           Telstra Exchange           \n" +
             "     5321 Casterton-Edenhope Road     \n" +
             "               Kadnook                \n",
@@ -101,21 +113,9 @@ void main() {
 
     test('getDeviceDetailsMobileBands', () {
       expect(site.getDeviceDetailsMobileBands().length, 3);
-      expect(
-          site
-              .getDeviceDetailsMobileBands()
-              .containsKey("001840000000_10M0W7D"),
-          true);
-      expect(
-          site
-              .getDeviceDetailsMobileBands()
-              .containsKey("001840000000_8M40G7E"),
-          true);
-      expect(
-          site
-              .getDeviceDetailsMobileBands()
-              .containsKey("000947600000_3M84G7W"),
-          true);
+      expect(site.getDeviceDetailsMobileBands().containsKey("4G_001840000000_10M0W7D"), true);
+      expect(site.getDeviceDetailsMobileBands().containsKey("2G_001840000000_8M40G7E"), true);
+      expect(site.getDeviceDetailsMobileBands().containsKey("3G_000947600000_3M84G7W"), true);
     });
 
     test('countNumberAntennas1', () {
@@ -174,7 +174,7 @@ void main() {
     // });
 
     test('getRotation', () {
-      expect(site.getRotation(), -50.0);
+      expect(site.getRotation(), -60.0);
     });
 
     test('getIconName', () {

@@ -3,10 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
-import 'package:phonetowers/helpers/get_elevation.dart';
-import 'package:phonetowers/helpers/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
@@ -14,6 +11,8 @@ import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/device_detail.dart';
+import 'package:phonetowers/restful/get_elevation.dart';
+import 'package:phonetowers/restful/get_licenceHRP.dart';
 
 import 'height_distance_pair.dart';
 
@@ -109,7 +108,7 @@ class Site {
 
     // Return true for sites where we don't know about the devices
     if (getDeviceDetailsMobile().isEmpty) {
-      return true;
+      return false;
     }
 
     deviceLoop:
@@ -211,8 +210,14 @@ class Site {
       int frequency = d.frequency!;
       //if (rounded) frequency = TranslateFrequencies.roundMobileFrequency(frequency);
       String emission = d.emission!;
+      NetworkType networkType = d.getNetworkType();
       // Ensure the key is padded to enable sorting to work correctly
-      String key = '$frequency'.padLeft(12, '0') + '_' + emission;
+      String key = "" +
+          NetworkTypeHelper.resolveNetworkToName(networkType) +
+          "_" +
+          '$frequency'.padLeft(12, '0') +
+          "_" +
+          emission;
 
       // Roll-up multiple transmitters so that if any are active, the frequency is active
       bool active = false;
