@@ -34,6 +34,8 @@
 	<string>App needs location permission to show nearest towers around you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>App needs location permission to show nearest towers around you.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>App needs location permission to show nearest towers around you.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>App needs motion to operate map directions.</string>
 	<key>UILaunchStoryboardName</key>
