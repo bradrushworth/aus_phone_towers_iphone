@@ -26,8 +26,12 @@ class SharedPreferencesHelper {
   static final String kisBet2_3Visible = 'isBet2_3Visible';
   static final String kisGreater3Visible = 'isGreater3Visible';
 
-  static final String kradiationModelselection = 'radiationModelselection';
-  static final String ksignalStrenghtSelection = 'signalStrenghtSelection';
+  static final String kisMetroVisible = 'isMetroVisible';
+  static final String kisUrbanVisible = 'isUrbanVisible';
+  static final String kisSuburbanVisible = 'isSuburbanVisible';
+  static final String kisOpenVisible = 'isOpenVisible';
+
+  static final String ksignalStrengthSelection = 'signalStrenghtSelection';
 
   static final String kisTelcoVisible = 'isTelcoVisible';
   static final String kisRadioVisible = 'isRadioVisible';

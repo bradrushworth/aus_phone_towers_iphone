@@ -31,6 +31,7 @@ class SiteHelper with ChangeNotifier {
   //static ConcurrentHashMap<Marker, Site> markersHashMap = new ConcurrentHashMap<>();
   static Set<Site> siteDownloadSinceLastClick = Set<Site>();
   static Set<List<int>> hideFrequency = Set<List<int>>();
+  static Set<CityDensity> hideDensity = Set<CityDensity>();
 
   static bool downloadedGeohashAlready(String geohash, Telco telco) {
     // Don't download the same area more than once for a given telco
@@ -121,10 +122,17 @@ class SiteHelper with ChangeNotifier {
   }
 
   //sets the radiation according to the map like: METRO,URBAN,SUBURBAN,OPEN
-  void setRadiationModel(CityDensity model) {
-    GetLicenceHRP.radiationModel = model;
-    notifyListeners();
-    PolygonHelper().refreshPolygons(false);
+  void toggleCityDensity(bool isShow, CityDensity model) {
+    if (isShow) {
+      SiteHelper.hideDensity.removeWhere((modelinside) {
+        return model == modelinside;
+      });
+    } else {
+      SiteHelper.hideDensity.add(model);
+    }
+
+    refreshSites();
+    PolygonHelper().refreshPolygons(!isShow);
   }
 
   void setSignalStrength(int position) {

@@ -116,6 +116,11 @@ class Site {
       //Log.i("Site", "shouldBeVisible(): checking site=" + this + " d=" + d);
 
       // Check we want to see this network type (e.g. 2G, 3G)
+      if (SiteHelper.hideDensity.contains(d.getRadiationModel())) {
+        continue deviceLoop;
+      }
+
+      // Check we want to see this network type (e.g. 2G, 3G)
       if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) {
         continue deviceLoop;
       }
@@ -143,6 +148,7 @@ class Site {
       // This site has at least one transmitter we are interested in
       return true;
     }
+
     // This site has zero transmitters we are interested in
     //Log.i("Site", "shouldBeVisible(): false for site=" + this);
     return false;
@@ -271,6 +277,23 @@ class Site {
 
     // MIMO doubles the bandwidth every time you double the antennas
     return d.getAntennaCapacity() * count;
+  }
+
+  // How populated is the containing geohash with sites?
+  // Geohash length of SiteHelper.GEOHASH_LENGTH is currently 5.
+  static CityDensity getCityDensityStatic(int numSitesInGeohash) {
+    if (numSitesInGeohash >= 50) return CityDensity.METRO;
+    if (numSitesInGeohash >= 30) return CityDensity.URBAN;
+    if (numSitesInGeohash >=  5) return CityDensity.SUBURBAN;
+    return CityDensity.OPEN;
+  }
+
+  CityDensity? getCityDensity() {
+    return cityDensity;
+  }
+
+  void setCityDensity(int numSitesInGeohash) {
+    cityDensity = getCityDensityStatic(numSitesInGeohash);
   }
 
   void addElevation(LatLng latLng, double elevation) {

@@ -493,38 +493,33 @@ class MapBodyState extends AbstractMapBodyState {
         NavigationMenu.isGreater3Visible,
         FrequencyRangesHelper.getValue(FrequencyRanges.VERY_HIGH));
 
-    NavigationMenu.radiationModelselection =
-        SharedPreferencesHelper.getRadiationModel(
-            key: SharedPreferencesHelper.kradiationModelselection,
-            prefs: prefs);
-    switch (NavigationMenu.radiationModelselection) {
-      case 0:
-        {
-          GetLicenceHRP.radiationModel = CityDensity.METRO;
-          break;
-        }
-      case 1:
-        {
-          GetLicenceHRP.radiationModel = CityDensity.URBAN;
-          break;
-        }
-      case 2:
-        {
-          GetLicenceHRP.radiationModel = CityDensity.SUBURBAN;
-          break;
-        }
-      case 3:
-        {
-          GetLicenceHRP.radiationModel = CityDensity.OPEN;
-          break;
-        }
-    }
+    //CityDensities
+    NavigationMenu.isMetroVisible = SharedPreferencesHelper.getMenuStatus(
+        key: SharedPreferencesHelper.kisMetroVisible, prefs: prefs);
+    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
+        NavigationMenu.isMetroVisible,
+        CityDensity.METRO);
+    NavigationMenu.isUrbanVisible = SharedPreferencesHelper.getMenuStatus(
+        key: SharedPreferencesHelper.kisUrbanVisible, prefs: prefs);
+    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
+        NavigationMenu.isUrbanVisible,
+        CityDensity.URBAN);
+    NavigationMenu.isSuburbanVisible = SharedPreferencesHelper.getMenuStatus(
+        key: SharedPreferencesHelper.kisSuburbanVisible, prefs: prefs);
+    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
+        NavigationMenu.isSuburbanVisible,
+        CityDensity.SUBURBAN);
+    NavigationMenu.isOpenVisible = SharedPreferencesHelper.getMenuStatus(
+        key: SharedPreferencesHelper.kisOpenVisible, prefs: prefs);
+    Provider.of<SiteHelper>(context, listen: false).toggleCityDensity(
+        NavigationMenu.isOpenVisible,
+        CityDensity.OPEN);
 
-    NavigationMenu.signalStrenghtSelection =
+    NavigationMenu.signalStrengthSelection =
         SharedPreferencesHelper.getSignalStrength(
-            key: SharedPreferencesHelper.ksignalStrenghtSelection,
+            key: SharedPreferencesHelper.ksignalStrengthSelection,
             prefs: prefs);
-    switch (NavigationMenu.signalStrenghtSelection) {
+    switch (NavigationMenu.signalStrengthSelection) {
       case 0:
         {
           PolygonHelper.polygonSignalStrengthPos = kMaximumSignalStrength;
@@ -771,7 +766,7 @@ class MapBodyState extends AbstractMapBodyState {
     }
 
     // What is the correct CityDensity for this Telco/GeoHash?
-    CityDensity cityDensity = CityDensity.METRO; // TODO
+    CityDensity cityDensity = Site.getCityDensityStatic(totalLatLong);
 
     //1) Start displaying markers
     for (int i = 0; i <= totalLatLong - 1; i++) {

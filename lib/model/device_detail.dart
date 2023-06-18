@@ -368,4 +368,8 @@ class DeviceDetails {
   int compareTo(DeviceDetails other) {
     return deviceRegistrationIdentifier!.compareTo(other.deviceRegistrationIdentifier!);
   }
+
+  CityDensity? getRadiationModel() {
+    return site!.getCityDensity();
+  }
 }

@@ -466,7 +466,7 @@ class PolygonHelper with ChangeNotifier {
     if (cancelFetchingPolygonRequestToken != null) {
       if (!cancelFetchingPolygonRequestToken!.isCancelled) {
         cancelFetchingPolygonRequestToken!
-            .cancel("future reuqest for signal polygon have been cancelled");
+            .cancel("future request for signal polygon have been cancelled");
       }
     }
 
