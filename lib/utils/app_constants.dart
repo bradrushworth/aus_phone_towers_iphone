@@ -7,7 +7,7 @@ class AppConstants {
   static final bool isMock = false;
 }
 
-const LatLng kLagLongBathurst = LatLng(-33.433, 149.565);
+const LatLng kLagLongMareeba = LatLng(17.20, 145.30);
 const double kDefaultZoom = 13.5;
 const double kZoomTooFar = 11;
 
