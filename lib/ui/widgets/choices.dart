@@ -15,11 +15,8 @@
 //   Choice(title: 'Map Mode', icon: Icons.map),
 //   Choice(title: 'Rotating Map', icon: Icons.threed_rotation),
 //   Choice(title: 'Hiding Menu', icon: Icons.border_all),
-//   Choice(title: 'Source Code', icon: Icons.code),
-//   Choice(title: 'Donate', icon: Icons.monetization_on),
 //   Choice(title: 'Developer Mode', icon: Icons.developer_mode),
 //   Choice(title: 'Report Problem', icon: Icons.report),
-//   Choice(title: 'Rate App', icon: Icons.rate_review),
 //   Choice(title: 'Close App', icon: Icons.close),
 // ];
 //
