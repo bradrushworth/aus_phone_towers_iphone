@@ -69,27 +69,23 @@ class PurchaseHelper with ChangeNotifier {
 
   bool isHasPurchasedProcessed = false;
 
-  void initStoreInfo(
-      {void Function({String message, bool isDismissible})?
-          showSnackBar}) async {
+  void initStoreInfo({void Function({String message, bool isDismissible})? showSnackBar}) async {
     this.showSnackBar = showSnackBar;
 
     // Check availability of In App Purchases
     final available = await _inAppPurchase.isAvailable();
 
     // Report statistics to Firebase
-    AnalyticsHelper().sendCustomAnalyticsEvent(
-        eventName: 'setup_billing',
-        eventParameters: <String, Object>{
-          'message': available
-              ? 'The Payment platform is ready and available'
-              : 'The Payment platform is not ready and available',
-        });
+    AnalyticsHelper()
+        .sendCustomAnalyticsEvent(eventName: 'setup_billing', eventParameters: <String, Object>{
+      'message': available
+          ? 'The Payment platform is ready and available'
+          : 'The Payment platform is not ready and available',
+    });
 
     if (available) {
       // Listen to new purchases
-      final Stream<List<PurchaseDetails>> purchaseUpdated =
-          _inAppPurchase.purchaseStream;
+      final Stream<List<PurchaseDetails>> purchaseUpdated = _inAppPurchase.purchaseStream;
       _subscription = purchaseUpdated.listen((purchaseDetailsList) {
         _listenToPurchaseUpdated(purchaseDetailsList);
       }, onDone: () {
@@ -120,18 +116,17 @@ class PurchaseHelper with ChangeNotifier {
   /// Get all products available for sale
   Future<void> _getProducts() async {
     if (Platform.isIOS) {
-      var iosPlatformAddition = _inAppPurchase
-          .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      var iosPlatformAddition =
+          _inAppPurchase.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       await iosPlatformAddition.setDelegate(ExamplePaymentQueueDelegate());
     }
 
     ProductDetailsResponse productDetailResponse =
         await _inAppPurchase.queryProductDetails(_kProductIds.toSet());
     if (productDetailResponse.error != null) {
-      String error =
-          "In-App Billing Failed: " + productDetailResponse.error!.message;
+      String error = "In-App Billing Failed: " + productDetailResponse.error!.message;
       showSnackBar!(message: error);
-      logger.e("PurchaseHelper", error);
+      logger.e("PurchaseHelper: " + error);
       AnalyticsHelper().log(error);
 
       _queryProductError = productDetailResponse.error!.message;
@@ -147,7 +142,7 @@ class PurchaseHelper with ChangeNotifier {
     if (productDetailResponse.productDetails.isEmpty) {
       String error = "In-App Billing is empty!";
       showSnackBar!(message: error);
-      logger.e("PurchaseHelper", error);
+      logger.e("PurchaseHelper: " + error);
       AnalyticsHelper().log(error);
 
       _queryProductError = null;
@@ -171,8 +166,8 @@ class PurchaseHelper with ChangeNotifier {
   @override
   void dispose() {
     if (Platform.isIOS) {
-      var iosPlatformAddition = _inAppPurchase
-          .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      var iosPlatformAddition =
+          _inAppPurchase.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       iosPlatformAddition.setDelegate(null);
     }
 
@@ -205,22 +200,16 @@ class PurchaseHelper with ChangeNotifier {
         orElse: () => null);
     // Thank the user for donating in the past :-)
     eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
-    isShowDonatePreviousMenuItem =
-        purchaseDetailsForDonation != null ? true : false;
+    isShowDonatePreviousMenuItem = purchaseDetailsForDonation != null ? true : false;
 
     //2)  Operation to perform when user has removed ad for one year
-    PurchaseDetails? purchaseDetailsForOneYearSubscription =
-        _purchases.firstWhere(
-            (purchaseDetails) =>
-                purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
-            orElse: () => null);
+    PurchaseDetails? purchaseDetailsForOneYearSubscription = _purchases.firstWhere(
+        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
+        orElse: () => null);
     if (purchaseDetailsForOneYearSubscription != null) {
-      int purchaseTime =
-          int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ??
-              0;
+      int purchaseTime = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
       if (purchaseTime > 0 &&
-          purchaseTime <
-              DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
+          purchaseTime < DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
         // Remove ads for one year is now over
         logger.i("BillingHelper Consuming the " +
             SKU_SUBSCRIBE_ONE_YEAR +
@@ -233,13 +222,10 @@ class PurchaseHelper with ChangeNotifier {
 
     //3) This is just for analytics
     // This needs to be after the consume everything above
-    PurchaseDetails? purchaseDetailsForPermanentSubscription =
-        _purchases.firstWhere(
-            (purchaseDetails) =>
-                purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
-            orElse: () => null);
-    bool permanent =
-        purchaseDetailsForPermanentSubscription != null ? true : false;
+    PurchaseDetails? purchaseDetailsForPermanentSubscription = _purchases.firstWhere(
+        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
+        orElse: () => null);
+    bool permanent = purchaseDetailsForPermanentSubscription != null ? true : false;
     bool yearly = purchaseDetailsForOneYearSubscription != null ? true : false;
     bool subscription = permanent || yearly;
 
@@ -254,9 +240,7 @@ class PurchaseHelper with ChangeNotifier {
     isShowSubscribePreviousMenuItem = subscription;
     isSubscribedPermanently = permanent;
     if (yearly) {
-      int expiry =
-          int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ??
-              0;
+      int expiry = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
       expiry += EXPIRY_PERIOD;
       DateTime date = new DateTime.fromMillisecondsSinceEpoch(expiry);
       await initializeDateFormatting("en-AU", null);
@@ -278,8 +262,8 @@ class PurchaseHelper with ChangeNotifier {
       }
     }
 
-    AnalyticsHelper().sendCustomAnalyticsEvent(
-        eventName: 'has_purchase', eventParameters: eventMap);
+    AnalyticsHelper()
+        .sendCustomAnalyticsEvent(eventName: 'has_purchase', eventParameters: eventMap);
   }
 
   Future<void> initiatePurchase({required String sku}) async {
@@ -295,10 +279,8 @@ class PurchaseHelper with ChangeNotifier {
       return product!.id == sku;
     }, orElse: () => null);
     if (productToBuy != null) {
-      final PurchaseParam purchaseParam =
-      PurchaseParam(productDetails: productToBuy);
-      _inAppPurchase.buyConsumable(
-          purchaseParam: purchaseParam, autoConsume: false);
+      final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
+      _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
     }
   }
 
@@ -312,12 +294,12 @@ class PurchaseHelper with ChangeNotifier {
           logger.e('Purchase status is ${purchaseDetails.status}');
           String error = 'Failed purchase: ${purchaseDetails.status}';
           showSnackBar!(message: error);
-          logger.w("PurchaseHelper", error);
+          logger.w("PurchaseHelper: " + error);
           eventMap['failure'] = error;
           AnalyticsHelper().log(error);
 
-          AnalyticsHelper().sendCustomAnalyticsEvent(
-              eventName: 'purchase_error', eventParameters: eventMap);
+          AnalyticsHelper()
+              .sendCustomAnalyticsEvent(eventName: 'purchase_error', eventParameters: eventMap);
         } else if (purchaseDetails.status == PurchaseStatus.purchased) {
           bool valid = true;
           //await _verifyPurchase(purchaseDetails);
@@ -334,16 +316,12 @@ class PurchaseHelper with ChangeNotifier {
     });
   }
 
-  void deliverProduct(
-      PurchaseDetails purchaseDetails, Map<String, Object> eventMap) {
+  void deliverProduct(PurchaseDetails purchaseDetails, Map<String, Object> eventMap) {
     switch (purchaseDetails.productID) {
       case SKU_DONATION_SMALL:
         {
-          showSnackBar!(
-              message: 'Thanks so much for the coffee, you legend!',
-              isDismissible: true);
-          logger.i(
-              "PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
+          showSnackBar!(message: 'Thanks so much for the coffee, you legend!', isDismissible: true);
+          logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateSmallPurchased = true;
           break;
@@ -351,10 +329,8 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_DONATION_MEDIUM:
         {
           showSnackBar!(
-              message: 'Coffee and cake is the best, just like you!',
-              isDismissible: true);
-          logger.i(
-              "PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
+              message: 'Coffee and cake is the best, just like you!', isDismissible: true);
+          logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateMediumPurchased = true;
           break;
@@ -362,10 +338,8 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_DONATION_LARGE:
         {
           showSnackBar!(
-              message: 'Thanks for buying lunch! I\'d love to hear from you.',
-              isDismissible: true);
-          logger.i(
-              "PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
+              message: 'Thanks for buying lunch! I\'d love to hear from you.', isDismissible: true);
+          logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateLargePurchased = true;
           break;
@@ -373,11 +347,9 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_SUBSCRIBE_ONE_YEAR:
         {
           showSnackBar!(
-              message:
-                  'Thanks for making this purchase. Please enjoy the app ad free.',
+              message: 'Thanks for making this purchase. Please enjoy the app ad free.',
               isDismissible: true);
-          logger.i(
-              "PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
+          logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           //hasPurchase();
           break;
@@ -385,11 +357,9 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_SUBSCRIBE_PERMANENTLY:
         {
           showSnackBar!(
-              message:
-                  'Thanks for making this purchase. Please enjoy the app ad free.',
+              message: 'Thanks for making this purchase. Please enjoy the app ad free.',
               isDismissible: true);
-          logger.i(
-              "PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
+          logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           //hasPurchase();
           break;
@@ -398,8 +368,7 @@ class PurchaseHelper with ChangeNotifier {
 
     notifyListeners();
 
-    AnalyticsHelper().sendCustomAnalyticsEvent(
-        eventName: 'purchase', eventParameters: eventMap);
+    AnalyticsHelper().sendCustomAnalyticsEvent(eventName: 'purchase', eventParameters: eventMap);
   }
 
   void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {}

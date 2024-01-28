@@ -49,8 +49,7 @@ class PolygonHelper with ChangeNotifier {
   static Set<PolygonContainer> allPolygons = new Set<PolygonContainer>();
   static Map<Site, Map<DeviceDetails, Set<PolygonContainer>>> sitesPolygons =
       new Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>();
-  static late Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>
-      sitesPolygonsOppositeTerrain;
+  static late Map<Site, Map<DeviceDetails, Set<PolygonContainer>>> sitesPolygonsOppositeTerrain;
   static bool drawPolygonsOnClick = true;
   static Logger logger = Logger();
 
@@ -59,8 +58,7 @@ class PolygonHelper with ChangeNotifier {
   static CancelToken? cancelFetchingPolygonRequestToken;
   static String terrainAwarenessKey = '';
 
-  void queryForSignalPolygon(
-      Site site, bool refreshingPolygons, bool cachingPolygons,
+  void queryForSignalPolygon(Site site, bool refreshingPolygons, bool cachingPolygons,
       {Set<DeviceDetails>? specificDevices, ShowSnackBar? showSnackBar}) {
     // If we have decided not to refresh (because we are loading a saved state for instance)
     logger.d('inside query for signal polygon');
@@ -118,8 +116,7 @@ class PolygonHelper with ChangeNotifier {
       try {
         if (!site.startedDownloadingElevations) {
           site.startedDownloadingElevations = true;
-          String positionsString =
-              GetElevation.getPositionsString(site.getLatLng());
+          String positionsString = GetElevation.getPositionsString(site.getLatLng());
           String url = (kIsWeb ? 'https://api.bitbot.com.au/cors/' : '') +
               'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$terrainAwarenessKey';
           GetElevation(site: site, url: url).getElevationData();
@@ -150,8 +147,7 @@ class PolygonHelper with ChangeNotifier {
         // If we know the specific devices we are looking for, ignore the user's configuration
         if (!specificDevices.contains(d)) {
           // This isn't the connected device
-          logger.d(
-              "PolygonHelper : queryForSignalPolygon: !devices.contains($d)");
+          logger.d("PolygonHelper: queryForSignalPolygon: !devices.contains($d)");
           continue deviceLoop;
         }
       } else {
@@ -160,33 +156,29 @@ class PolygonHelper with ChangeNotifier {
         // Don't download network types we are hiding
         if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) {
           logger.d(
-              "PolygonHelper : queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType()})");
+              "PolygonHelper: queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType()})");
           continue deviceLoop;
         }
 
         // Don't download LTE types we are hiding
         LteType lteType = d.getLteType();
         if (lteType == LteType.NOT_LTE && !displayNotLteMultiplex) {
-          logger.d("PolygonHelper",
-              "queryForSignalPolygon: !displayNotLteMultiplex");
+          logger.d("PolygonHelper: queryForSignalPolygon: !displayNotLteMultiplex");
           continue deviceLoop;
         }
         if (lteType == LteType.TD_LTE && !displayTdMultiplex) {
-          logger.d(
-              "PolygonHelper", "queryForSignalPolygon: !displayTdMultiplex");
+          logger.d("PolygonHelper: queryForSignalPolygon: !displayTdMultiplex");
           continue deviceLoop;
         }
         if (lteType == LteType.FD_LTE && !displayFdMultiplex) {
-          logger.d(
-              "PolygonHelper", "queryForSignalPolygon: !displayFdMultiplex");
+          logger.d("PolygonHelper: queryForSignalPolygon: !displayFdMultiplex");
           continue deviceLoop;
         }
 
         // Don't download frequencies we are hiding
         for (List<int> range in SiteHelper.hideFrequency) {
           if (frequency >= range[0] && frequency <= range[1]) {
-            logger.d("PolygonHelper",
-                "queryForSignalPolygon: r.contains($frequency)");
+            logger.d("PolygonHelper: queryForSignalPolygon: r.contains($frequency)");
             continue deviceLoop;
           }
         }
@@ -209,8 +201,7 @@ class PolygonHelper with ChangeNotifier {
           site,
           d,
         );
-        logger.d("PolygonHelper",
-            "queryForSignalPolygon: polygonCache.containsKey($d)");
+        logger.d("PolygonHelper: queryForSignalPolygon: polygonCache.containsKey($d)");
         continue deviceLoop;
       }
 
@@ -218,9 +209,7 @@ class PolygonHelper with ChangeNotifier {
       switchingBetweenTerrainAwareness = false;
 
       List<List<LatLng>> results = [];
-      for (int i = 0;
-          i <= PolygonHelper.getPolygonSignalStrengthPosition();
-          i++) {
+      for (int i = 0; i <= PolygonHelper.getPolygonSignalStrengthPosition(); i++) {
         results.insert(i, []);
       }
 
@@ -230,8 +219,8 @@ class PolygonHelper with ChangeNotifier {
         // If we can't do any better, lets create a simple circular polygon
         createBasicPolygon(d, site, results);
         //}
-        logger.d("PolygonHelper",
-            "queryForSignalPolygon: device_registration_identifier == null for [${site.siteId} , ${d.getNetworkType()} ,  $frequency ]");
+        logger.d(
+            "PolygonHelper: queryForSignalPolygon: device_registration_identifier == null for [${site.siteId} , ${d.getNetworkType()} ,  $frequency ]");
         continue deviceLoop;
       }
 
@@ -283,9 +272,8 @@ class PolygonHelper with ChangeNotifier {
       //Log.d("PolygonHelper", "i=" + i + " capacity=" + capacity + " alpha=" + alpha);
       Polygon po = Polygon(
         polygonId: PolygonId("polygon_${i}_${device.sddId}"),
-        strokeColor: i != data.length - 1
-            ? Colors.transparent
-            : TelcoHelper.getColor(telco, lineAlpha),
+        strokeColor:
+            i != data.length - 1 ? Colors.transparent : TelcoHelper.getColor(telco, lineAlpha),
         strokeWidth: 4,
         fillColor: TelcoHelper.getColor(telco, alpha),
         points: data[i],
@@ -367,8 +355,8 @@ class PolygonHelper with ChangeNotifier {
       eventMap['device_networkType'] =
           NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
       eventMap['device_antennaCapacity'] = device.getAntennaCapacity();
-      AnalyticsHelper().sendCustomAnalyticsEvent(
-          eventName: 'create_polygon', eventParameters: eventMap);
+      AnalyticsHelper()
+          .sendCustomAnalyticsEvent(eventName: 'create_polygon', eventParameters: eventMap);
     }
   }
 
@@ -376,8 +364,7 @@ class PolygonHelper with ChangeNotifier {
     return polygonSignalStrengthPos;
   }
 
-  void createBasicPolygon(
-      DeviceDetails device, Site site, List<List<LatLng>> results) {
+  void createBasicPolygon(DeviceDetails device, Site site, List<List<LatLng>> results) {
     if (site == null || device == null) return;
     // If we can't use the Licence HRP table, lets make a circle estimate
 //    double eirp = d.eirp;
@@ -392,8 +379,7 @@ class PolygonHelper with ChangeNotifier {
     int freqInMHz = device.frequency! / 1000 ~/ 1000;
 
     // Draw appropriate signal strength
-    List<int> polygons =
-        NetworkTypeHelper.getNetworkBars(device.getNetworkType());
+    List<int> polygons = NetworkTypeHelper.getNetworkBars(device.getNetworkType());
 
     int towerHeight = 0;
     towerHeight = device.height!;
@@ -403,9 +389,7 @@ class PolygonHelper with ChangeNotifier {
     }
     //Log.d("PolygonHelper", "power_dBm="+power_dBm+" freeSpaceLoss_dBi="+freeSpaceLoss_dBi+" towerHeight="+towerHeight);
 
-    for (double bearing = BEARING_START;
-        bearing < 360;
-        bearing += BEARING_INCREMENT) {
+    for (double bearing = BEARING_START; bearing < 360; bearing += BEARING_INCREMENT) {
       //TODO calculare Terrain
       Set<HeightDistancePair> heightToDistance = {};
       int hillHeight = 0;
@@ -422,37 +406,26 @@ class PolygonHelper with ChangeNotifier {
       double power_dBm = device.getPowerAtBearing(bearing);
 
       int pos = 0;
-      for (int p = 0;
-          p <= PolygonHelper.getPolygonSignalStrengthPosition();
-          p++) {
+      for (int p = 0; p <= PolygonHelper.getPolygonSignalStrengthPosition(); p++) {
         int receiver_dBm = polygons[p];
         double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
-        double distanceKm = GetLicenceHRP.calculateDistance(
-            GetLicenceHRP.radiationModel,
-            freeSpaceLoss_dBi,
-            freqInMHz.toDouble(),
-            towerHeight + hillHeight.toDouble());
+        double distanceKm = GetLicenceHRP.calculateDistance(GetLicenceHRP.radiationModel,
+            freeSpaceLoss_dBi, freqInMHz.toDouble(), towerHeight + hillHeight.toDouble());
         //Log.d("PolygonHelper", "distanceKm="+distanceKm);
 
 //    TreeSet<HeightDistancePair> heightToDistance = site.getHeightsAlongBearing(distanceKm, bearing);//TODO later on
 //    distanceKm = GetLicenceHRP.calculateTerrainLosses(site, heightToDistance, distanceKm, bearing, freqInMHz, towerHeight);
         if (calculateTerrain) {
           distanceKm = GetLicenceHRP.calculateTerrainLosses(
-              site,
-              heightToDistance,
-              distanceKm,
-              bearing,
-              freqInMHz.toDouble(),
-              towerHeight);
+              site, heightToDistance, distanceKm, bearing, freqInMHz.toDouble(), towerHeight);
         }
 
         if (distanceKm > 100) {
           distanceKm = 100;
         }
 
-        LatLng latlng =
-            GetLicenceHRP.travel(site.getLatLng(), bearing, distanceKm);
+        LatLng latlng = GetLicenceHRP.travel(site.getLatLng(), bearing, distanceKm);
         results[pos].add(latlng);
         pos++;
       }
@@ -460,8 +433,7 @@ class PolygonHelper with ChangeNotifier {
     createPolygon(results, site, device);
   }
 
-  void clearSitePatterns(bool cancelAllTaskTypes,
-      {Site? skipSite, ShowSnackBar? showSnackBar}) {
+  void clearSitePatterns(bool cancelAllTaskTypes, {Site? skipSite, ShowSnackBar? showSnackBar}) {
     // Cancel pending REST requests for polygons
     if (cancelFetchingPolygonRequestToken != null) {
       if (!cancelFetchingPolygonRequestToken!.isCancelled) {
@@ -545,15 +517,13 @@ class PolygonHelper with ChangeNotifier {
 
     for (Site site in oldSitesPolygons.keys) {
       for (DeviceDetails deviceDetails in oldSitesPolygons[site]!.keys) {
-        Set<PolygonContainer> oldPolygons =
-            oldSitesPolygons[site]![deviceDetails]!;
+        Set<PolygonContainer> oldPolygons = oldSitesPolygons[site]![deviceDetails]!;
         redrawPolygons(site, deviceDetails, oldPolygons);
       }
     }
   }
 
-  void redrawPolygons(Site site, DeviceDetails deviceDetails,
-      Set<PolygonContainer> oldPolygons) {
+  void redrawPolygons(Site site, DeviceDetails deviceDetails, Set<PolygonContainer> oldPolygons) {
     List<List<LatLng>> data = [];
     for (PolygonContainer oldContainer in oldPolygons) {
       logger.d('PolygonHelper: redrawPolygons: oldContainer= $oldContainer');
