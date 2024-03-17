@@ -11,7 +11,7 @@ description: Aus Phone Towers
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.6.3+55
+version: 1.6.4+56
 
 environment:
   sdk: '>=2.19.6 <3.0.0'
@@ -19,9 +19,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_maps_flutter_platform_interface: ^2.2.6
-  google_maps_flutter_web: ^0.5.0
-  google_maps_flutter: ^2.2.6
+  google_maps_flutter: ^2.6.0
   cupertino_icons: ^1.0.4
   http: ^1.0.0
   dio: ^5.0.1
@@ -39,9 +37,9 @@ dependencies:
   path_provider: ^2.0.8
   path: ^1.8.1
   #firebase_core: ^1.24.0
-  firebase_analytics: ^10.1.4 #9.3.8
-  firebase_crashlytics: ^3.0.15 #2.9.0
-  in_app_purchase: ^3.1.5
+  firebase_analytics: ^10.8.10
+  firebase_crashlytics: ^3.4.19
+  in_app_purchase: ^3.1.13
   #590 was merged and update_version branch of https://github.com/jjliu15/googleads-mobile-flutter-1 has been deleted. So, current workaround is here:
   google_mobile_ads: ^4.0.0
   #    git:
@@ -50,7 +48,7 @@ dependencies:
 #      path: packages/google_mobile_ads
   after_layout: ^1.1.1
   in_app_review: ^2.0.4
-  app_tracking_transparency: ^2.0.2+4
+  app_tracking_transparency: ^2.0.4
   auto_size_text: ^3.0.0
   #google_map_polyutil: ^1.0.1
   #flt_telephony_info: ^0.1.3
