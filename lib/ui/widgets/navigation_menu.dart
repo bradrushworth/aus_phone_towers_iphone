@@ -99,7 +99,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               child: ListTile(
                 title: Text(
                   'Licencees',
-                  style: Theme.of(context).textTheme.button,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -187,7 +187,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               child: ListTile(
                 title: Text(
                   '2G/3G/4G/5G',
-                  style: Theme.of(context).textTheme.button,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -249,7 +249,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               child: ListTile(
                 title: Text(
                   Strings.multiplex_type,
-                  style: Theme.of(context).textTheme.button,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -301,7 +301,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               child: ListTile(
                 title: Text(
                   Strings.frequencies,
-                  style: Theme.of(context).textTheme.button,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -373,7 +373,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               child: ListTile(
                 title: Text(
                   Strings.radiation_models,
-                  style: Theme.of(context).textTheme.button,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -435,7 +435,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               child: ListTile(
                 title: Text(
                   Strings.signal_strength,
-                  style: Theme.of(context).textTheme.button,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -445,7 +445,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.maximum_signal,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.signalStrengthSelection == kMaximumSignalStrength
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -468,7 +468,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.strong_signal,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.signalStrengthSelection == kStrongSignalStrength
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -491,7 +491,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.good_signal,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.signalStrengthSelection == kGoodSignalStrength
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -514,7 +514,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
                   : Colors.white,
               child: ListTile(
                 title: Text(Strings.weak_signal,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.signalStrengthSelection == kWeakSignalStrength
                             ? HexColor('3F51B5')
                             : Colors.black)),
@@ -549,7 +549,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               child: ListTile(
                 title: Text(
                   Strings.transmitter_type,
-                  style: Theme.of(context).textTheme.button,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
               ),
             ),
@@ -557,7 +557,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               color: NavigationMenu.isTelcoVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_telecommunication,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.isTelcoVisible ? HexColor('3F51B5') : Colors.black)),
                 onTap: () {
                   NavigationMenu.isTelcoVisible = !NavigationMenu.isTelcoVisible;
@@ -589,7 +589,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               color: NavigationMenu.isRadioVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_radio,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.isRadioVisible ? HexColor('3F51B5') : Colors.black)),
                 onTap: () {
                   NavigationMenu.isRadioVisible = !NavigationMenu.isRadioVisible;
@@ -606,7 +606,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               color: NavigationMenu.isTVVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_tv,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.isTVVisible ? HexColor('3F51B5') : Colors.black)),
                 onTap: () {
                   NavigationMenu.isTVVisible = !NavigationMenu.isTVVisible;
@@ -623,7 +623,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               color: NavigationMenu.isCivilVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_civil,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.isCivilVisible ? HexColor('3F51B5') : Colors.black)),
                 onTap: () {
                   NavigationMenu.isCivilVisible = !NavigationMenu.isCivilVisible;
@@ -640,7 +640,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               color: NavigationMenu.isPagerVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_pager,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.isPagerVisible ? HexColor('3F51B5') : Colors.black)),
                 onTap: () {
                   NavigationMenu.isPagerVisible = !NavigationMenu.isPagerVisible;
@@ -657,7 +657,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               color: NavigationMenu.isCBRSVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_CBRS,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color: NavigationMenu.isCBRSVisible ? HexColor('3F51B5') : Colors.black)),
                 onTap: () {
                   NavigationMenu.isCBRSVisible = !NavigationMenu.isCBRSVisible;
@@ -674,7 +674,7 @@ class _NavigationMenuState extends State<NavigationMenu> {
               color: NavigationMenu.isAviationVisible ? Colors.grey[300] : Colors.white,
               child: ListTile(
                 title: Text(Strings.transmitter_type_aviation,
-                    style: Theme.of(context).textTheme.button!.copyWith(
+                    style: Theme.of(context).textTheme.labelLarge!.copyWith(
                         color:
                             NavigationMenu.isAviationVisible ? HexColor('3F51B5') : Colors.black)),
                 onTap: () {
@@ -740,7 +740,7 @@ class LicenceesMenuItem extends StatelessWidget {
         title: Text(valueName,
             style: Theme.of(context)
                 .textTheme
-                .button!
+                .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
@@ -786,7 +786,7 @@ class NetworkTypeMenu extends StatelessWidget {
         title: Text(valueName,
             style: Theme.of(context)
                 .textTheme
-                .button!
+                .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
@@ -823,7 +823,7 @@ class MultiplexTypeMenu extends StatelessWidget {
         title: Text(valueName,
             style: Theme.of(context)
                 .textTheme
-                .button!
+                .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
@@ -861,7 +861,7 @@ class FrequencyTypeMenu extends StatelessWidget {
         title: Text(valueName,
             style: Theme.of(context)
                 .textTheme
-                .button!
+                .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
@@ -899,7 +899,7 @@ class RadiationModelTypeMenu extends StatelessWidget {
         title: Text(valueName,
             style: Theme.of(context)
                 .textTheme
-                .button!
+                .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
           isValueVisible = !isValueVisible;
