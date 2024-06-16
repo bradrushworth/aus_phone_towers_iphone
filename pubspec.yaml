@@ -19,7 +19,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_maps_flutter: ^2.6.0
+  google_maps_flutter: ^2.7.0
   cupertino_icons: ^1.0.4
   http: ^1.0.0
   dio: ^5.0.1
@@ -36,8 +36,8 @@ dependencies:
   shared_preferences: ^2.0.12
   path_provider: ^2.0.8
   path: ^1.8.1
-  firebase_analytics: ^10.10.7
-  firebase_crashlytics: ^3.5.7
+  firebase_analytics: ^11.0.1
+  firebase_crashlytics: ^4.0.1
   in_app_purchase: ^3.1.13
   #590 was merged and update_version branch of https://github.com/jjliu15/googleads-mobile-flutter-1 has been deleted. So, current workaround is here:
   google_mobile_ads: ^5.1.0

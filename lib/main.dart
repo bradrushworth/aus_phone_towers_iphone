@@ -149,8 +149,8 @@ class AusPhoneTowers extends StatelessWidget {
               elevation: 0.0,
               color: Colors.white.withOpacity(0.85)),
           textTheme: TextTheme(
-              bodyText1: TextStyle(fontFamily: 'RobotoMono', color: Colors.grey[800], fontSize: 10),
-              button: TextStyle(color: Colors.grey[700])),
+              bodySmall: TextStyle(fontFamily: 'RobotoMono', color: Colors.grey[800], fontSize: 10),
+              labelLarge: TextStyle(color: Colors.grey[700])),
           inputDecorationTheme: InputDecorationTheme(
             enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
             focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),

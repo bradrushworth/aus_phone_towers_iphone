@@ -17,8 +17,8 @@ class ScreenshotController {
 
   Future<File> capture(
       {String path = "",
-      double pixelRatio: 1,
-      Duration delay: const Duration(milliseconds: 20)}) {
+      double pixelRatio = 1,
+      Duration delay = const Duration(milliseconds: 20)}) {
     //DElay is required. See Issue https://github.com/flutter/flutter/issues/22308
     return new Future.delayed(delay, () async {
       try {

@@ -48,7 +48,7 @@ class Api {
 //          "raw marker response ${jsonEncode(SiteReponse.fromJson(response.data))}");
       //return SiteReponse.fromJson(response.data);
       return compute(parseSiteResponse, response.data);
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx and is also not 304.
       /// Response info, it may be `null` if the request can't reach to
@@ -69,7 +69,7 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
       final int? statusCode = response.statusCode;
       //logger.i("raw device response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       logger.e('''Error message is ${e.message}
 Error type is ${e.type}
 Error is ${e.error}
@@ -88,7 +88,7 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
       final int? statusCode = response.statusCode;
       //logger.i("raw licenceHRP response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
         print('Cancelled $path: $e');
       }
@@ -103,7 +103,7 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
       final int? statusCode = response.statusCode;
       //logger.i("raw search response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       logger.e('''Error message is ${e.message}
 Error type is ${e.type}
 Error is ${e.error}
@@ -120,7 +120,7 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
       final int? statusCode = response.statusCode;
       //logger.i("raw antenna response ${response.data.toString()}");
       return compute(parseSiteResponse, response.data);
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       logger.e('''Error message is ${e.message}
 Error type is ${e.type}
 Error is ${e.error}
@@ -137,7 +137,7 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
       final int? statusCode = response.statusCode;
       logger.i("raw elevation response ${response.data.toString()}");
       return compute(parseElevationResponse, response.data);
-    } on DioError catch (e) {
+    } on DioException catch (e) {
       logger.e('''Error message is ${e.message}
 Error type is ${e.type}
 Error is ${e.error}
