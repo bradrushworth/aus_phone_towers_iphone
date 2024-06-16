@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:integration_test/integration_test_driver_extended.dart';
 import 'package:path/path.dart';
+import 'package:flutter_driver/flutter_driver.dart';
 
 //Future<void> main() => integrationDriver();
 
@@ -31,8 +32,9 @@ Future<void> main() async {
     'android.permission.ACCESS_COARSE_LOCATION'
   ]);
 
+  final FlutterDriver driver = await FlutterDriver.connect();
   await integrationDriver(
-    //driver: ,
+    driver: driver,
     onScreenshot: (String screenshotName, List<int> screenshotBytes, [Map<String, Object?>? args]) async {
       final File image = File('$screenshotName.png');
       image.writeAsBytesSync(screenshotBytes);
