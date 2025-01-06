@@ -387,7 +387,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
               ] else ...[
                 Expanded(
                     child: ListTile(
-                  contentPadding: EdgeInsets.all(0),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 5),
                   title: Text(radioItem.title),
                   trailing: Radio(
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
