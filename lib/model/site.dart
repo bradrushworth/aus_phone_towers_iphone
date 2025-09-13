@@ -66,11 +66,11 @@ class Site {
   // }
 
   double getRotation() {
-    return TelcoHelper.getRotation(telco);
+    return rotation;
   }
 
   double getAlpha() {
-    return TelcoHelper.getAlpha(telco);
+    return alpha;
   }
 
   String getIconFullName() {

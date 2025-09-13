@@ -1,4 +1,4 @@
-class HeightDistancePair extends Comparable<HeightDistancePair> {
+class HeightDistancePair implements Comparable<HeightDistancePair> {
   final double height;
   final double distance;
 

@@ -11,10 +11,10 @@ description: Aus Phone Towers
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.7.0+58
+version: 1.8.0+59
 
 environment:
-  sdk: '>=2.22.0 <3.0.0'
+  sdk: '>=3.9.2 <4.0.0'
 
 dependencies:
   flutter:
@@ -24,11 +24,11 @@ dependencies:
   #http: ^1.0.0
   dio: ^5.7.0
   logger: ^2.5.0
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.1
   geohash:
     git: https://github.com/bradrushworth/dart-geohash.git
     #path: ../geohash
-  location: ^7.0.1
+  location: ^8.0.1
   json_annotation: ^4.9.0
   intl: ^0.20.1
   html_unescape: ^2.0.0
@@ -36,11 +36,11 @@ dependencies:
   shared_preferences: ^2.3.5
   path_provider: ^2.1.5
   #path: ^1.9.1
-  firebase_analytics: ^11.3.6
-  firebase_crashlytics: ^4.2.0
+  firebase_analytics: ^12.0.1
+  firebase_crashlytics: ^5.0.1
   in_app_purchase: ^3.2.0
   #590 was merged and update_version branch of https://github.com/jjliu15/googleads-mobile-flutter-1 has been deleted. So, current workaround is here:
-  google_mobile_ads: ^5.2.0
+  google_mobile_ads: ^6.0.0
   #    git:
 #      url: https://github.com/googleads/googleads-mobile-flutter
 #      ref: 356875362ddb2ac2e0056385d2729c093722fb8d
