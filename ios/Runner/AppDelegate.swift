@@ -4,7 +4,7 @@ import GoogleMaps
 import Firebase
 import MessageUI
 
-@UIApplicationMain
+@main
 @objc class AppDelegate: FlutterAppDelegate,MFMailComposeViewControllerDelegate {
 
   override func application(
