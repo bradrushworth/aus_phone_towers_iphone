@@ -155,38 +155,46 @@ class DeviceDetails {
   ]);
   static Set<int> antennas3G4G5G = Set.of([
     80562, // Telstra
-    92391, 93659, 93661, 90023, 90025 // Optus
+    92391, 93659, 93661, 90023, 90025, 81539, 95668 // Optus
   ]);
   static Set<int> antennas3G5G = Set.of([
     81170 // Telstra
   ]);
   static Set<int> antennas4G = Set.of([
-    80854, // Telstra
-    90025, // Optus
+    80854, 81380, 80154, 80232, // Telstra
+    90025, 93910, // Optus
     13198 // Vodafone
   ]);
   static Set<int> antennas4G5G = Set.of([
-    // Telstra. Not: 81204
+    91103, 92694, // Telstra. Not: 81204
     93658, 93789, 90022, 93664, 92388, // Optus
-    93907, 93908, 93910, 93911, 93364, 93365, 93366, 93368, 93369, 92174 // Vodafone
+    93907, 93908, 93911, 93364, 93365, 93366, 93368, 93369, 92174, 93588, 93590, 93589, 81305, 13198, 94865 // Vodafone
+  ]);
+  static Set<int> antennas5G = Set.of([
+    // Telstra
+    // Optus
+    // Vodafone
   ]);
 
   static List<NetworkType> getNetworkTypeStatic(
       String? emission, int frequency, int bandwidth, Telco telco, int antennaId) {
     if (antennas3G4G.contains(antennaId)) {
-      return [NetworkType.UMTS, NetworkType.LTE];
+      return [NetworkType.LTE];
     }
     if (antennas3G4G5G.contains(antennaId)) {
-      return [NetworkType.UMTS, NetworkType.LTE, NetworkType.NR];
+      return [NetworkType.LTE, NetworkType.NR];
     }
     if (antennas3G5G.contains(antennaId)) {
-      return [NetworkType.UMTS, NetworkType.NR];
+      return [NetworkType.NR];
     }
     if (antennas4G.contains(antennaId)) {
       return [NetworkType.LTE];
     }
     if (antennas4G5G.contains(antennaId)) {
       return [NetworkType.LTE, NetworkType.NR];
+    }
+    if (antennas5G.contains(antennaId)) {
+      return [NetworkType.NR];
     }
     if (emission == null || emission.length <= 6) return [NetworkType.UNKNOWN];
 
