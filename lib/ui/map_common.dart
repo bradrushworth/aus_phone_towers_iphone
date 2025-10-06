@@ -760,7 +760,7 @@ class MapBodyState extends AbstractMapBodyState {
               "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}"),
           // title: site.name,
           position: LatLng(site.latitude!, site.longitude!),
-          icon: BitmapDescriptor.bytes(await site.getIcon()),
+          icon: BitmapDescriptor.bytes(await site.getIcon(), width: 20),
           rotation: site.rotation,
           alpha: site.alpha,
           visible: site.shouldBeVisible(),
