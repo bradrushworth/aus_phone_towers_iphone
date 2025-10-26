@@ -101,7 +101,10 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
                 SharedPreferencesHelper.saveBoolean(
-                    key: SharedPreferencesHelper.betaLaunchPopup, value: true, prefs: prefs);
+                  key: SharedPreferencesHelper.betaLaunchPopup,
+                  value: true,
+                  prefs: prefs,
+                );
               },
             ),
           ],
@@ -121,16 +124,14 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
         child: Column(
           children: <Widget>[
             Consumer<SiteHelper>(
-                builder: (context, siteHelper, child) => Expanded(
-                      child: Screenshot(
-                        key: Key('screenshotKey'),
-                        controller: screenshotController,
-                        child: Scaffold(
-                          drawer: NavigationMenu(),
-                          body: MapBody(screenshotController),
-                        ),
-                      ),
-                    )),
+              builder: (context, siteHelper, child) => Expanded(
+                child: Screenshot(
+                  key: Key('screenshotKey'),
+                  controller: screenshotController,
+                  child: Scaffold(drawer: NavigationMenu(), body: MapBody(screenshotController)),
+                ),
+              ),
+            ),
             Consumer<PurchaseHelper>(
               builder: (context, purchaseHelper, child) => Visibility(
                 visible: !purchaseHelper.isShowSubscribePreviousMenuItem,
@@ -150,11 +151,11 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
                         configureAds();
                         return Container();
                       },
-                    )
+                    ),
                   ],
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -218,8 +219,9 @@ class MapBodyState extends AbstractMapBodyState {
   /*
   * Method channel for taking screenshots
   * */
-  static const androidMethodChannel =
-      const MethodChannel('au.com.bitbot.phonetowers.flutter.provider/screenshot');
+  static const androidMethodChannel = const MethodChannel(
+    'au.com.bitbot.phonetowers.flutter.provider/screenshot',
+  );
 
   /// ******************** Overrided methods **********************************
   @override
@@ -227,9 +229,7 @@ class MapBodyState extends AbstractMapBodyState {
     super.initState();
 
     if (!kIsWeb) {
-      PurchaseHelper().initStoreInfo(
-        showSnackBar: showSnackbar,
-      );
+      PurchaseHelper().initStoreInfo(showSnackBar: showSnackbar);
     }
 
     _loadNavigationSavedState();
@@ -268,10 +268,7 @@ class MapBodyState extends AbstractMapBodyState {
                 mapToolbarEnabled: true,
                 zoomControlsEnabled: true,
                 zoomGesturesEnabled: true,
-                initialCameraPosition: CameraPosition(
-                  target: kLagLongBathurst,
-                  zoom: kDefaultZoom,
-                ),
+                initialCameraPosition: CameraPosition(target: kLagLongBathurst, zoom: kDefaultZoom),
                 markers: SiteHelper.globalListMapOverlay.isNotEmpty
                     ? SiteHelper.globalListMapOverlay.map((data) => data.marker!).toSet()
                     : Set(),
@@ -287,19 +284,19 @@ class MapBodyState extends AbstractMapBodyState {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-//                  Container(
-//                    height: 60,
-//                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-//                    child: Center(
-//                      child: Text(
-//                        'Current Tower: 505-02-52200-123456789-1231 \n LTE band 28 | 763 MHz | -99 dBm | 41 ASU',
-//                        style: TextStyle(color: Colors.grey, fontSize: 15),
-//                      ),
-//                    ),
-//                  ),
+                  //                  Container(
+                  //                    height: 60,
+                  //                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  //                    child: Center(
+                  //                      child: Text(
+                  //                        'Current Tower: 505-02-52200-123456789-1231 \n LTE band 28 | 763 MHz | -99 dBm | 41 ASU',
+                  //                        style: TextStyle(color: Colors.grey, fontSize: 15),
+                  //                      ),
+                  //                    ),
+                  //                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
         Positioned(
@@ -313,33 +310,27 @@ class MapBodyState extends AbstractMapBodyState {
                       icon: Icon(Icons.arrow_back),
                       onPressed: () {
                         Provider.of<SearchHelper>(context, listen: false).setSearchStatus(false);
-                      })
+                      },
+                    )
                   : null,
               title: !SearchHelper.calculatingSearchResults
-                  ? AutoSizeText(
-                      Strings.app_title,
-                      style: TextStyle(color: Colors.grey),
-                    )
+                  ? AutoSizeText(Strings.app_title, style: TextStyle(color: Colors.grey))
                   : TextField(
                       cursorColor: Colors.grey[600],
                       controller: _searchTextFilter,
                       decoration: InputDecoration(
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: Colors.grey[600],
-                          ),
-                          suffixIcon: isShowCancelSearch
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear,
-                                    color: Colors.grey[600],
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _searchTextFilter.text = '';
-                                    });
-                                  })
-                              : null),
+                        prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                        suffixIcon: isShowCancelSearch
+                            ? IconButton(
+                                icon: Icon(Icons.clear, color: Colors.grey[600]),
+                                onPressed: () {
+                                  setState(() {
+                                    _searchTextFilter.text = '';
+                                  });
+                                },
+                              )
+                            : null,
+                      ),
                       textInputAction: TextInputAction.search,
                       onSubmitted: (query) {
                         logger.d('search query is $query');
@@ -347,39 +338,44 @@ class MapBodyState extends AbstractMapBodyState {
                       },
                     ),
               actions: <Widget>[
-//                Padding(
-//                  padding: const EdgeInsets.symmetric(horizontal: 8),
-//                  child: IconButton(
-//                    icon: Icon(Icons.gps_fixed),
-//                    onPressed: () {},
-//                  ),
-//                ),
+                //                Padding(
+                //                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                //                  child: IconButton(
+                //                    icon: Icon(Icons.gps_fixed),
+                //                    onPressed: () {},
+                //                  ),
+                //                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 0),
                   child: IconButton(
-                    icon: Image.asset(PolygonHelper.calculateTerrain
-                        ? 'assets/images/ic_terrain_selected.png'
-                        : 'assets/images/ic_terrain_unselected.png'),
+                    icon: Image.asset(
+                      PolygonHelper.calculateTerrain
+                          ? 'assets/images/ic_terrain_selected.png'
+                          : 'assets/images/ic_terrain_unselected.png',
+                    ),
                     tooltip: Strings.calculate_terrain,
                     onPressed: () {
                       PolygonHelper.calculateTerrain = !PolygonHelper.calculateTerrain;
                       SharedPreferencesHelper.saveBoolean(
-                          key: SharedPreferencesHelper.kcalculateTerrain,
-                          value: PolygonHelper.calculateTerrain,
-                          prefs: prefs);
+                        key: SharedPreferencesHelper.kcalculateTerrain,
+                        value: PolygonHelper.calculateTerrain,
+                        prefs: prefs,
+                      );
                       setState(() {});
                       showSnackbar(
-                          message: PolygonHelper.calculateTerrain
-                              ? 'Using terrain data when calculating propagation models! This is more accurate but slower.'
-                              : 'Ignoring terrain when calculating propagation models.');
+                        message: PolygonHelper.calculateTerrain
+                            ? 'Using terrain data when calculating propagation models! This is more accurate but slower.'
+                            : 'Ignoring terrain when calculating propagation models.',
+                      );
                       PolygonHelper().switchTerrainAwareness();
                     },
                   ),
                 ),
                 OptionsMenu(
-                    showSnackBar: showSnackbar,
-                    onCameraMoveFromLastLocation: onCameraMoveFromLastLocation,
-                    takeScreenshot: takeScreenshot),
+                  showSnackBar: showSnackbar,
+                  onCameraMoveFromLastLocation: onCameraMoveFromLastLocation,
+                  takeScreenshot: takeScreenshot,
+                ),
               ],
             ),
           ),
@@ -403,103 +399,186 @@ class MapBodyState extends AbstractMapBodyState {
 
     //Licences
     NavigationMenu.isTelstraVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisTelstraVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Telstra, NavigationMenu.isTelstraVisible);
+      key: SharedPreferencesHelper.kisTelstraVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Telstra, NavigationMenu.isTelstraVisible);
     NavigationMenu.isOptusVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisOptusVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Optus, NavigationMenu.isOptusVisible);
+      key: SharedPreferencesHelper.kisOptusVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Optus, NavigationMenu.isOptusVisible);
     NavigationMenu.isVodafoneVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisVodafoneVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
+      key: SharedPreferencesHelper.kisVodafoneVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
     NavigationMenu.isDenseAirVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisDenseAirVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
+      key: SharedPreferencesHelper.kisDenseAirVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
     NavigationMenu.isNBNVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisNBNVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
+      key: SharedPreferencesHelper.kisNBNVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
     NavigationMenu.isOtherVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisOtherVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
+      key: SharedPreferencesHelper.kisOtherVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
 
     //2G/3G4G/5G
     NavigationMenu.is2GVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kis2GVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoNetwork(NetworkType.GSM, NavigationMenu.is2GVisible);
+      key: SharedPreferencesHelper.kis2GVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoNetwork(NetworkType.GSM, NavigationMenu.is2GVisible);
     NavigationMenu.is3GVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kis3GVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoNetwork(NetworkType.UMTS, NavigationMenu.is3GVisible);
+      key: SharedPreferencesHelper.kis3GVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoNetwork(NetworkType.UMTS, NavigationMenu.is3GVisible);
     NavigationMenu.is4GVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kis4GVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoNetwork(NetworkType.LTE, NavigationMenu.is4GVisible);
+      key: SharedPreferencesHelper.kis4GVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoNetwork(NetworkType.LTE, NavigationMenu.is4GVisible);
     NavigationMenu.is5GVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kis5GVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoNetwork(NetworkType.NR, NavigationMenu.is5GVisible);
+      key: SharedPreferencesHelper.kis5GVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoNetwork(NetworkType.NR, NavigationMenu.is5GVisible);
 
     //Multiplex type
     NavigationMenu.isNOTLTEVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisNOTLTEVisible, prefs: prefs);
+      key: SharedPreferencesHelper.kisNOTLTEVisible,
+      prefs: prefs,
+    );
     PolygonHelper.displayNotLteMultiplex = NavigationMenu.isNOTLTEVisible;
     NavigationMenu.isFDLTEVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisFDLTEVisible, prefs: prefs);
+      key: SharedPreferencesHelper.kisFDLTEVisible,
+      prefs: prefs,
+    );
     PolygonHelper.displayFdMultiplex = NavigationMenu.isFDLTEVisible;
     NavigationMenu.isTDLTEVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisTDLTEVisible, prefs: prefs);
+      key: SharedPreferencesHelper.kisTDLTEVisible,
+      prefs: prefs,
+    );
     PolygonHelper.displayTdMultiplex = NavigationMenu.isTDLTEVisible;
     SiteHelper().refreshSites();
 
     //Frequencies
     NavigationMenu.isLess700Visible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisLess700Visible, prefs: prefs);
+      key: SharedPreferencesHelper.kisLess700Visible,
+      prefs: prefs,
+    );
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isLess700Visible, FrequencyRangesHelper.getValue(FrequencyRanges.VERY_LOW));
+      NavigationMenu.isLess700Visible,
+      FrequencyRangesHelper.getValue(FrequencyRanges.VERY_LOW),
+    );
     NavigationMenu.isBet700_100Visible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisBet700_100Visible, prefs: prefs);
+      key: SharedPreferencesHelper.kisBet700_100Visible,
+      prefs: prefs,
+    );
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isBet700_100Visible, FrequencyRangesHelper.getValue(FrequencyRanges.LOW));
+      NavigationMenu.isBet700_100Visible,
+      FrequencyRangesHelper.getValue(FrequencyRanges.LOW),
+    );
     NavigationMenu.isBet1_2Visible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisBet1_2Visible, prefs: prefs);
+      key: SharedPreferencesHelper.kisBet1_2Visible,
+      prefs: prefs,
+    );
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isBet1_2Visible, FrequencyRangesHelper.getValue(FrequencyRanges.MEDIUM));
+      NavigationMenu.isBet1_2Visible,
+      FrequencyRangesHelper.getValue(FrequencyRanges.MEDIUM),
+    );
     NavigationMenu.isBet2_3Visible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisBet2_3Visible, prefs: prefs);
+      key: SharedPreferencesHelper.kisBet2_3Visible,
+      prefs: prefs,
+    );
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isBet2_3Visible, FrequencyRangesHelper.getValue(FrequencyRanges.HIGH));
+      NavigationMenu.isBet2_3Visible,
+      FrequencyRangesHelper.getValue(FrequencyRanges.HIGH),
+    );
     NavigationMenu.isGreater3Visible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisGreater3Visible, prefs: prefs);
+      key: SharedPreferencesHelper.kisGreater3Visible,
+      prefs: prefs,
+    );
     Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-        NavigationMenu.isGreater3Visible,
-        FrequencyRangesHelper.getValue(FrequencyRanges.VERY_HIGH));
+      NavigationMenu.isGreater3Visible,
+      FrequencyRangesHelper.getValue(FrequencyRanges.VERY_HIGH),
+    );
 
     //CityDensities
     NavigationMenu.isMetroVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisMetroVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleCityDensity(NavigationMenu.isMetroVisible, CityDensity.METRO);
+      key: SharedPreferencesHelper.kisMetroVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleCityDensity(NavigationMenu.isMetroVisible, CityDensity.METRO);
     NavigationMenu.isUrbanVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisUrbanVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleCityDensity(NavigationMenu.isUrbanVisible, CityDensity.URBAN);
+      key: SharedPreferencesHelper.kisUrbanVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleCityDensity(NavigationMenu.isUrbanVisible, CityDensity.URBAN);
     NavigationMenu.isSuburbanVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisSuburbanVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleCityDensity(NavigationMenu.isSuburbanVisible, CityDensity.SUBURBAN);
+      key: SharedPreferencesHelper.kisSuburbanVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleCityDensity(NavigationMenu.isSuburbanVisible, CityDensity.SUBURBAN);
     NavigationMenu.isOpenVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisOpenVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleCityDensity(NavigationMenu.isOpenVisible, CityDensity.OPEN);
+      key: SharedPreferencesHelper.kisOpenVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleCityDensity(NavigationMenu.isOpenVisible, CityDensity.OPEN);
 
     NavigationMenu.signalStrengthSelection = SharedPreferencesHelper.getSignalStrength(
-        key: SharedPreferencesHelper.ksignalStrengthSelection, prefs: prefs);
+      key: SharedPreferencesHelper.ksignalStrengthSelection,
+      prefs: prefs,
+    );
     switch (NavigationMenu.signalStrengthSelection) {
       case 0:
         {
@@ -524,7 +603,9 @@ class MapBodyState extends AbstractMapBodyState {
     }
 
     NavigationMenu.isTelcoVisible = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kisTelcoVisible, prefs: prefs);
+      key: SharedPreferencesHelper.kisTelcoVisible,
+      prefs: prefs,
+    );
     if (NavigationMenu.isTelcoVisible) {
       NavigationMenu.isTelstraVisible = NavigationMenu.isTelstraVisible;
       NavigationMenu.isOptusVisible = NavigationMenu.isOptusVisible;
@@ -544,47 +625,79 @@ class MapBodyState extends AbstractMapBodyState {
     }
 
     NavigationMenu.isRadioVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-        key: SharedPreferencesHelper.kisRadioVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Radio, NavigationMenu.isRadioVisible);
+      key: SharedPreferencesHelper.kisRadioVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Radio, NavigationMenu.isRadioVisible);
 
     NavigationMenu.isTVVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-        key: SharedPreferencesHelper.kisTVVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.TV, NavigationMenu.isTVVisible);
+      key: SharedPreferencesHelper.kisTVVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.TV, NavigationMenu.isTVVisible);
 
     NavigationMenu.isCivilVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-        key: SharedPreferencesHelper.kisCivilVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Civil, NavigationMenu.isCivilVisible);
+      key: SharedPreferencesHelper.kisCivilVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Civil, NavigationMenu.isCivilVisible);
 
     NavigationMenu.isPagerVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-        key: SharedPreferencesHelper.kisPagerVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Pager, NavigationMenu.isPagerVisible);
+      key: SharedPreferencesHelper.kisPagerVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Pager, NavigationMenu.isPagerVisible);
 
     NavigationMenu.isCBRSVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-        key: SharedPreferencesHelper.kisCBRSVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.CBRS, NavigationMenu.isCBRSVisible);
+      key: SharedPreferencesHelper.kisCBRSVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.CBRS, NavigationMenu.isCBRSVisible);
 
     NavigationMenu.isAviationVisible = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-        key: SharedPreferencesHelper.kisAviationVisible, prefs: prefs);
-    Provider.of<SiteHelper>(context, listen: false)
-        .toggleTelcoMarkers(Telco.Aviation, NavigationMenu.isAviationVisible);
+      key: SharedPreferencesHelper.kisAviationVisible,
+      prefs: prefs,
+    );
+    Provider.of<SiteHelper>(
+      context,
+      listen: false,
+    ).toggleTelcoMarkers(Telco.Aviation, NavigationMenu.isAviationVisible);
 
     //Options menu
     PolygonHelper.showPolygonBorders = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kshowPolygonBorders, prefs: prefs);
+      key: SharedPreferencesHelper.kshowPolygonBorders,
+      prefs: prefs,
+    );
 
-    MapHelper().mapMode =
-        SharedPreferencesHelper.getMapMode(key: SharedPreferencesHelper.kMapMode, prefs: prefs);
+    MapHelper().mapMode = SharedPreferencesHelper.getMapMode(
+      key: SharedPreferencesHelper.kMapMode,
+      prefs: prefs,
+    );
 
     PolygonHelper.drawPolygonsOnClick = SharedPreferencesHelper.getMenuStatus(
-        key: SharedPreferencesHelper.kdrawPolygonsOnClick, prefs: prefs);
+      key: SharedPreferencesHelper.kdrawPolygonsOnClick,
+      prefs: prefs,
+    );
 
     PolygonHelper.calculateTerrain = SharedPreferencesHelper.getMenuStatusOtherThanTelco(
-        key: SharedPreferencesHelper.kcalculateTerrain, prefs: prefs);
+      key: SharedPreferencesHelper.kcalculateTerrain,
+      prefs: prefs,
+    );
 
     setState(() {});
   }
@@ -595,10 +708,10 @@ class MapBodyState extends AbstractMapBodyState {
     });
 
     askForLocationPermission();
-//    Future.delayed(Duration(seconds: 2),(){
-//      logger.d('after 2 second delay');
-//      askForLocationPermission();
-//    });
+    //    Future.delayed(Duration(seconds: 2),(){
+    //      logger.d('after 2 second delay');
+    //      askForLocationPermission();
+    //    });
   }
 
   Future askForLocationPermission() async {
@@ -647,12 +760,13 @@ class MapBodyState extends AbstractMapBodyState {
       setState(() {
         // create marker for location
         Marker marker = Marker(
-            markerId: MarkerId("My Location"),
-            position: LatLng(lat, long),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-            rotation: 0,
-            alpha: 0.50,
-            visible: false);
+          markerId: MarkerId("My Location"),
+          position: LatLng(lat, long),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          rotation: 0,
+          alpha: 0.50,
+          visible: false,
+        );
 
         // add to map overlay
         MapOverlay mapOverlay = MapOverlay(marker: marker);
@@ -664,10 +778,7 @@ class MapBodyState extends AbstractMapBodyState {
         logger.i('moveCamera: $lat, $long');
         mapController.moveCamera(
           CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(lat, long),
-              zoom: kDefaultZoom,
-            ),
+            CameraPosition(target: LatLng(lat, long), zoom: kDefaultZoom),
           ),
         );
       });
@@ -676,10 +787,7 @@ class MapBodyState extends AbstractMapBodyState {
     downloadTowers(geoHash, true);
 
     // Saving first camera position as last so that reload everything option menu works.
-    lastCameraPosition = CameraPosition(
-      target: LatLng(lat, long),
-      zoom: kDefaultZoom,
-    );
+    lastCameraPosition = CameraPosition(target: LatLng(lat, long), zoom: kDefaultZoom);
 
     // Start loading the first markers
     onCameraMove(lastCameraPosition!);
@@ -701,30 +809,39 @@ class MapBodyState extends AbstractMapBodyState {
           fetchNeighbourSites(geoHash: geoHash, telco: telco, expandGeohash: expandGeohash);
         } else {
           //logger.d('mygeoHash doest not exist');
-          downloadTowersForSingleTelco(telco, geoHash,
-              expansionAmount: expansionAmount,
-              recursionDepth: recursionDepth,
-              expandGeohash: expandGeohash);
+          downloadTowersForSingleTelco(
+            telco,
+            geoHash,
+            expansionAmount: expansionAmount,
+            recursionDepth: recursionDepth,
+            expandGeohash: expandGeohash,
+          );
         }
       }
     });
   }
 
-  Future downloadTowersForSingleTelco(Telco telco, String geoHash,
-      {String? nextPageURL,
-      required int expansionAmount,
-      required int recursionDepth,
-      required bool expandGeohash}) async {
+  Future downloadTowersForSingleTelco(
+    Telco telco,
+    String geoHash, {
+    String? nextPageURL,
+    required int expansionAmount,
+    required int recursionDepth,
+    required bool expandGeohash,
+  }) async {
     List<MapOverlay> listOfTowersForSingleTeclo = [];
 
     logger.d(
-        'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}');
+      'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}',
+    );
 
     showSnackbar(message: "Downloading ${TelcoHelper.getName(telco)} towers...");
 
-    SiteResponse? rawResponse = await api.getMarkerData(nextPageURL != null
-        ? nextPageURL
-        : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash');
+    SiteResponse? rawResponse = await api.getMarkerData(
+      nextPageURL != null
+          ? nextPageURL
+          : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash',
+    );
 
     int totalLatLong = rawResponse!.restify?.rows?.length ?? 0;
 
@@ -743,31 +860,35 @@ class MapBodyState extends AbstractMapBodyState {
 
       //Create site from row
       Site site = Site(
-          telco: telco,
-          cityDensity: cityDensity,
-          siteId: values!.siteId!.value,
-          name: values.name!.value,
-          licensingAreaId:
-              values.licensingAreaId != null ? int.parse(values.licensingAreaId!.value) : 0,
-          latitude: double.parse(values.latitude!.value),
-          longitude: double.parse(values.longitude!.value),
-          state: values.state!.value,
-          postcode: values.postcode!.value,
-          elevation: values.elevation!.value);
+        telco: telco,
+        cityDensity: cityDensity,
+        siteId: values!.siteId!.value,
+        name: values.name!.value,
+        licensingAreaId: values.licensingAreaId != null
+            ? int.parse(values.licensingAreaId!.value)
+            : 0,
+        latitude: double.parse(values.latitude!.value),
+        longitude: double.parse(values.longitude!.value),
+        state: values.state!.value,
+        postcode: values.postcode!.value,
+        elevation: values.elevation!.value,
+      );
 
       Marker marker = Marker(
-          markerId: MarkerId(
-              "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}"),
-          // title: site.name,
-          position: LatLng(site.latitude!, site.longitude!),
-          icon: BitmapDescriptor.bytes(await site.getIcon(), width: 20),
-          rotation: site.rotation,
-          alpha: site.alpha,
-          visible: site.shouldBeVisible(),
-          //infoWindow: InfoWindow(title: ' ', snippet: 'Site Data \n dsfdf'),
-          onTap: () {
-            showCustomInfoWindowAsBottomSheet(context, site);
-          });
+        markerId: MarkerId(
+          "marker_${TelcoHelper.getName(site.telco)}_${site.siteId}_${site.latitude}_${site.longitude}",
+        ),
+        // title: site.name,
+        position: LatLng(site.latitude!, site.longitude!),
+        icon: BitmapDescriptor.bytes(await site.getIcon(), width: 20),
+        rotation: site.rotation,
+        alpha: site.alpha,
+        visible: site.shouldBeVisible(),
+        //infoWindow: InfoWindow(title: ' ', snippet: 'Site Data \n dsfdf'),
+        onTap: () {
+          showCustomInfoWindowAsBottomSheet(context, site);
+        },
+      );
 
       //add to map overlay
       MapOverlay mapOverlay = MapOverlay(marker: marker, site: site);
@@ -780,10 +901,10 @@ class MapBodyState extends AbstractMapBodyState {
       SiteHelper.globalListMapOverlay.addAll(listOfTowersForSingleTeclo);
     });
 
-//    Future.delayed(Duration(seconds: 3), () {
-//      logger.d(
-//          "total towers downloaded are ${SiteHelper.globalListMapOverlay.length} and displaying on map are ${SiteHelper.globalListMapOverlay.map((data) => data.marker).toSet().length}");
-//    });
+    //    Future.delayed(Duration(seconds: 3), () {
+    //      logger.d(
+    //          "total towers downloaded are ${SiteHelper.globalListMapOverlay.length} and displaying on map are ${SiteHelper.globalListMapOverlay.map((data) => data.marker).toSet().length}");
+    //    });
 
     //Add expansion amount
     expansionAmount = expansionAmount + totalLatLong;
@@ -792,11 +913,14 @@ class MapBodyState extends AbstractMapBodyState {
     NextPage? nextPage = rawResponse.restify!.nextPage;
     if (nextPage != null) {
       logger.d("next page exist");
-      downloadTowersForSingleTelco(telco, geoHash,
-          nextPageURL: nextPage.href,
-          expansionAmount: expansionAmount,
-          recursionDepth: recursionDepth,
-          expandGeohash: expandGeohash);
+      downloadTowersForSingleTelco(
+        telco,
+        geoHash,
+        nextPageURL: nextPage.href,
+        expansionAmount: expansionAmount,
+        recursionDepth: recursionDepth,
+        expandGeohash: expandGeohash,
+      );
     } else {
       // Draw the developer mode squares, as required
       if (MapHelper().developerMode) {
@@ -835,29 +959,31 @@ class MapBodyState extends AbstractMapBodyState {
 
       //logger.d('get device url for site count $siteCounter');
       GetDevices(
-              url: url,
-              telco: telco,
-              listOfTowersForSingleTelco: listOfTowersForSingleTeclo,
-              showSnackBar: showSnackbar,
-              onTowerInfoChanged: refreshUI)
-          .getDevicesData();
+        url: url,
+        telco: telco,
+        listOfTowersForSingleTelco: listOfTowersForSingleTeclo,
+        showSnackBar: showSnackbar,
+        onTowerInfoChanged: refreshUI,
+      ).getDevicesData();
     }
 
     //4) See if any neighbour sites need downloading and fetch them if required also
     fetchNeighbourSites(
-        expansionAmount: expansionAmount,
-        recursionDepth: recursionDepth,
-        geoHash: geoHash,
-        telco: telco,
-        expandGeohash: expandGeohash);
+      expansionAmount: expansionAmount,
+      recursionDepth: recursionDepth,
+      geoHash: geoHash,
+      telco: telco,
+      expandGeohash: expandGeohash,
+    );
   }
 
-  void fetchNeighbourSites(
-      {int expansionAmount = 0,
-      int recursionDepth = 0,
-      required String geoHash,
-      required Telco telco,
-      required bool expandGeohash}) {
+  void fetchNeighbourSites({
+    int expansionAmount = 0,
+    int recursionDepth = 0,
+    required String geoHash,
+    required Telco telco,
+    required bool expandGeohash,
+  }) {
     // See if any neighbour sites need downloading and fetch them if required also
     if (expandGeohash &&
         expansionAmount < SiteHelper.EXPANSION_LIMIT &&
@@ -868,15 +994,19 @@ class MapBodyState extends AbstractMapBodyState {
         filter = filter.substring(0, filter.length - 2);
         logger.d('neighbour ring is $filter for telco ${TelcoHelper.getName(telco)}');
         logger.i(
-            "fetchNeighbourSites: recursionDepth=$recursionDepth + telco= ${TelcoHelper.getName(telco)} +  filter= $filter");
+          "fetchNeighbourSites: recursionDepth=$recursionDepth + telco= ${TelcoHelper.getName(telco)} +  filter= $filter",
+        );
         String neightbourURL =
             '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=$filter';
 
-        downloadTowersForSingleTelco(telco, geoHash,
-            nextPageURL: neightbourURL,
-            expansionAmount: expansionAmount,
-            recursionDepth: recursionDepth + 1,
-            expandGeohash: expandGeohash);
+        downloadTowersForSingleTelco(
+          telco,
+          geoHash,
+          nextPageURL: neightbourURL,
+          expansionAmount: expansionAmount,
+          recursionDepth: recursionDepth + 1,
+          expandGeohash: expandGeohash,
+        );
       }
     }
   }
@@ -897,7 +1027,7 @@ class MapBodyState extends AbstractMapBodyState {
       [0, 1], //Right
       [-1, 0], //Bottom
       [0, -1], //Let
-      [1, 0] //Top
+      [1, 0], //Top
     ];
     directions.forEach((List<int> direction) {
       for (int i = 0; i < moves; i++) {
@@ -912,10 +1042,11 @@ class MapBodyState extends AbstractMapBodyState {
     return filter;
   }
 
-  void showSnackbar(
-      {String? message,
-      Duration duration = const Duration(seconds: 1),
-      bool isDismissible = false}) {
+  void showSnackbar({
+    String? message,
+    Duration duration = const Duration(seconds: 1),
+    bool isDismissible = false,
+  }) {
     final SnackBar snackBar = SnackBar(
       content: Text(message!),
       duration: duration,
@@ -925,9 +1056,11 @@ class MapBodyState extends AbstractMapBodyState {
               label: Strings.dismiss,
               textColor: Colors.white,
               onPressed: () {
-                ScaffoldMessenger.of(context)
-                    .hideCurrentSnackBar(reason: SnackBarClosedReason.hide);
-              })
+                ScaffoldMessenger.of(
+                  context,
+                ).hideCurrentSnackBar(reason: SnackBarClosedReason.hide);
+              },
+            )
           : null,
     );
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
@@ -961,12 +1094,10 @@ class MapBodyState extends AbstractMapBodyState {
 
     if (PolygonHelper.drawPolygonsOnClick) {
       // Draw the signal polygon for this site
-      Provider.of<PolygonHelper>(context, listen: false).queryForSignalPolygon(
-        site,
-        false,
-        false,
-        showSnackBar: showSnackbar,
-      );
+      Provider.of<PolygonHelper>(
+        context,
+        listen: false,
+      ).queryForSignalPolygon(site, false, false, showSnackBar: showSnackbar);
     }
   }
 
@@ -976,11 +1107,7 @@ class MapBodyState extends AbstractMapBodyState {
       context: context,
       builder: (BuildContext bc) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(
-              Radius.circular(8),
-            ),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -1003,7 +1130,8 @@ class MapBodyState extends AbstractMapBodyState {
                     Image.asset(site.getIconFullName(), width: 20),
                     SizedBox(height: 8.0),
                     ...prepareSiteTitleForInfoWindow(
-                        '${site.getNameFormatted()} ${site.state} ${site.postcode}'),
+                      '${site.getNameFormatted()} ${site.state} ${site.postcode}',
+                    ),
                     SizedBox(height: 8.0),
                     SitePropertiesTableWidget(
                       data: {
@@ -1042,9 +1170,7 @@ class MapBodyState extends AbstractMapBodyState {
                     //     style: Theme.of(context).textTheme.bodySmall,
                     //   ),
                     // ],
-                    SizedBox(
-                      height: 8.0,
-                    ),
+                    SizedBox(height: 8.0),
                     if (site.getDeviceDetailsMobile().length == 0) ...[
                       AutoSizeText(
                         ' Device data still downloading...',
@@ -1211,7 +1337,7 @@ class MapBodyState extends AbstractMapBodyState {
                                   maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
-                              )
+                              ),
                             ],
                           ),
                           ...getMoreTableRows(site),
@@ -1247,8 +1373,8 @@ class MapBodyState extends AbstractMapBodyState {
   }
 
   List<TableRow> getMoreTableRows(Site site) {
-    Map<String, MapEntry<DeviceDetails, bool>> freqToDeviceMapping =
-        site.getDeviceDetailsMobileBands();
+    Map<String, MapEntry<DeviceDetails, bool>> freqToDeviceMapping = site
+        .getDeviceDetailsMobileBands();
 
     AutoSizeGroup sizeGroup = AutoSizeGroup();
     List<TableRow> listOfTableRows = <TableRow>[];
@@ -1345,8 +1471,8 @@ class MapBodyState extends AbstractMapBodyState {
   }
 
   List<TableRow> getMoreTableRowsForNonTelco(Site site) {
-    Map<String, MapEntry<DeviceDetails, bool>> freqToDeviceMapping =
-        site.getDeviceDetailsMobileBands();
+    Map<String, MapEntry<DeviceDetails, bool>> freqToDeviceMapping = site
+        .getDeviceDetailsMobileBands();
 
     AutoSizeGroup sizeGroup = AutoSizeGroup();
     List<TableRow> listOfTableRows = <TableRow>[];
@@ -1354,48 +1480,50 @@ class MapBodyState extends AbstractMapBodyState {
     for (String bandEmission in freqToDeviceMapping.keys) {
       DeviceDetails d = freqToDeviceMapping[bandEmission]!.key;
       //Boolean active = freqToDeviceMapping.get(bandEmission).second;
-      TableRow singleTableRow = TableRow(children: [
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: AutoSizeText(
-            '${TranslateFrequencies.formatFrequency(d.frequency!, true)}',
-            group: sizeGroup,
-            minFontSize: 8,
-            maxFontSize: 16,
-            style: Theme.of(context).textTheme.bodySmall,
+      TableRow singleTableRow = TableRow(
+        children: [
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: AutoSizeText(
+              '${TranslateFrequencies.formatFrequency(d.frequency!, true)}',
+              group: sizeGroup,
+              minFontSize: 8,
+              maxFontSize: 16,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
-        ),
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: AutoSizeText(
-            '${d.emission}',
-            group: sizeGroup,
-            minFontSize: 8,
-            maxFontSize: 16,
-            style: Theme.of(context).textTheme.bodySmall,
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: AutoSizeText(
+              '${d.emission}',
+              group: sizeGroup,
+              minFontSize: 8,
+              maxFontSize: 16,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
-        ),
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: AutoSizeText(
-            '${d.callSign}',
-            group: sizeGroup,
-            minFontSize: 8,
-            maxFontSize: 16,
-            style: Theme.of(context).textTheme.bodySmall,
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: AutoSizeText(
+              '${d.callSign}',
+              group: sizeGroup,
+              minFontSize: 8,
+              maxFontSize: 16,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
-        ),
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: AutoSizeText(
-            '${DeviceDetails.formatNetworkSpeed(site.getNetworkCapacity(d))}',
-            group: sizeGroup,
-            minFontSize: 8,
-            maxFontSize: 16,
-            style: Theme.of(context).textTheme.bodySmall,
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: AutoSizeText(
+              '${DeviceDetails.formatNetworkSpeed(site.getNetworkCapacity(d))}',
+              group: sizeGroup,
+              minFontSize: 8,
+              maxFontSize: 16,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
-        ),
-      ]);
+        ],
+      );
       listOfTableRows.add(singleTableRow);
     }
 
@@ -1417,74 +1545,74 @@ class MapBodyState extends AbstractMapBodyState {
     AutoSizeGroup sizeGroup = AutoSizeGroup();
     List<Widget> siteTitleDetails = <Widget>[];
     for (String line in text.split(RegExp("\n"))) {
-      siteTitleDetails.add(AutoSizeText(
-        '$line',
-        group: sizeGroup,
-        minFontSize: 8,
-        maxFontSize: 16,
-        style: Theme.of(context).textTheme.bodySmall,
-      ));
+      siteTitleDetails.add(
+        AutoSizeText(
+          '$line',
+          group: sizeGroup,
+          minFontSize: 8,
+          maxFontSize: 16,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      );
     }
     return siteTitleDetails;
   }
 
   void takeScreenshot() {
-    widget.screenshotController.capture(pixelRatio: 1).then((File image) {
-      logger.d("File Saved to Gallery ${image.path}");
-      androidMethodChannel.invokeMethod('takeScreenshot', onlyPath.basename(image.path));
-    }).catchError((onError) {
-      print(onError);
-    });
+    widget.screenshotController
+        .capture(pixelRatio: 1)
+        .then((File image) {
+          logger.d("File Saved to Gallery ${image.path}");
+          androidMethodChannel.invokeMethod('takeScreenshot', onlyPath.basename(image.path));
+        })
+        .catchError((onError) {
+          print(onError);
+        });
   }
 }
 
 class SitePropertiesTableWidget extends StatelessWidget {
   final Map<String, String> data;
 
-  const SitePropertiesTableWidget({
-    Key? key,
-    required this.data,
-  }) : super(key: key);
+  const SitePropertiesTableWidget({Key? key, required this.data}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     AutoSizeGroup sizeGroup = AutoSizeGroup();
     return Table(
       defaultColumnWidth: FixedColumnWidth(90.0),
-      children: data.entries.map(
-        (item) {
-          return TableRow(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Align(
-                  alignment: AlignmentDirectional.centerEnd,
-                  child: AutoSizeText(
-                    '${item.key}',
-                    group: sizeGroup,
-                    minFontSize: 8,
-                    maxFontSize: 16,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+      children: data.entries.map((item) {
+        return TableRow(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: AutoSizeText(
+                  '${item.key}',
+                  group: sizeGroup,
+                  minFontSize: 8,
+                  maxFontSize: 16,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(right: 0),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: AutoSizeText(
-                    '${item.value}',
-                    group: sizeGroup,
-                    minFontSize: 8,
-                    maxFontSize: 16,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 0),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AutoSizeText(
+                  '${item.value}',
+                  group: sizeGroup,
+                  minFontSize: 8,
+                  maxFontSize: 16,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-            ],
-          );
-        },
-      ).toList(),
+            ),
+          ],
+        );
+      }).toList(),
     );
   }
 }
