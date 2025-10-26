@@ -174,20 +174,15 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
       // TODO
       if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
         //Show ads only if user has not subscribed to any of remove ads menu item
-        AdSize bannerAdSize;
+        AdSize bannerAdSize = AdSize.fluid;
+
         String adUnitId = '';
-        if (screenOrientation == Orientation.portrait) {
-          logger.d('load ad in portrait mode');
-          bannerAdSize = AdSize.banner;
+        if (kDebugMode) {
+          adUnitId = "ca-app-pub-3940256099942544/9214589741";
+        } else {
           adUnitId = Platform.isAndroid
               ? AdsHelper.androidPortraitAdUnitId
               : AdsHelper.iOSPortraitAdUnitId;
-        } else {
-          logger.d('load ad in landscape mode');
-          bannerAdSize = AdSize.smartBanner;
-          adUnitId = Platform.isAndroid
-              ? AdsHelper.androidLandscapeAdUnitId
-              : AdsHelper.iOSLandscapeAdUnitId;
         }
 
         AdsHelper().hideBannerAd();

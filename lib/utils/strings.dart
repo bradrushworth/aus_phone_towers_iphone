@@ -76,15 +76,15 @@ class Strings {
   static String remove_ads = 'Remove Ads';
   static String remove_ads_subscribe_previous =
       'You are subscribed! Thanking you.';
-  static String remove_ads_year = 'One Year Ad Free (\$7.99)';
-  static String remove_ads_permanent = 'Permanent Ad Free (\$14.99)';
+  static String remove_ads_year = 'One Year Ad Free (\$14.99)';
+  static String remove_ads_permanent = 'Permanent Ad Free (\$24.99)';
   static String subscribed_permanently = 'Permanently subscribed.';
 
   static String donate = 'Donate';
   static String donatePrevious = 'Thanks for your previous donation!';
-  static String donateSmall = 'Morning Coffee (\$4.49)';
-  static String donateMedium = 'Coffee and Cake (\$9.99)';
-  static String donateLarge = 'Thanks For Lunch (\$19.99)';
+  static String donateSmall = 'Morning Coffee (\$5.49)';
+  static String donateMedium = 'Coffee and Cake (\$14.99)';
+  static String donateLarge = 'Thanks For Lunch (\$27.99)';
 
   static String developerMode = 'Developer Mode';
   static String regularMode = 'Regular Mode';

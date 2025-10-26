@@ -40,7 +40,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace 'au.com.bitbot.ausphonetowers.flutter'
+    namespace 'au.com.bitbot.phonetowers.flutter'
 
     compileSdkVersion rootProject.ext.compileSdkVersion
     ndkVersion flutter.ndkVersion
@@ -94,7 +94,7 @@ dependencies {
     //implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     // Import the Firebase BoM
-    implementation platform('com.google.firebase:firebase-bom:34.2.0')
+    //implementation platform('com.google.firebase:firebase-bom:34.4.0')
 
     // Add the dependency for the Firebase SDK for Google Analytics
     // When using the BoM, don't specify versions in Firebase dependencies
