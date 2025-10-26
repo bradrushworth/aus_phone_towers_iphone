@@ -1528,7 +1528,7 @@ class MapBodyState extends AbstractMapBodyState {
 
   launchURL(String siteId) async {
     String url =
-        'http://web.acma.gov.au/pls/radcom/site_search.site_lookup?pSITE_ID=$siteId&pSORT_BY=frequency';
+        'https://web.acma.gov.au/rrl/site_search.site_lookup?pSITE_ID=$siteId&pSORT_BY=frequency';
     if (await canLaunch(url)) {
       await launch(url);
     } else {
