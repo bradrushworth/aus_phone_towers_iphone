@@ -1247,13 +1247,14 @@ class MapBodyState extends AbstractMapBodyState {
                       ),
                       SizedBox(height: 8),
                       Table(
+                        //border: TableBorder.all(),
                         columnWidths: {
-                          0: const FixedColumnWidth(37),
-                          1: const FixedColumnWidth(72),
-                          2: const FixedColumnWidth(64),
-                          3: const FixedColumnWidth(42),
-                          4: const FixedColumnWidth(37),
-                          5: const FixedColumnWidth(67),
+                          0: const FixedColumnWidth(30),
+                          1: const FixedColumnWidth(60),
+                          2: const FixedColumnWidth(60),
+                          3: const FixedColumnWidth(35),
+                          4: const FixedColumnWidth(30),
+                          5: const FixedColumnWidth(60),
                         },
                         children: [
                           TableRow(
