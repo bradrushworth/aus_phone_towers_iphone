@@ -82,9 +82,9 @@ class Strings {
 
   static String donate = 'Donate';
   static String donatePrevious = 'Thanks for your previous donation!';
-  static String donateSmall = 'Morning Coffee (\$5.49)';
+  static String donateSmall = 'Morning Coffee (\$5.99)';
   static String donateMedium = 'Coffee and Cake (\$14.99)';
-  static String donateLarge = 'Thanks For Lunch (\$27.99)';
+  static String donateLarge = 'Thanks For Lunch (\$29.99)';
 
   static String developerMode = 'Developer Mode';
   static String regularMode = 'Regular Mode';
