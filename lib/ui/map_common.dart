@@ -138,12 +138,12 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
                 child: Column(
                   children: <Widget>[
                     Container(
-                      height: AdsHelper().bannerAd == null ? 0 : 3,
-                      color: Colors.grey[500],
+                      height: AdsHelper().bannerAd == null ? 0 : 15,
+                      color: Colors.white,
                     ),
                     Container(
-                      height: AdsHelper().bannerAd == null ? 0 : 50,
-                      color: Colors.grey[300],
+                      height: AdsHelper().bannerAd == null ? 0 : 100,
+                      color: Colors.white,
                     ),
                     OrientationBuilder(
                       builder: (context, orientation) {
