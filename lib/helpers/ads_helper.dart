@@ -1,6 +1,5 @@
-import 'package:flutter/foundation.dart' as Foundation;
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:phonetowers/helpers/site_helper.dart';
 
 class AdsHelper {
   static final AdsHelper _singleton = new AdsHelper._internal();
@@ -12,12 +11,12 @@ class AdsHelper {
   AdsHelper._internal();
 
   BannerAd? bannerAd;
-  static String androidAdmobAppId = '';
-  static String androidPortraitAdUnitId = '';
-  static String androidLandscapeAdUnitId = '';
-  static String iOSAdmobAppId = '';
-  static String iOSPortraitAdUnitId = '';
-  static String iOSLandscapeAdUnitId = '';
+  static String androidAdmobAppId = 'ca-app-pub-6156750794650893~6040337543';
+  static String androidPortraitAdUnitId = 'ca-app-pub-6156750794650893/9444411844';
+  static String androidLandscapeAdUnitId = 'ca-app-pub-6156750794650893/6818248500';
+  static String iOSAdmobAppId = 'ca-app-pub-6156750794650893~6040337543';
+  static String iOSPortraitAdUnitId = 'ca-app-pub-6156750794650893/9444411844';
+  static String iOSLandscapeAdUnitId = 'ca-app-pub-6156750794650893/6818248500';
 
   void initialize() {
     MobileAds.instance.initialize();
@@ -29,11 +28,12 @@ class AdsHelper {
     testDevices.add("A04D16B625198F3E16D9214B07CCAAD1"); // My Pixel 3 XL (laptop)
     testDevices.add("B51BDAC25EBAECE25CC0F4985D1A8DDE"); // My Pixel 3 XL (desktop)
     testDevices.add("98F0065AD2F5F13DC15FD37B7511DBBD"); // My Pixel 8 Pro
+    testDevices.add("965EC0108F9D63C0E64858EE030729B9"); // My Pixel 8 Pro
     RequestConfiguration requestConfiguration = RequestConfiguration(
         maxAdContentRating: 'MA', testDeviceIds: testDevices);
     MobileAds.instance.updateRequestConfiguration(requestConfiguration);
 
-    AdRequest adRequestBuilder = new AdRequest();
+    AdRequest adRequestBuilder = new AdRequest(keywords: []);
     adRequestBuilder.keywords!.add("mobile");
     adRequestBuilder.keywords!.add("mobile tower");
     adRequestBuilder.keywords!.add("mobile coverage");
@@ -64,24 +64,28 @@ class AdsHelper {
     adRequestBuilder.keywords!.add("scanner");
     adRequestBuilder.keywords!.add("Australia");
 
-    Future.delayed(Duration(seconds: 1), () {
-      bannerAd ??= BannerAd(
-        adUnitId: adUnitId,
-        size: bannerAdSize,
-        //targetingInfo: AppConstants.isDebug ? targetingInfo : null,
-        // listener: (MobileAdEvent event) {
-        //   print("BannerAd event $event");
-        // },
-        listener: BannerAdListener(),
-        request: adRequestBuilder,
-      );
-
-      bannerAd?..load();
-    });
+    BannerAd(
+      adUnitId: adUnitId,
+      request: adRequestBuilder,
+      size: bannerAdSize,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          // Called when an ad is successfully received.
+          debugPrint("Ads was loaded.");
+          bannerAd = ad as BannerAd;
+        },
+        onAdFailedToLoad: (ad, err) {
+          // Called when an ad request failed.
+          debugPrint("Ads failed to load with error: $err");
+          ad.dispose();
+        },
+      ),
+    ).load();
   }
 
   void hideBannerAd() async {
     await bannerAd?.dispose();
     bannerAd = null;
+    debugPrint("Ads: hideBannerAd()");
   }
 }

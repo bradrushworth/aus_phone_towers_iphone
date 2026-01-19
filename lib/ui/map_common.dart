@@ -137,14 +137,6 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
                 visible: !purchaseHelper.isShowSubscribePreviousMenuItem,
                 child: Column(
                   children: <Widget>[
-                    Container(
-                      height: AdsHelper().bannerAd == null ? 0 : 15,
-                      color: Colors.white,
-                    ),
-                    Container(
-                      height: AdsHelper().bannerAd == null ? 0 : 100,
-                      color: Colors.white,
-                    ),
                     OrientationBuilder(
                       builder: (context, orientation) {
                         screenOrientation = MediaQuery.of(context).orientation;
@@ -163,7 +155,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   }
 
   //Ad Integration in the widget
-  void configureAds() {
+  Future<void> configureAds() async {
     if (!kIsWeb) {
       if (!PurchaseHelper().isHasPurchasedProcessed) {
         return;
@@ -171,21 +163,32 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     }
 
     if (!kIsWeb) {
-      // TODO
       if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
         //Show ads only if user has not subscribed to any of remove ads menu item
-        AdSize bannerAdSize = AdSize.fluid;
+        // Get an AnchoredAdaptiveBannerAdSize before loading the ad.
+        final bannerAdSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+          MediaQuery.sizeOf(context).width.truncate(),
+        );
+        if (bannerAdSize == null) {
+          // Unable to get width of anchored banner.
+          return;
+        }
 
         String adUnitId = '';
         if (kDebugMode) {
-          adUnitId = "ca-app-pub-3940256099942544/9214589741";
+          adUnitId = Platform.isAndroid
+              ? "ca-app-pub-3940256099942544/9214589741"
+              : "ca-app-pub-3940256099942544/2435281174";
+          // adUnitId = Platform.isAndroid
+          //     ? AdsHelper.androidPortraitAdUnitId
+          //     : AdsHelper.iOSPortraitAdUnitId;
         } else {
           adUnitId = Platform.isAndroid
               ? AdsHelper.androidPortraitAdUnitId
               : AdsHelper.iOSPortraitAdUnitId;
         }
 
-        AdsHelper().hideBannerAd();
+        //AdsHelper().hideBannerAd();
         AdsHelper().showBannerAd(bannerAdSize, adUnitId);
       } else {
         AdsHelper().hideBannerAd();
@@ -238,7 +241,7 @@ class MapBodyState extends AbstractMapBodyState {
       });
     });
 
-    if (!kIsWeb) AdsHelper().initialize(); // TODO
+    if (!kIsWeb) AdsHelper().initialize();
   }
 
   @override
@@ -250,7 +253,7 @@ class MapBodyState extends AbstractMapBodyState {
           children: <Widget>[
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
               builder: (context, polygonHelper, siteHelper, mapHelper, child) => GoogleMap(
-                padding: EdgeInsets.only(bottom: 100, top: 100),
+                padding: EdgeInsets.only(bottom: AdsHelper().bannerAd == null ? 100 : 150, top: 100),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
                 buildingsEnabled: false,
@@ -372,6 +375,31 @@ class MapBodyState extends AbstractMapBodyState {
                   takeScreenshot: takeScreenshot,
                 ),
               ],
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: SafeArea(
+            child: Container(
+              height: AdsHelper().bannerAd == null
+                  ? 0
+                  : AdsHelper().bannerAd!.size.height.toDouble() + 60,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: SafeArea(
+            child: SizedBox(
+              width: AdsHelper().bannerAd == null ? 0 : AdsHelper().bannerAd!.size.width.toDouble(),
+              height: AdsHelper().bannerAd == null
+                  ? 0
+                  : AdsHelper().bannerAd!.size.height.toDouble() + 105,
+              child: AdsHelper().bannerAd == null
+                  ? Container()
+                  : AdWidget(ad: AdsHelper().bannerAd!),
             ),
           ),
         ),

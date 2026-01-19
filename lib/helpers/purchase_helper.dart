@@ -51,7 +51,7 @@ class PurchaseHelper with ChangeNotifier {
     SKU_DONATION_MEDIUM,
     SKU_DONATION_LARGE,
     SKU_SUBSCRIBE_ONE_YEAR,
-    SKU_SUBSCRIBE_PERMANENTLY
+    SKU_SUBSCRIBE_PERMANENTLY,
   ]);
 
   bool isShowDonatePreviousMenuItem = false;
@@ -76,23 +76,29 @@ class PurchaseHelper with ChangeNotifier {
     final available = await _inAppPurchase.isAvailable();
 
     // Report statistics to Firebase
-    AnalyticsHelper()
-        .sendCustomAnalyticsEvent(eventName: 'setup_billing', eventParameters: <String, Object>{
-      'message': available
-          ? 'The Payment platform is ready and available'
-          : 'The Payment platform is not ready and available',
-    });
+    AnalyticsHelper().sendCustomAnalyticsEvent(
+      eventName: 'setup_billing',
+      eventParameters: <String, Object>{
+        'message': available
+            ? 'The Payment platform is ready and available'
+            : 'The Payment platform is not ready and available',
+      },
+    );
 
     if (available) {
       // Listen to new purchases
       final Stream<List<PurchaseDetails>> purchaseUpdated = _inAppPurchase.purchaseStream;
-      _subscription = purchaseUpdated.listen((purchaseDetailsList) {
-        _listenToPurchaseUpdated(purchaseDetailsList);
-      }, onDone: () {
-        _subscription!.cancel();
-      }, onError: (error) {
-        // handle error here.
-      });
+      _subscription = purchaseUpdated.listen(
+        (purchaseDetailsList) {
+          _listenToPurchaseUpdated(purchaseDetailsList);
+        },
+        onDone: () {
+          _subscription!.cancel();
+        },
+        onError: (error) {
+          // handle error here.
+        },
+      );
 
       await _getProducts();
       await _hasPurchase();
@@ -116,13 +122,15 @@ class PurchaseHelper with ChangeNotifier {
   /// Get all products available for sale
   Future<void> _getProducts() async {
     if (Platform.isIOS) {
-      var iosPlatformAddition =
-          _inAppPurchase.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      var iosPlatformAddition = _inAppPurchase
+          .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      // TODO: Why is this an example?
       await iosPlatformAddition.setDelegate(ExamplePaymentQueueDelegate());
     }
 
-    ProductDetailsResponse productDetailResponse =
-        await _inAppPurchase.queryProductDetails(_kProductIds.toSet());
+    ProductDetailsResponse productDetailResponse = await _inAppPurchase.queryProductDetails(
+      _kProductIds.toSet(),
+    );
     if (productDetailResponse.error != null) {
       String error = "In-App Billing Failed: " + productDetailResponse.error!.message;
       showSnackBar!(message: error);
@@ -166,8 +174,8 @@ class PurchaseHelper with ChangeNotifier {
   @override
   void dispose() {
     if (Platform.isIOS) {
-      var iosPlatformAddition =
-          _inAppPurchase.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      var iosPlatformAddition = _inAppPurchase
+          .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       iosPlatformAddition.setDelegate(null);
     }
 
@@ -180,40 +188,51 @@ class PurchaseHelper with ChangeNotifier {
 
   /// Gets past purchases
   Future<void> _hasPurchase() async {
-    Map<String, PurchaseDetails> purchases =
-        Map.fromEntries(_purchases.map((PurchaseDetails? purchase) {
-      if (purchase!.pendingCompletePurchase) {
-        _inAppPurchase.completePurchase(purchase);
-      }
-      return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
-    }));
+    Map<String, PurchaseDetails> purchases = Map.fromEntries(
+      _purchases.map((PurchaseDetails? purchase) {
+        if (purchase!.pendingCompletePurchase) {
+          _inAppPurchase.completePurchase(purchase);
+        }
+        return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
+      }),
+    );
     _purchases = purchases.values.toList();
 
     Map<String, Object> eventMap = Map<String, Object>();
 
     //1) Operation to show / hide donate previous menu
-    PurchaseDetails? purchaseDetailsForDonation = _purchases.firstWhere(
-        (purchaseDetails) =>
-            purchaseDetails!.productID == SKU_DONATION_SMALL ||
+    PurchaseDetails? purchaseDetailsForDonation = null;
+    if (_purchases.isNotEmpty) {
+      purchaseDetailsForDonation = _purchases.firstWhere(
+            (purchaseDetails) =>
+        purchaseDetails!.productID == SKU_DONATION_SMALL ||
             purchaseDetails.productID == SKU_DONATION_MEDIUM ||
             purchaseDetails.productID == SKU_DONATION_LARGE,
-        orElse: () => null);
+        orElse: () => null, // Explicitly cast null to the nullable type
+      );
+    }
     // Thank the user for donating in the past :-)
     eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
     isShowDonatePreviousMenuItem = purchaseDetailsForDonation != null ? true : false;
 
     //2)  Operation to perform when user has removed ad for one year
-    PurchaseDetails? purchaseDetailsForOneYearSubscription = _purchases.firstWhere(
-        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
-        orElse: () => null);
+    PurchaseDetails? purchaseDetailsForOneYearSubscription = null;
+    if (_purchases.isNotEmpty) {
+      purchaseDetailsForOneYearSubscription = _purchases.firstWhere(
+            (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
+        orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
+      );
+    }
     if (purchaseDetailsForOneYearSubscription != null) {
       int purchaseTime = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
       if (purchaseTime > 0 &&
-          purchaseTime < DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
+          purchaseTime < DateTime
+              .now()
+              .millisecondsSinceEpoch - EXPIRY_PERIOD) {
         // Remove ads for one year is now over
-        logger.i("BillingHelper Consuming the " +
-            SKU_SUBSCRIBE_ONE_YEAR +
-            " purchase because it expired!");
+        logger.i(
+          "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
+        );
         eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
         _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
         isShowSubscribePreviousMenuItem = false;
@@ -222,9 +241,13 @@ class PurchaseHelper with ChangeNotifier {
 
     //3) This is just for analytics
     // This needs to be after the consume everything above
-    PurchaseDetails? purchaseDetailsForPermanentSubscription = _purchases.firstWhere(
-        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
-        orElse: () => null);
+    PurchaseDetails? purchaseDetailsForPermanentSubscription = null;
+    if (_purchases.isNotEmpty) {
+      purchaseDetailsForPermanentSubscription = _purchases.firstWhere(
+            (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
+        orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
+      );
+    }
     bool permanent = purchaseDetailsForPermanentSubscription != null ? true : false;
     bool yearly = purchaseDetailsForOneYearSubscription != null ? true : false;
     bool subscription = permanent || yearly;
@@ -232,8 +255,9 @@ class PurchaseHelper with ChangeNotifier {
     eventMap['permanent'] = permanent;
     eventMap['yearly'] = yearly;
     eventMap['subscription'] = subscription;
-    List<String> listAllOwnedSkus =
-        _purchases.map((purchaseDetails) => purchaseDetails!.productID).toList();
+    List<String> listAllOwnedSkus = _purchases
+        .map((purchaseDetails) => purchaseDetails!.productID)
+        .toList();
     eventMap['owned_sku'] = listAllOwnedSkus.toString();
 
     // Stop users from subscribing more than once
@@ -262,8 +286,10 @@ class PurchaseHelper with ChangeNotifier {
       }
     }
 
-    AnalyticsHelper()
-        .sendCustomAnalyticsEvent(eventName: 'has_purchase', eventParameters: eventMap);
+    AnalyticsHelper().sendCustomAnalyticsEvent(
+      eventName: 'has_purchase',
+      eventParameters: eventMap,
+    );
   }
 
   Future<void> initiatePurchase({required String sku}) async {
@@ -298,8 +324,10 @@ class PurchaseHelper with ChangeNotifier {
           eventMap['failure'] = error;
           AnalyticsHelper().log(error);
 
-          AnalyticsHelper()
-              .sendCustomAnalyticsEvent(eventName: 'purchase_error', eventParameters: eventMap);
+          AnalyticsHelper().sendCustomAnalyticsEvent(
+            eventName: 'purchase_error',
+            eventParameters: eventMap,
+          );
         } else if (purchaseDetails.status == PurchaseStatus.purchased) {
           bool valid = true;
           //await _verifyPurchase(purchaseDetails);
@@ -329,7 +357,9 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_DONATION_MEDIUM:
         {
           showSnackBar!(
-              message: 'Coffee and cake is the best, just like you!', isDismissible: true);
+            message: 'Coffee and cake is the best, just like you!',
+            isDismissible: true,
+          );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateMediumPurchased = true;
@@ -338,7 +368,9 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_DONATION_LARGE:
         {
           showSnackBar!(
-              message: 'Thanks for buying lunch! I\'d love to hear from you.', isDismissible: true);
+            message: 'Thanks for buying lunch! I\'d love to hear from you.',
+            isDismissible: true,
+          );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateLargePurchased = true;
@@ -347,8 +379,9 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_SUBSCRIBE_ONE_YEAR:
         {
           showSnackBar!(
-              message: 'Thanks for making this purchase. Please enjoy the app ad free.',
-              isDismissible: true);
+            message: 'Thanks for making this purchase. Please enjoy the app ad free.',
+            isDismissible: true,
+          );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           //hasPurchase();
@@ -357,8 +390,9 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_SUBSCRIBE_PERMANENTLY:
         {
           showSnackBar!(
-              message: 'Thanks for making this purchase. Please enjoy the app ad free.',
-              isDismissible: true);
+            message: 'Thanks for making this purchase. Please enjoy the app ad free.',
+            isDismissible: true,
+          );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           //hasPurchase();
@@ -377,17 +411,17 @@ class PurchaseHelper with ChangeNotifier {
     logger.d('$sku');
     PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
       return product!.productID == sku;
-    }, orElse: () => null);
+    }, orElse: () => null as PurchaseDetails?);
     if (purchaseDetails != null) {
       await _inAppPurchase.completePurchase(purchaseDetails);
     }
   }
 
-//  Future<bool> _isSignatureValid(PurchaseDetails purchaseDetails) {
-//    return Future<bool>.value(Security.verifyPurchase(
-//        purchaseDetails.billingClientPurchase.originalJson,
-//        purchaseDetails.billingClientPurchase.signature));
-//  }
+  //  Future<bool> _isSignatureValid(PurchaseDetails purchaseDetails) {
+  //    return Future<bool>.value(Security.verifyPurchase(
+  //        purchaseDetails.billingClientPurchase.originalJson,
+  //        purchaseDetails.billingClientPurchase.signature));
+  //  }
 }
 
 /// Example implementation of the
@@ -398,7 +432,9 @@ class PurchaseHelper with ChangeNotifier {
 class ExamplePaymentQueueDelegate implements SKPaymentQueueDelegateWrapper {
   @override
   bool shouldContinueTransaction(
-      SKPaymentTransactionWrapper transaction, SKStorefrontWrapper storefront) {
+    SKPaymentTransactionWrapper transaction,
+    SKStorefrontWrapper storefront,
+  ) {
     return true;
   }
 
