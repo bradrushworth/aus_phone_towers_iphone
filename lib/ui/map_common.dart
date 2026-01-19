@@ -134,7 +134,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
             ),
             Consumer<PurchaseHelper>(
               builder: (context, purchaseHelper, child) => Visibility(
-                visible: !purchaseHelper.isShowSubscribePreviousMenuItem,
+                visible: !purchaseHelper.isSubscribed,
                 child: Column(
                   children: <Widget>[
                     OrientationBuilder(
@@ -157,13 +157,13 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   //Ad Integration in the widget
   Future<void> configureAds() async {
     if (!kIsWeb) {
-      if (!PurchaseHelper().isHasPurchasedProcessed) {
+      if (!PurchaseHelper().hasPurchaseProcessed) {
         return;
       }
     }
 
     if (!kIsWeb) {
-      if (!PurchaseHelper().isShowSubscribePreviousMenuItem) {
+      if (!PurchaseHelper().isSubscribed) {
         //Show ads only if user has not subscribed to any of remove ads menu item
         // Get an AnchoredAdaptiveBannerAdSize before loading the ad.
         final bannerAdSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
@@ -253,7 +253,7 @@ class MapBodyState extends AbstractMapBodyState {
           children: <Widget>[
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
               builder: (context, polygonHelper, siteHelper, mapHelper, child) => GoogleMap(
-                padding: EdgeInsets.only(bottom: AdsHelper().bannerAd == null ? 100 : 150, top: 100),
+                padding: EdgeInsets.only(bottom: AdsHelper().bannerAd == null ? 100 : 160, top: 100),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
                 buildingsEnabled: false,

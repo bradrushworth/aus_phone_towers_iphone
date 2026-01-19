@@ -54,8 +54,8 @@ class PurchaseHelper with ChangeNotifier {
     SKU_SUBSCRIBE_PERMANENTLY,
   ]);
 
-  bool isShowDonatePreviousMenuItem = false;
-  bool isShowSubscribePreviousMenuItem = false;
+  bool isDonated = false;
+  bool isSubscribed = false;
   bool isSubscribedPermanently = false;
   String timeToExpireYearlySubscription = '';
 
@@ -67,7 +67,7 @@ class PurchaseHelper with ChangeNotifier {
 
   ShowSnackBar? showSnackBar;
 
-  bool isHasPurchasedProcessed = false;
+  bool hasPurchaseProcessed = false;
 
   void initStoreInfo({void Function({String message, bool isDismissible})? showSnackBar}) async {
     this.showSnackBar = showSnackBar;
@@ -213,7 +213,7 @@ class PurchaseHelper with ChangeNotifier {
     }
     // Thank the user for donating in the past :-)
     eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
-    isShowDonatePreviousMenuItem = purchaseDetailsForDonation != null ? true : false;
+    isDonated = purchaseDetailsForDonation != null ? true : false;
 
     //2)  Operation to perform when user has removed ad for one year
     PurchaseDetails? purchaseDetailsForOneYearSubscription = null;
@@ -235,7 +235,7 @@ class PurchaseHelper with ChangeNotifier {
         );
         eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
         _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
-        isShowSubscribePreviousMenuItem = false;
+        isSubscribed = false;
       }
     }
 
@@ -261,7 +261,7 @@ class PurchaseHelper with ChangeNotifier {
     eventMap['owned_sku'] = listAllOwnedSkus.toString();
 
     // Stop users from subscribing more than once
-    isShowSubscribePreviousMenuItem = subscription;
+    isSubscribed = subscription;
     isSubscribedPermanently = permanent;
     if (yearly) {
       int expiry = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
@@ -275,7 +275,7 @@ class PurchaseHelper with ChangeNotifier {
     }
 
     // Remove or display the ads
-    isHasPurchasedProcessed = true;
+    hasPurchaseProcessed = true;
     notifyListeners();
 
     //This is required only for iOS

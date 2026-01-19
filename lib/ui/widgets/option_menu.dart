@@ -227,11 +227,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
       }).where((singleRowItem) {
         int optionItemPosition = listSingleRowItem.indexOf(singleRowItem.value!);
         if (menuType == kRemoveAds) {
-          return PurchaseHelper().isShowSubscribePreviousMenuItem
+          return PurchaseHelper().isSubscribed
               ? true
               : optionItemPosition != 1;
         } else if (menuType == kDonate) {
-          return PurchaseHelper().isShowDonatePreviousMenuItem
+          return PurchaseHelper().isDonated
               ? true
               : optionItemPosition != 1;
         } else {
@@ -465,7 +465,7 @@ List<SingleRowItem> listHidingMenuItem = <SingleRowItem>[
 ];
 
 List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: false),
+  SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: true),
   SingleRowItem(
       isTitle: true,
       title: Strings.remove_ads_subscribe_previous,
@@ -483,7 +483,7 @@ List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
 ];
 
 List<SingleRowItem> listDonateItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: false),
+  SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: true),
   SingleRowItem(title: Strings.donatePrevious, isEnabled: false),
   SingleRowItem(
       title: Strings.donateSmall,
