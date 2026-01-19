@@ -204,8 +204,8 @@ class PurchaseHelper with ChangeNotifier {
     PurchaseDetails? purchaseDetailsForDonation = null;
     if (_purchases.isNotEmpty) {
       purchaseDetailsForDonation = _purchases.firstWhere(
-            (purchaseDetails) =>
-        purchaseDetails!.productID == SKU_DONATION_SMALL ||
+        (purchaseDetails) =>
+            purchaseDetails!.productID == SKU_DONATION_SMALL ||
             purchaseDetails.productID == SKU_DONATION_MEDIUM ||
             purchaseDetails.productID == SKU_DONATION_LARGE,
         orElse: () => null, // Explicitly cast null to the nullable type
@@ -219,16 +219,14 @@ class PurchaseHelper with ChangeNotifier {
     PurchaseDetails? purchaseDetailsForOneYearSubscription = null;
     if (_purchases.isNotEmpty) {
       purchaseDetailsForOneYearSubscription = _purchases.firstWhere(
-            (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
+        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
         orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
       );
     }
     if (purchaseDetailsForOneYearSubscription != null) {
       int purchaseTime = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
       if (purchaseTime > 0 &&
-          purchaseTime < DateTime
-              .now()
-              .millisecondsSinceEpoch - EXPIRY_PERIOD) {
+          purchaseTime < DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
         // Remove ads for one year is now over
         logger.i(
           "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
@@ -244,7 +242,7 @@ class PurchaseHelper with ChangeNotifier {
     PurchaseDetails? purchaseDetailsForPermanentSubscription = null;
     if (_purchases.isNotEmpty) {
       purchaseDetailsForPermanentSubscription = _purchases.firstWhere(
-            (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
+        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
         orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
       );
     }
@@ -293,20 +291,39 @@ class PurchaseHelper with ChangeNotifier {
   }
 
   Future<void> initiatePurchase({required String sku}) async {
-    //If product is already purchased, First consume it and then buy again
-    PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
-      return product!.productID == sku;
-    }, orElse: () => null);
-    if (purchaseDetails != null) {
-      await _inAppPurchase.completePurchase(purchaseDetails);
+    logger.i('Trying to purchase: ${sku}');
+    if (_purchases.isNotEmpty) {
+      //If product is already purchased, First consume it and then buy again
+      PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
+        return product!.productID == sku;
+      }, orElse: () => null as PurchaseDetails?);
+      if (purchaseDetails != null) {
+        await _inAppPurchase.completePurchase(purchaseDetails);
+      }
+    } else {
+      logger.i('No previous purchases found...');
     }
 
-    ProductDetails? productToBuy = _products.firstWhere((product) {
-      return product!.id == sku;
-    }, orElse: () => null);
-    if (productToBuy != null) {
-      final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
-      _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
+    if (_products.isNotEmpty) {
+      ProductDetails? productToBuy = _products.firstWhere((product) {
+        return product!.id == sku;
+      }, orElse: () => null);
+      if (productToBuy != null) {
+        final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
+        _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
+      }
+    } else {
+      String error = 'No products in inventory found...';
+      showSnackBar!(message: error);
+      logger.e("PurchaseHelper: " + error);
+      Map<String, Object> eventMap = Map<String, Object>();
+      eventMap['failure'] = error;
+      AnalyticsHelper().log(error);
+
+      AnalyticsHelper().sendCustomAnalyticsEvent(
+        eventName: 'purchase_error',
+        eventParameters: eventMap,
+      );
     }
   }
 

@@ -253,7 +253,10 @@ class MapBodyState extends AbstractMapBodyState {
           children: <Widget>[
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
               builder: (context, polygonHelper, siteHelper, mapHelper, child) => GoogleMap(
-                padding: EdgeInsets.only(bottom: AdsHelper().bannerAd == null ? 100 : 160, top: 100),
+                padding: EdgeInsets.only(
+                  bottom: AdsHelper().bannerAd == null ? 100 : 160,
+                  top: 100,
+                ),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
                 buildingsEnabled: false,
@@ -378,28 +381,31 @@ class MapBodyState extends AbstractMapBodyState {
             ),
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: SafeArea(
-            child: Container(
-              height: AdsHelper().bannerAd == null
-                  ? 0
-                  : AdsHelper().bannerAd!.size.height.toDouble() + 60,
-              color: Colors.white,
+        Visibility(
+          visible: !PurchaseHelper().isSubscribed,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: SafeArea(
+              child: Container(height: AdsHelper().bannerAd == null ? 0 : 150, color: Colors.white),
             ),
           ),
         ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: SafeArea(
-            child: SizedBox(
-              width: AdsHelper().bannerAd == null ? 0 : AdsHelper().bannerAd!.size.width.toDouble(),
-              height: AdsHelper().bannerAd == null
-                  ? 0
-                  : AdsHelper().bannerAd!.size.height.toDouble() + 105,
-              child: AdsHelper().bannerAd == null
-                  ? Container()
-                  : AdWidget(ad: AdsHelper().bannerAd!),
+        Visibility(
+          visible: !PurchaseHelper().isSubscribed,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: SafeArea(
+              child: SizedBox(
+                width: AdsHelper().bannerAd == null
+                    ? 0
+                    : AdsHelper().bannerAd!.size.width.toDouble(),
+                height: AdsHelper().bannerAd == null
+                    ? 0
+                    : AdsHelper().bannerAd!.size.height.toDouble() + 125,
+                child: AdsHelper().bannerAd == null
+                    ? Container()
+                    : AdWidget(ad: AdsHelper().bannerAd!),
+              ),
             ),
           ),
         ),
@@ -854,9 +860,9 @@ class MapBodyState extends AbstractMapBodyState {
   }) async {
     List<MapOverlay> listOfTowersForSingleTeclo = [];
 
-    logger.d(
-      'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}',
-    );
+    // logger.d(
+    //   'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}',
+    // );
 
     showSnackbar(message: "Downloading ${TelcoHelper.getName(telco)} towers...");
 
@@ -935,7 +941,7 @@ class MapBodyState extends AbstractMapBodyState {
     //2) Download next page towers if exist
     NextPage? nextPage = rawResponse.restify!.nextPage;
     if (nextPage != null) {
-      logger.d("next page exist");
+      //logger.d("next page exist");
       downloadTowersForSingleTelco(
         telco,
         geoHash,
@@ -1015,10 +1021,10 @@ class MapBodyState extends AbstractMapBodyState {
       if (filter.length > 2) {
         // Trim the last two "||" characters
         filter = filter.substring(0, filter.length - 2);
-        logger.d('neighbour ring is $filter for telco ${TelcoHelper.getName(telco)}');
-        logger.i(
-          "fetchNeighbourSites: recursionDepth=$recursionDepth + telco= ${TelcoHelper.getName(telco)} +  filter= $filter",
-        );
+        // logger.d('neighbour ring is $filter for telco ${TelcoHelper.getName(telco)}');
+        // logger.d(
+        //   "fetchNeighbourSites: recursionDepth=$recursionDepth + telco= ${TelcoHelper.getName(telco)} +  filter= $filter",
+        // );
         String neightbourURL =
             '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=$filter';
 

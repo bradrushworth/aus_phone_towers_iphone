@@ -465,7 +465,7 @@ List<SingleRowItem> listHidingMenuItem = <SingleRowItem>[
 ];
 
 List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: true),
+  SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: !kIsWeb),
   SingleRowItem(
       isTitle: true,
       title: Strings.remove_ads_subscribe_previous,
@@ -483,7 +483,7 @@ List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
 ];
 
 List<SingleRowItem> listDonateItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: true),
+  SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: !kIsWeb),
   SingleRowItem(title: Strings.donatePrevious, isEnabled: false),
   SingleRowItem(
       title: Strings.donateSmall,
