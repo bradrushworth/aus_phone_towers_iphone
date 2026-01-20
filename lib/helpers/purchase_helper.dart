@@ -424,7 +424,7 @@ class PurchaseHelper with ChangeNotifier {
 
   void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {}
 
-  Future<void> consumeforDebuggingOnly({required String sku}) async {
+  Future<void> consumeForDebuggingOnly({required String sku}) async {
     logger.d('$sku');
     PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
       return product!.productID == sku;
