@@ -161,6 +161,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.2"
+  code_assets:
+    dependency: transitive
+    description:
+      name: code_assets
+      sha256: "83ccdaa064c980b5596c35dd64a8d3ecc68620174ab9b90b6343b753aa721687"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   code_builder:
     dependency: transitive
     description:
@@ -415,10 +423,10 @@ packages:
     dependency: transitive
     description:
       name: google_maps_flutter_ios
-      sha256: b3f9aa62f65f7f266651e156a910ce88b8158de6546c6b145c9ba8080eb861b3
+      sha256: "72812231d1c2051a42f1ae82e2860eb761d4b0c01a5d59213d399521fcb8a8d3"
       url: "https://pub.dev"
     source: hosted
-    version: "2.16.1"
+    version: "2.17.0"
   google_maps_flutter_platform_interface:
     dependency: transitive
     description:
@@ -451,6 +459,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.3.2"
+  hooks:
+    dependency: transitive
+    description:
+      name: hooks
+      sha256: "5d309c86e7ce34cd8e37aa71cb30cb652d3829b900ab145e4d9da564b31d59f7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   html:
     dependency: transitive
     description:
@@ -652,10 +668,10 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.16.0"
+    version: "1.17.0"
   mime:
     dependency: transitive
     description:
@@ -664,6 +680,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
+  native_toolchain_c:
+    dependency: transitive
+    description:
+      name: native_toolchain_c
+      sha256: "89e83885ba09da5fdf2cdacc8002a712ca238c28b7f717910b34bcd27b0d03ac"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.17.4"
   nested:
     dependency: transitive
     description:
@@ -672,6 +696,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.0"
+  objective_c:
+    dependency: transitive
+    description:
+      name: objective_c
+      sha256: "9922a1ad59ac5afb154cc948aa6ded01987a75003651d0a2866afc23f4da624e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.2.3"
   package_config:
     dependency: transitive
     description:
@@ -708,10 +740,10 @@ packages:
     dependency: transitive
     description:
       name: path_provider_foundation
-      sha256: "6d13aece7b3f5c5a9731eaf553ff9dcbc2eff41087fd2df587fd0fed9a3eb0c4"
+      sha256: "2a376b7d6392d80cd3705782d2caa734ca4727776db0b6ec36ef3f1855197699"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.1"
+    version: "2.6.0"
   path_provider_linux:
     dependency: transitive
     description:
@@ -1001,10 +1033,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "522f00f556e73044315fa4585ec3270f1808a4b186c936e612cab0b565ff1e00"
+      sha256: ab2726c1a94d3176a45960b6234466ec367179b87dd74f1611adb1f3b5fb9d55
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.6"
+    version: "0.7.7"
   typed_data:
     dependency: transitive
     description:
@@ -1065,10 +1097,10 @@ packages:
     dependency: transitive
     description:
       name: url_launcher_web
-      sha256: "4bd2b7b4dc4d4d0b94e5babfffbca8eac1a126c7f3d6ecbc1a11013faa3abba2"
+      sha256: d0412fcf4c6b31ecfdb7762359b7206ffba3bbffd396c6d9f9c4616ece476c1f
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.2"
   url_launcher_windows:
     dependency: transitive
     description:
@@ -1190,5 +1222,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.9.2 <4.0.0"
-  flutter: ">=3.35.1"
+  dart: ">=3.10.3 <4.0.0"
+  flutter: ">=3.38.4"

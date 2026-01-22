@@ -253,10 +253,7 @@ class MapBodyState extends AbstractMapBodyState {
           children: <Widget>[
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
               builder: (context, polygonHelper, siteHelper, mapHelper, child) => GoogleMap(
-                padding: EdgeInsets.only(
-                  bottom: AdsHelper().bannerAd == null ? 80 : 200,
-                  top: 80,
-                ),
+                padding: EdgeInsets.only(bottom: AdsHelper().bannerAd == null ? 80 : 200, top: 80),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
                 buildingsEnabled: false,
@@ -387,20 +384,29 @@ class MapBodyState extends AbstractMapBodyState {
             alignment: Alignment.bottomCenter,
             child: SafeArea(
               child: Container(
-                height: AdsHelper().bannerAd == null
-                    ? 0
-                    : 200,
+                height: AdsHelper().bannerAd == null ? 0 : 100,
                 color: Colors.white,
-                child: SizedBox(
-                  width: AdsHelper().bannerAd == null
-                      ? 0
-                      : AdsHelper().bannerAd!.size.width.toDouble(),
-                  height: AdsHelper().bannerAd == null
-                      ? 0
-                      : AdsHelper().bannerAd!.size.height.toDouble(),
-                  child: AdsHelper().bannerAd == null
-                      ? Container()
-                      : AdWidget(ad: AdsHelper().bannerAd!),
+                alignment: AlignmentGeometry.center,
+                child: Column(
+                  children: [
+                    Text(
+                      "Advertisement",
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    SizedBox(
+                      width: AdsHelper().bannerAd == null
+                          ? 0
+                          : AdsHelper().bannerAd!.size.width.toDouble(),
+                      height: AdsHelper().bannerAd == null
+                          ? 0
+                          : AdsHelper().bannerAd!.size.height.toDouble(),
+                      child: AdsHelper().bannerAd == null
+                          ? Container()
+                          : AdWidget(ad: AdsHelper().bannerAd!),
+                    ),
+                  ],
                 ),
               ),
             ),
