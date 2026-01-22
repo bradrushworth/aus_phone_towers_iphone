@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
@@ -253,7 +252,7 @@ class MapBodyState extends AbstractMapBodyState {
           children: <Widget>[
             Consumer3<PolygonHelper, SiteHelper, MapHelper>(
               builder: (context, polygonHelper, siteHelper, mapHelper, child) => GoogleMap(
-                padding: EdgeInsets.only(bottom: AdsHelper().bannerAd == null ? 80 : 200, top: 80),
+                padding: EdgeInsets.only(bottom: AdsHelper().bannerAd == null ? 80 : 120, top: 80),
                 myLocationEnabled: true,
                 mapType: mapHelper.getMapType(),
                 buildingsEnabled: false,
