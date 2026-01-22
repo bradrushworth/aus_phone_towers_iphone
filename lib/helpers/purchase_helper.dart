@@ -124,8 +124,7 @@ class PurchaseHelper with ChangeNotifier {
     if (Platform.isIOS) {
       var iosPlatformAddition = _inAppPurchase
           .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
-      // TODO: Why is this an example?
-      await iosPlatformAddition.setDelegate(ExamplePaymentQueueDelegate());
+      iosPlatformAddition.setDelegate(null);
     }
 
     ProductDetailsResponse productDetailResponse = await _inAppPurchase.queryProductDetails(
@@ -439,24 +438,4 @@ class PurchaseHelper with ChangeNotifier {
   //        purchaseDetails.billingClientPurchase.originalJson,
   //        purchaseDetails.billingClientPurchase.signature));
   //  }
-}
-
-/// Example implementation of the
-/// [`SKPaymentQueueDelegate`](https://developer.apple.com/documentation/storekit/skpaymentqueuedelegate?language=objc).
-///
-/// The payment queue delegate can be implementated to provide information
-/// needed to complete transactions.
-class ExamplePaymentQueueDelegate implements SKPaymentQueueDelegateWrapper {
-  @override
-  bool shouldContinueTransaction(
-    SKPaymentTransactionWrapper transaction,
-    SKStorefrontWrapper storefront,
-  ) {
-    return true;
-  }
-
-  @override
-  bool shouldShowPriceConsent() {
-    return false;
-  }
 }

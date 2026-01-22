@@ -73,19 +73,13 @@ class _OptionsMenuState extends State<OptionsMenu> {
             );
           }).where((optionItem) {
             int optionItemPosition = listOptionItem.indexOf(optionItem.value!);
-            if (!kIsWeb && Platform.isAndroid) {
-              return SearchHelper.calculatingSearchResults
-                  ? optionItemPosition != 1
-                  : true;
+            if (optionItemPosition == 1) {
+              return !SearchHelper.calculatingSearchResults;
+            } else if (optionItemPosition == 5 || optionItemPosition == 6) {
+              // Only show donations and subscriptions on non-web platforms
+              return !kIsWeb;
             } else {
-              // Remove below code when IAP is implemented for iOS.
-              if (optionItemPosition == 1) {
-                return !SearchHelper.calculatingSearchResults;
-              } else if (optionItemPosition == 5 || optionItemPosition == 6) {
-                return false;
-              } else {
-                return true;
-              }
+              return true;
             }
           }).toList();
         },
@@ -465,7 +459,7 @@ List<SingleRowItem> listHidingMenuItem = <SingleRowItem>[
 ];
 
 List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: !kIsWeb),
+  SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: true),
   SingleRowItem(
       isTitle: true,
       title: Strings.remove_ads_subscribe_previous,
@@ -483,7 +477,7 @@ List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
 ];
 
 List<SingleRowItem> listDonateItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: !kIsWeb),
+  SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: true),
   SingleRowItem(title: Strings.donatePrevious, isEnabled: false),
   SingleRowItem(
       title: Strings.donateSmall,
