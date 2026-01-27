@@ -11,7 +11,7 @@ description: Aus Phone Towers
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.8.14+73
+version: 1.8.15+74
 
 environment:
   sdk: '>=3.9.2 <4.0.0'
@@ -45,6 +45,7 @@ dependencies:
 #      url: https://github.com/googleads/googleads-mobile-flutter
 #      ref: 356875362ddb2ac2e0056385d2729c093722fb8d
 #      path: packages/google_mobile_ads
+  gma_mediation_meta: ^1.5.0
   after_layout: ^1.2.0
   in_app_review: ^2.0.10
   app_tracking_transparency: ^2.0.6+1
