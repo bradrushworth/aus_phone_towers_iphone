@@ -3,6 +3,7 @@ import 'dart:core';
 import 'dart:io';
 
 import 'package:after_layout/after_layout.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -66,10 +67,41 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
 
   late SharedPreferences prefs;
 
+  late TrackingStatus _iOSTrackingStatus;
+
   @override
   void initState() {
     super.initState();
     logger = Logger();
+    WidgetsFlutterBinding.ensureInitialized().addPostFrameCallback((_) => initAppTracingTransparency());
+  }
+
+  Future<void> initAppTracingTransparency() async {
+    if (!kIsWeb && Platform.isIOS) {
+      // Show tracking authorization dialog and ask for permission
+      final TrackingStatus status = await AppTrackingTransparency.trackingAuthorizationStatus;
+      setState(() => _iOSTrackingStatus = status);
+
+      // If the system can show an authorization request dialog
+      if (status == TrackingStatus.notDetermined) {
+        // Wait for dialog popping animation
+        await Future.delayed(const Duration(milliseconds: 1000));
+        // Request system's tracking authorization dialog
+        final newStatus = await AppTrackingTransparency.requestTrackingAuthorization();
+        setState(() => _iOSTrackingStatus = newStatus);
+
+        // Check every 1s if the user has made a decision - previous await returns notDetermined instantly for some reason?
+        if (newStatus == TrackingStatus.notDetermined) {
+          Timer.periodic(const Duration(seconds: 1), (timer) async {
+            final newStatus = await AppTrackingTransparency.trackingAuthorizationStatus;
+            if (newStatus != _iOSTrackingStatus) {
+              setState(() => _iOSTrackingStatus = newStatus);
+              timer.cancel();
+            }
+          });
+        }
+      }
+    }
   }
 
   /*
