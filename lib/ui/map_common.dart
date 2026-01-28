@@ -163,15 +163,12 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
 
     if (!kIsWeb) {
       if (!PurchaseHelper().isSubscribed) {
-        //Show ads only if user has not subscribed to any of remove ads menu item
+        // Show ads only if user has not subscribed to any of remove ads menu item
         // Get an AnchoredAdaptiveBannerAdSize before loading the ad.
-        final bannerAdSize = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+        final bannerAdSize = await AdSize.getInlineAdaptiveBannerAdSize(
           MediaQuery.sizeOf(context).width.truncate(),
+          100,
         );
-        if (bannerAdSize == null) {
-          // Unable to get width of anchored banner.
-          return;
-        }
 
         String adUnitId = '';
         if (kDebugMode) {
