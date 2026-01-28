@@ -33,6 +33,13 @@ Future<void> main() async {
   // development.
 
   runZonedGuarded(() async {
+    await WidgetsFlutterBinding.ensureInitialized();
+
+    if (!kIsWeb && Platform.isIOS) {
+      // Show tracking authorization dialog and ask for permission
+      final status = await AppTrackingTransparency.requestTrackingAuthorization();
+      final uuid = await AppTrackingTransparency.getAdvertisingIdentifier();
+    }
 
     // Initialize Firebase
     if (useFirebase) {
