@@ -35,7 +35,7 @@ class GetDevices {
   Future getDevicesData() async {
     //logger.d('get device url $url');
 
-    showSnackBar(message: "Downloading tower frequencies...");
+    //showSnackBar(message: "Downloading tower frequencies...");
 
     SiteResponse? rawReponse = await api.getDevicesData(url);
 

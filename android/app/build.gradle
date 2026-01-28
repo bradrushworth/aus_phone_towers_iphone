@@ -50,9 +50,6 @@ android {
         main.kotlin.srcDirs += 'src/main/kotlin'
     }
 
-    lintOptions {
-        disable 'InvalidPackage'
-    }
 
     kotlin {
         jvmToolchain(21)
@@ -83,6 +80,9 @@ android {
         release {
             signingConfig signingConfigs.release
         }
+    }
+    lint {
+        disable 'InvalidPackage'
     }
 }
 

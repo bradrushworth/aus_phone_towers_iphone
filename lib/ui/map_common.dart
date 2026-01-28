@@ -866,7 +866,7 @@ class MapBodyState extends AbstractMapBodyState {
     //   'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}',
     // );
 
-    showSnackbar(message: "Downloading ${TelcoHelper.getName(telco)} towers...");
+    //showSnackbar(message: "Downloading ${TelcoHelper.getName(telco)} towers...");
 
     SiteResponse? rawResponse = await api.getMarkerData(
       nextPageURL != null
