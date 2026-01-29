@@ -87,7 +87,7 @@ class PurchaseHelper with ChangeNotifier {
     showSnackBar!(
       message: available
           ? 'The Payment platform is ready and available'
-          : 'The Payment platform is not ready and available',
+          : 'The Payment platform is NOT ready and available',
     );
 
     if (available) {
@@ -277,7 +277,7 @@ class PurchaseHelper with ChangeNotifier {
         .map((purchaseDetails) => purchaseDetails!.productID)
         .toList();
     eventMap['owned_sku'] = listAllOwnedSkus.toString();
-    showSnackBar!(message: "_hasPurchase: ${listAllOwnedSkus.length}");
+    //showSnackBar!(message: "_hasPurchase: ${listAllOwnedSkus.length}");
 
     // Stop users from subscribing more than once
     isSubscribed = subscription;
@@ -380,8 +380,9 @@ class PurchaseHelper with ChangeNotifier {
     return Future<bool>.value(true);
   }
 
-  void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
-    purchaseDetailsList.forEach((PurchaseDetails purchaseDetails) async {
+  Future<void> _listenToPurchaseUpdated(
+      List<PurchaseDetails> purchaseDetailsList) async {
+    for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
       Map<String, Object> eventMap = Map<String, Object>();
       if (purchaseDetails.status == PurchaseStatus.pending) {
         logger.w('Purchase status is ${purchaseDetails.status}');
@@ -414,7 +415,7 @@ class PurchaseHelper with ChangeNotifier {
           await _inAppPurchase.completePurchase(purchaseDetails);
         }
       }
-    });
+    }
   }
 
   Future<void> deliverProduct(PurchaseDetails purchaseDetails, Map<String, Object> eventMap) async {
