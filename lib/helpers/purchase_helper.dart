@@ -94,9 +94,16 @@ class PurchaseHelper with ChangeNotifier {
         },
         onDone: () {
           _subscription!.cancel();
+
+          String error = 'PurchaseHelper.onDone';
+          logger.i(error);
+          showSnackBar!(message: error);
         },
         onError: (error) {
           // handle error here.
+          logger.e('Error in PurchaseHelper.purchaseUpdated: Error is $error');
+          AnalyticsHelper().log(error);
+          showSnackBar!(message: error);
         },
       );
 
@@ -207,7 +214,7 @@ class PurchaseHelper with ChangeNotifier {
             purchaseDetails!.productID == SKU_DONATION_SMALL ||
             purchaseDetails.productID == SKU_DONATION_MEDIUM ||
             purchaseDetails.productID == SKU_DONATION_LARGE,
-        orElse: () => null, // Explicitly cast null to the nullable type
+        orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
       );
     }
     // Thank the user for donating in the past :-)
@@ -217,7 +224,7 @@ class PurchaseHelper with ChangeNotifier {
     //2)  Operation to perform when user has removed ad for one year
     PurchaseDetails? purchaseDetailsForOneYearSubscription = null;
     if (_purchases.isNotEmpty) {
-      purchaseDetailsForOneYearSubscription = _purchases.firstWhere(
+      purchaseDetailsForOneYearSubscription = _purchases.singleWhere(
         (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
         orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
       );
@@ -240,7 +247,7 @@ class PurchaseHelper with ChangeNotifier {
     // This needs to be after the consume everything above
     PurchaseDetails? purchaseDetailsForPermanentSubscription = null;
     if (_purchases.isNotEmpty) {
-      purchaseDetailsForPermanentSubscription = _purchases.firstWhere(
+      purchaseDetailsForPermanentSubscription = _purchases.singleWhere(
         (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
         orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
       );
@@ -256,6 +263,7 @@ class PurchaseHelper with ChangeNotifier {
         .map((purchaseDetails) => purchaseDetails!.productID)
         .toList();
     eventMap['owned_sku'] = listAllOwnedSkus.toString();
+    showSnackBar!(message: "_hasPurchase: ${listAllOwnedSkus.length}");
 
     // Stop users from subscribing more than once
     isSubscribed = subscription;
@@ -294,7 +302,7 @@ class PurchaseHelper with ChangeNotifier {
     logger.i('Trying to purchase: ${sku}');
     if (_purchases.isNotEmpty) {
       //If product is already purchased, First consume it and then buy again
-      PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
+      PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
         return product!.productID == sku;
       }, orElse: () => null as PurchaseDetails?);
       if (purchaseDetails != null) {
@@ -309,11 +317,11 @@ class PurchaseHelper with ChangeNotifier {
         return product!.id == sku;
       });
       if (productToBuy != null) {
-        showSnackBar!(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
+        //showSnackBar!(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
-        showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
-        _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
-        showSnackBar!(message: 'Bought: productDetails=${purchaseParam.productDetails.title}');
+        //showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
+        bool bought = await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
+        showSnackBar!(message: 'Bought ${bought}: productDetails=${purchaseParam.productDetails.title}');
       } else {
         String error = 'The product being bought does not match the inventory... _products=${_products.length}';
         logger.e("PurchaseHelper: " + error);
