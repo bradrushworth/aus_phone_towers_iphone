@@ -72,6 +72,27 @@ class PurchaseHelper with ChangeNotifier {
   void initStoreInfo({void Function({String message, bool isDismissible})? showSnackBar}) async {
     this.showSnackBar = showSnackBar;
 
+    // Listen to new purchases immediately
+    final Stream<List<PurchaseDetails>> purchaseUpdated = _inAppPurchase.purchaseStream;
+    _subscription = purchaseUpdated.listen(
+      (purchaseDetailsList) {
+        _listenToPurchaseUpdated(purchaseDetailsList);
+      },
+      onDone: () {
+        _subscription!.cancel();
+
+        String error = 'PurchaseHelper.onDone';
+        logger.i(error);
+        if (showSnackBar != null) showSnackBar(message: error);
+      },
+      onError: (error) {
+        // handle error here.
+        logger.e('Error in PurchaseHelper.purchaseUpdated: Error is $error');
+        AnalyticsHelper().log(error);
+        if (showSnackBar != null) showSnackBar(message: error.toString());
+      },
+    );
+
     // Check availability of In App Purchases
     final available = await _inAppPurchase.isAvailable();
 
@@ -91,27 +112,6 @@ class PurchaseHelper with ChangeNotifier {
     );
 
     if (available) {
-      // Listen to new purchases
-      final Stream<List<PurchaseDetails>> purchaseUpdated = _inAppPurchase.purchaseStream;
-      _subscription = purchaseUpdated.listen(
-        (purchaseDetailsList) {
-          _listenToPurchaseUpdated(purchaseDetailsList);
-        },
-        onDone: () {
-          _subscription!.cancel();
-
-          String error = 'PurchaseHelper.onDone';
-          logger.i(error);
-          showSnackBar(message: error);
-        },
-        onError: (error) {
-          // handle error here.
-          logger.e('Error in PurchaseHelper.purchaseUpdated: Error is $error');
-          AnalyticsHelper().log(error);
-          showSnackBar(message: error);
-        },
-      );
-
       await _getProducts();
       await _hasPurchase();
     } else {
@@ -119,7 +119,7 @@ class PurchaseHelper with ChangeNotifier {
       String error = 'The Payment platform is not ready and available';
       logger.e('Error in PurchaseHelper: Error is $error');
       AnalyticsHelper().log(error);
-      showSnackBar!(message: error);
+      if (showSnackBar != null) showSnackBar(message: error);
 
       _products = [];
       _purchases = [];
@@ -211,7 +211,7 @@ class PurchaseHelper with ChangeNotifier {
             message:
                 "_hasPurchase: ${purchase.productID} has pendingCompletePurchase=${purchase.pendingCompletePurchase}",
           );
-          //_inAppPurchase.completePurchase(purchase);
+          _inAppPurchase.completePurchase(purchase);
         }
         return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
       }),
@@ -252,7 +252,7 @@ class PurchaseHelper with ChangeNotifier {
           "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
         );
         eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
-        _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
+        await _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
         isSubscribed = false;
       }
     }
@@ -302,7 +302,7 @@ class PurchaseHelper with ChangeNotifier {
       showSnackBar!(message: 'purchased item is ${purchase.productID}');
       //This is required only for iOS
       if (Platform.isIOS) {
-        // await _inAppPurchase.completePurchase(purchase);
+        await _inAppPurchase.completePurchase(purchase);
       }
     }
 
@@ -319,9 +319,9 @@ class PurchaseHelper with ChangeNotifier {
       PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
         return product!.productID == sku;
       }, orElse: () => null as PurchaseDetails?);
-      // if (purchaseDetails != null) {
-      //   await _inAppPurchase.completePurchase(purchaseDetails);
-      // }
+      if (purchaseDetails != null) {
+        await _inAppPurchase.completePurchase(purchaseDetails);
+      }
       String error =
           'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
       logger.i(error);
@@ -507,7 +507,7 @@ class PurchaseHelper with ChangeNotifier {
 /// Example implementation of the
 /// [`SKPaymentQueueDelegate`](https://developer.apple.com/documentation/storekit/skpaymentqueuedelegate?language=objc).
 ///
-/// The payment queue delegate can be implementated to provide information
+/// The payment queue delegate can be implemented to provide information
 /// needed to complete transactions.
 class ExamplePaymentQueueDelegate implements SKPaymentQueueDelegateWrapper {
   @override
