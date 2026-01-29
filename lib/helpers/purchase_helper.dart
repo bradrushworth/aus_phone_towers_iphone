@@ -105,7 +105,7 @@ class PurchaseHelper with ChangeNotifier {
             : 'The Payment platform is not ready and available',
       },
     );
-    showSnackBar!(
+    showSnackBar(
       message: available
           ? 'The Payment platform is ready and available'
           : 'The Payment platform is NOT ready and available',
@@ -113,6 +113,7 @@ class PurchaseHelper with ChangeNotifier {
 
     if (available) {
       await _getProducts();
+      await _inAppPurchase.restorePurchases();
       await _hasPurchase();
     } else {
       // Oh no, there was a problem.
@@ -144,7 +145,7 @@ class PurchaseHelper with ChangeNotifier {
     );
     if (productDetailResponse.error != null) {
       String error = "In-App Billing Failed: " + productDetailResponse.error!.message;
-      showSnackBar!(message: error);
+      showSnackBar(message: error);
       logger.e("PurchaseHelper: " + error);
       AnalyticsHelper().log(error);
 
@@ -160,7 +161,7 @@ class PurchaseHelper with ChangeNotifier {
 
     if (productDetailResponse.productDetails.isEmpty) {
       String error = "In-App Billing is empty!";
-      showSnackBar!(message: error);
+      showSnackBar(message: error);
       logger.e("PurchaseHelper: " + error);
       AnalyticsHelper().log(error);
 
@@ -181,7 +182,7 @@ class PurchaseHelper with ChangeNotifier {
     _purchasePending = false;
     _loading = false;
     String error = "In-App Billing is completed!";
-    showSnackBar!(message: error);
+    showSnackBar(message: error);
     logger.i("PurchaseHelper: " + error);
   }
 
@@ -202,12 +203,10 @@ class PurchaseHelper with ChangeNotifier {
 
   /// Gets past purchases
   Future<void> _hasPurchase() async {
-    await _inAppPurchase.restorePurchases();
-
     Map<String, PurchaseDetails> purchases = Map.fromEntries(
       _purchases.map((PurchaseDetails? purchase) {
         if (purchase!.pendingCompletePurchase) {
-          showSnackBar!(
+          showSnackBar(
             message:
                 "_hasPurchase: ${purchase.productID} has pendingCompletePurchase=${purchase.pendingCompletePurchase}",
           );
@@ -251,7 +250,7 @@ class PurchaseHelper with ChangeNotifier {
         logger.i(
           "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
         );
-        showSnackBar!(message: "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!");
+        showSnackBar(message: "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!");
         eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
         await _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
         isSubscribed = false;
@@ -297,10 +296,10 @@ class PurchaseHelper with ChangeNotifier {
     hasPurchaseProcessed = true;
     notifyListeners();
 
-    showSnackBar!(message: "_hasPurchase: ${listAllOwnedSkus.length}");
+    showSnackBar(message: "_hasPurchase: ${listAllOwnedSkus.length}");
     for (PurchaseDetails? purchase in _purchases) {
       logger.d('purchased item is ${purchase!.productID}');
-      showSnackBar!(message: 'purchased item is ${purchase.productID}');
+      showSnackBar(message: 'purchased item is ${purchase.productID}');
       //This is required only for iOS
       if (Platform.isIOS) {
         await _inAppPurchase.completePurchase(purchase);
@@ -326,7 +325,7 @@ class PurchaseHelper with ChangeNotifier {
       String error =
           'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
       logger.i(error);
-      showSnackBar!(message: error);
+      showSnackBar(message: error);
       return;
     } else {
       logger.i('No previous purchases found...');
@@ -337,9 +336,9 @@ class PurchaseHelper with ChangeNotifier {
         return product!.id == sku;
       });
       if (productToBuy != null) {
-        //showSnackBar!(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
+        //showSnackBar(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
-        //showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
+        //showSnackBar(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
         bool bought = false;
         if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY) {
           bought = await _inAppPurchase.buyNonConsumable(
@@ -351,18 +350,18 @@ class PurchaseHelper with ChangeNotifier {
             autoConsume: false,
           );
         }
-        showSnackBar!(
-          message: 'Bought ${bought}: productDetails=${purchaseParam.productDetails.title}',
+        showSnackBar(
+          message: 'Selected to buy ${bought}: productDetails=${purchaseParam.productDetails.title}',
         );
       } else {
         String error =
             'The product being bought does not match the inventory... _products=${_products.length}';
         logger.e("PurchaseHelper: " + error);
-        showSnackBar!(message: error);
+        showSnackBar(message: error);
       }
     } else {
       String error = 'No products in inventory found...';
-      showSnackBar!(message: error);
+      showSnackBar(message: error);
       logger.e("PurchaseHelper: " + error);
       Map<String, Object> eventMap = Map<String, Object>();
       eventMap['failure'] = error;
@@ -387,12 +386,12 @@ class PurchaseHelper with ChangeNotifier {
       Map<String, Object> eventMap = Map<String, Object>();
       if (purchaseDetails.status == PurchaseStatus.pending) {
         logger.w('Purchase status is ${purchaseDetails.status}');
-        showSnackBar!(message: 'Purchase status is ${purchaseDetails.status}');
+        showSnackBar(message: 'Purchase status is ${purchaseDetails.status}');
       } else {
         if (purchaseDetails.status == PurchaseStatus.error) {
           logger.e('Purchase status is ${purchaseDetails.status}');
           String error = 'Failed purchase: ${purchaseDetails.status}';
-          showSnackBar!(message: error);
+          showSnackBar(message: error);
           logger.w("PurchaseHelper: " + error);
           eventMap['failure'] = error;
           AnalyticsHelper().log(error);
@@ -404,7 +403,7 @@ class PurchaseHelper with ChangeNotifier {
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
           logger.i('Purchase status is ${purchaseDetails.status}');
-          showSnackBar!(message: 'Purchase status is ${purchaseDetails.status}');
+          showSnackBar(message: 'Purchase status is ${purchaseDetails.status}');
           bool valid = await _verifyPurchase(purchaseDetails);
           if (valid) {
             unawaited(deliverProduct(purchaseDetails, eventMap));
@@ -426,54 +425,57 @@ class PurchaseHelper with ChangeNotifier {
     switch (purchaseDetails.productID) {
       case SKU_DONATION_SMALL:
         {
-          showSnackBar!(message: 'Thanks so much for the coffee, you legend!', isDismissible: true);
+          showSnackBar(message: 'Thanks so much for the coffee, you legend!', isDismissible: true);
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateSmallPurchased = true;
+          _hasPurchase();
           break;
         }
       case SKU_DONATION_MEDIUM:
         {
-          showSnackBar!(
+          showSnackBar(
             message: 'Coffee and cake is the best, just like you!',
             isDismissible: true,
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateMediumPurchased = true;
+          _hasPurchase();
           break;
         }
       case SKU_DONATION_LARGE:
         {
-          showSnackBar!(
+          showSnackBar(
             message: 'Thanks for buying lunch! I\'d love to hear from you.',
             isDismissible: true,
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           isDonateLargePurchased = true;
+          _hasPurchase();
           break;
         }
       case SKU_SUBSCRIBE_ONE_YEAR:
         {
-          showSnackBar!(
+          showSnackBar(
             message: 'Thanks! Enjoy the app now ad free for the next year.',
             isDismissible: true,
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
-          //hasPurchase();
+          _hasPurchase();
           break;
         }
       case SKU_SUBSCRIBE_PERMANENTLY:
         {
-          showSnackBar!(
+          showSnackBar(
             message: 'Thanks for making this purchase. Please enjoy the app ad free.',
             isDismissible: true,
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
-          //hasPurchase();
+          _hasPurchase();
           break;
         }
     }
@@ -485,7 +487,7 @@ class PurchaseHelper with ChangeNotifier {
 
   void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {
     logger.e('_handleInvalidPurchase: Purchase status is ${purchaseDetails.status}');
-    showSnackBar!(message: '_handleInvalidPurchase: Purchase status is ${purchaseDetails.status}');
+    showSnackBar(message: '_handleInvalidPurchase: Purchase status is ${purchaseDetails.status}');
   }
 
   Future<void> consumeForDebuggingOnly({required String sku}) async {
