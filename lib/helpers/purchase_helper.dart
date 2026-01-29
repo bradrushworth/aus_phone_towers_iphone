@@ -202,6 +202,8 @@ class PurchaseHelper with ChangeNotifier {
 
   /// Gets past purchases
   Future<void> _hasPurchase() async {
+    await _inAppPurchase.restorePurchases();
+
     Map<String, PurchaseDetails> purchases = Map.fromEntries(
       _purchases.map((PurchaseDetails? purchase) {
         if (purchase!.pendingCompletePurchase) {
@@ -337,10 +339,17 @@ class PurchaseHelper with ChangeNotifier {
         //showSnackBar!(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
         //showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
-        bool bought = await _inAppPurchase.buyConsumable(
-          purchaseParam: purchaseParam,
-          autoConsume: false,
-        );
+        bool bought = false;
+        if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY) {
+          bought = await _inAppPurchase.buyNonConsumable(
+            purchaseParam: purchaseParam,
+          );
+        } else {
+          bought = await _inAppPurchase.buyConsumable(
+            purchaseParam: purchaseParam,
+            autoConsume: false,
+          );
+        }
         showSnackBar!(
           message: 'Bought ${bought}: productDetails=${purchaseParam.productDetails.title}',
         );
