@@ -313,6 +313,10 @@ class PurchaseHelper with ChangeNotifier {
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
         showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
         _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
+      } else {
+        String error = 'The product being bought does not match the inventory... _products=${_products.length}';
+        logger.e("PurchaseHelper: " + error);
+        showSnackBar!(message: error);
       }
     } else {
       String error = 'No products in inventory found...';
