@@ -348,15 +348,16 @@ class PolygonHelper with ChangeNotifier {
     }
 
     if (data.length > 0) {
-      Map<String, Object> eventMap = Map<String, Object>();
-      eventMap['site_id'] = site.siteId!;
-      eventMap['site_telco'] = TelcoHelper.getName(site.getTelco());
-      eventMap['device_lteType'] = LteTypeHelper.getName(device.getLteType());
-      eventMap['device_networkType'] =
-          NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
-      eventMap['device_antennaCapacity'] = device.getAntennaCapacity();
-      AnalyticsHelper()
-          .sendCustomAnalyticsEvent(eventName: 'create_polygon', eventParameters: eventMap);
+      // This probably slows everything down
+      // Map<String, Object> eventMap = Map<String, Object>();
+      // eventMap['site_id'] = site.siteId!;
+      // eventMap['site_telco'] = TelcoHelper.getName(site.getTelco());
+      // eventMap['device_lteType'] = LteTypeHelper.getName(device.getLteType());
+      // eventMap['device_networkType'] =
+      //     NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
+      // eventMap['device_antennaCapacity'] = device.getAntennaCapacity();
+      // AnalyticsHelper()
+      //     .sendCustomAnalyticsEvent(eventName: 'create_polygon', eventParameters: eventMap);
     }
   }
 

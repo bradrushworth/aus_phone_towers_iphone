@@ -65,11 +65,11 @@ class PurchaseHelper with ChangeNotifier {
 
   final int EXPIRY_PERIOD = 365 * 24 * 60 * 60 * 1000;
 
-  ShowSnackBar? showSnackBar;
+  late ShowSnackBar showSnackBar;
 
   bool hasPurchaseProcessed = false;
 
-  void initStoreInfo({void Function({String message, bool isDismissible})? showSnackBar}) async {
+  void initStoreInfo({required void Function({String message, bool isDismissible}) showSnackBar}) async {
     this.showSnackBar = showSnackBar;
 
     // Listen to new purchases immediately
@@ -251,6 +251,7 @@ class PurchaseHelper with ChangeNotifier {
         logger.i(
           "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
         );
+        showSnackBar!(message: "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!");
         eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
         await _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
         isSubscribed = false;
@@ -277,7 +278,6 @@ class PurchaseHelper with ChangeNotifier {
         .map((purchaseDetails) => purchaseDetails!.productID)
         .toList();
     eventMap['owned_sku'] = listAllOwnedSkus.toString();
-    //showSnackBar!(message: "_hasPurchase: ${listAllOwnedSkus.length}");
 
     // Stop users from subscribing more than once
     isSubscribed = subscription;
@@ -297,6 +297,7 @@ class PurchaseHelper with ChangeNotifier {
     hasPurchaseProcessed = true;
     notifyListeners();
 
+    showSnackBar!(message: "_hasPurchase: ${listAllOwnedSkus.length}");
     for (PurchaseDetails? purchase in _purchases) {
       logger.d('purchased item is ${purchase!.productID}');
       showSnackBar!(message: 'purchased item is ${purchase.productID}');
@@ -456,7 +457,7 @@ class PurchaseHelper with ChangeNotifier {
       case SKU_SUBSCRIBE_ONE_YEAR:
         {
           showSnackBar!(
-            message: 'Thanks for making this purchase. Please enjoy the app ad free.',
+            message: 'Thanks! Enjoy the app now ad free for the next year.',
             isDismissible: true,
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
