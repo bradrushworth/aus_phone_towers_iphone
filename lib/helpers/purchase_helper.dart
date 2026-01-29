@@ -83,13 +83,13 @@ class PurchaseHelper with ChangeNotifier {
 
         String error = 'PurchaseHelper.onDone';
         logger.i(error);
-        if (showSnackBar != null) showSnackBar(message: error);
+        showSnackBar(message: error);
       },
       onError: (error) {
         // handle error here.
         logger.e('Error in PurchaseHelper.purchaseUpdated: Error is $error');
         AnalyticsHelper().log(error);
-        if (showSnackBar != null) showSnackBar(message: error.toString());
+        showSnackBar(message: error.toString());
       },
     );
 
@@ -112,15 +112,15 @@ class PurchaseHelper with ChangeNotifier {
     );
 
     if (available) {
-      await _getProducts();
       await _inAppPurchase.restorePurchases();
-      await _hasPurchase();
+      await _getProducts();
+      //await _hasPurchase();
     } else {
       // Oh no, there was a problem.
       String error = 'The Payment platform is not ready and available';
       logger.e('Error in PurchaseHelper: Error is $error');
       AnalyticsHelper().log(error);
-      if (showSnackBar != null) showSnackBar(message: error);
+      showSnackBar(message: error);
 
       _products = [];
       _purchases = [];
@@ -428,8 +428,9 @@ class PurchaseHelper with ChangeNotifier {
           showSnackBar(message: 'Thanks so much for the coffee, you legend!', isDismissible: true);
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
+          _purchases.add(purchaseDetails);
           isDonateSmallPurchased = true;
-          _hasPurchase();
+          await _hasPurchase();
           break;
         }
       case SKU_DONATION_MEDIUM:
@@ -440,8 +441,9 @@ class PurchaseHelper with ChangeNotifier {
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
+          _purchases.add(purchaseDetails);
           isDonateMediumPurchased = true;
-          _hasPurchase();
+          await _hasPurchase();
           break;
         }
       case SKU_DONATION_LARGE:
@@ -452,8 +454,9 @@ class PurchaseHelper with ChangeNotifier {
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
+          _purchases.add(purchaseDetails);
           isDonateLargePurchased = true;
-          _hasPurchase();
+          await _hasPurchase();
           break;
         }
       case SKU_SUBSCRIBE_ONE_YEAR:
@@ -464,7 +467,8 @@ class PurchaseHelper with ChangeNotifier {
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
-          _hasPurchase();
+          _purchases.add(purchaseDetails);
+          await _hasPurchase();
           break;
         }
       case SKU_SUBSCRIBE_PERMANENTLY:
@@ -475,8 +479,17 @@ class PurchaseHelper with ChangeNotifier {
           );
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
-          _hasPurchase();
+          _purchases.add(purchaseDetails);
+          await _hasPurchase();
           break;
+        }
+      default:
+        {
+          showSnackBar(
+            message: 'This purchase condition shouldn\'t of happened! ${purchaseDetails.productID}',
+            isDismissible: true,
+          );
+          logger.e("PurchaseHelper: This purchase condition shouldn\'t of happened! ${purchaseDetails.productID}");
         }
     }
 
