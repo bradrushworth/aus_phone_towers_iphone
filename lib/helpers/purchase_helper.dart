@@ -292,7 +292,7 @@ class PurchaseHelper with ChangeNotifier {
 
   Future<void> initiatePurchase({required String sku}) async {
     logger.i('Trying to purchase: ${sku}');
-    showSnackBar!(message: 'Trying to purchase: ${sku}');
+    showSnackBar!(message: 'Trying to purchase1: ${sku}');
     if (_purchases.isNotEmpty) {
       //If product is already purchased, First consume it and then buy again
       PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
@@ -304,7 +304,7 @@ class PurchaseHelper with ChangeNotifier {
     } else {
       logger.i('No previous purchases found...');
     }
-    showSnackBar!(message: 'Trying to purchase: ${sku}');
+    showSnackBar!(message: 'Trying to purchase ${sku} from ${_products.first!.id} ${_products.first!.title}');
 
     if (_products.isNotEmpty) {
       ProductDetails? productToBuy = _products.firstWhere((product) {
