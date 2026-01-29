@@ -84,6 +84,11 @@ class PurchaseHelper with ChangeNotifier {
             : 'The Payment platform is not ready and available',
       },
     );
+    showSnackBar!(
+      message: available
+          ? 'The Payment platform is ready and available'
+          : 'The Payment platform is not ready and available',
+    );
 
     if (available) {
       // Listen to new purchases
@@ -93,17 +98,17 @@ class PurchaseHelper with ChangeNotifier {
           _listenToPurchaseUpdated(purchaseDetailsList);
         },
         onDone: () {
-          //_subscription!.cancel();
+          _subscription!.cancel();
 
           String error = 'PurchaseHelper.onDone';
           logger.i(error);
-          showSnackBar!(message: error);
+          showSnackBar(message: error);
         },
         onError: (error) {
           // handle error here.
           logger.e('Error in PurchaseHelper.purchaseUpdated: Error is $error');
           AnalyticsHelper().log(error);
-          showSnackBar!(message: error);
+          showSnackBar(message: error);
         },
       );
 
@@ -129,12 +134,12 @@ class PurchaseHelper with ChangeNotifier {
   /// Get all products available for sale
   Future<void> _getProducts() async {
     if (Platform.isIOS) {
-      var iosPlatformAddition = _inAppPurchase
+      final InAppPurchaseStoreKitPlatformAddition iosPlatformAddition = _inAppPurchase
           .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
-      iosPlatformAddition.setDelegate(null);
+      await iosPlatformAddition.setDelegate(ExamplePaymentQueueDelegate());
     }
 
-    ProductDetailsResponse productDetailResponse = await _inAppPurchase.queryProductDetails(
+    final ProductDetailsResponse productDetailResponse = await _inAppPurchase.queryProductDetails(
       _kProductIds.toSet(),
     );
     if (productDetailResponse.error != null) {
@@ -175,12 +180,15 @@ class PurchaseHelper with ChangeNotifier {
     _consumables = consumables;
     _purchasePending = false;
     _loading = false;
+    String error = "In-App Billing is completed!";
+    showSnackBar!(message: error);
+    logger.i("PurchaseHelper: " + error);
   }
 
   @override
   void dispose() {
     if (Platform.isIOS) {
-      var iosPlatformAddition = _inAppPurchase
+      final InAppPurchaseStoreKitPlatformAddition iosPlatformAddition = _inAppPurchase
           .getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       iosPlatformAddition.setDelegate(null);
     }
@@ -197,7 +205,10 @@ class PurchaseHelper with ChangeNotifier {
     Map<String, PurchaseDetails> purchases = Map.fromEntries(
       _purchases.map((PurchaseDetails? purchase) {
         if (purchase!.pendingCompletePurchase) {
-          showSnackBar!(message: "_hasPurchase: ${purchase.productID} has pendingCompletePurchase=${purchase.pendingCompletePurchase}");
+          showSnackBar!(
+            message:
+                "_hasPurchase: ${purchase.productID} has pendingCompletePurchase=${purchase.pendingCompletePurchase}",
+          );
           //_inAppPurchase.completePurchase(purchase);
         }
         return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
@@ -289,7 +300,7 @@ class PurchaseHelper with ChangeNotifier {
       showSnackBar!(message: 'purchased item is ${purchase.productID}');
       //This is required only for iOS
       if (Platform.isIOS) {
-        // InAppPurchase.instance.completePurchase(purchase);
+        // await _inAppPurchase.completePurchase(purchase);
       }
     }
 
@@ -309,7 +320,8 @@ class PurchaseHelper with ChangeNotifier {
       // if (purchaseDetails != null) {
       //   await _inAppPurchase.completePurchase(purchaseDetails);
       // }
-      String error = 'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
+      String error =
+          'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
       logger.i(error);
       showSnackBar!(message: error);
       return;
@@ -325,10 +337,16 @@ class PurchaseHelper with ChangeNotifier {
         //showSnackBar!(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
         //showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
-        bool bought = await _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
-        showSnackBar!(message: 'Bought ${bought}: productDetails=${purchaseParam.productDetails.title}');
+        bool bought = await _inAppPurchase.buyConsumable(
+          purchaseParam: purchaseParam,
+          autoConsume: false,
+        );
+        showSnackBar!(
+          message: 'Bought ${bought}: productDetails=${purchaseParam.productDetails.title}',
+        );
       } else {
-        String error = 'The product being bought does not match the inventory... _products=${_products.length}';
+        String error =
+            'The product being bought does not match the inventory... _products=${_products.length}';
         logger.e("PurchaseHelper: " + error);
         showSnackBar!(message: error);
       }
@@ -345,6 +363,12 @@ class PurchaseHelper with ChangeNotifier {
         eventParameters: eventMap,
       );
     }
+  }
+
+  Future<bool> _verifyPurchase(PurchaseDetails purchaseDetails) {
+    // IMPORTANT!! Always verify a purchase before delivering the product.
+    // For the purpose of an example, we directly return true.
+    return Future<bool>.value(true);
   }
 
   void _listenToPurchaseUpdated(List<PurchaseDetails> purchaseDetailsList) {
@@ -366,25 +390,28 @@ class PurchaseHelper with ChangeNotifier {
             eventName: 'purchase_error',
             eventParameters: eventMap,
           );
-        } else if (purchaseDetails.status == PurchaseStatus.purchased) {
+        } else if (purchaseDetails.status == PurchaseStatus.purchased ||
+            purchaseDetails.status == PurchaseStatus.restored) {
           logger.i('Purchase status is ${purchaseDetails.status}');
           showSnackBar!(message: 'Purchase status is ${purchaseDetails.status}');
-          bool valid = true;
-          //await _verifyPurchase(purchaseDetails);
+          bool valid = await _verifyPurchase(purchaseDetails);
           if (valid) {
-            deliverProduct(purchaseDetails, eventMap);
+            unawaited(deliverProduct(purchaseDetails, eventMap));
           } else {
             _handleInvalidPurchase(purchaseDetails);
           }
         }
-        // if (Platform.isIOS) {
-        //   InAppPurchase.instance.completePurchase(purchaseDetails);
-        // }
+        if (purchaseDetails.pendingCompletePurchase) {
+          await _inAppPurchase.completePurchase(purchaseDetails);
+        }
       }
     });
   }
 
-  void deliverProduct(PurchaseDetails purchaseDetails, Map<String, Object> eventMap) {
+  Future<void> deliverProduct(PurchaseDetails purchaseDetails, Map<String, Object> eventMap) async {
+    // Use the prototype that stores consumables in the shared preferences
+    await ConsumableStore.save(purchaseDetails.purchaseID!);
+
     switch (purchaseDetails.productID) {
       case SKU_DONATION_SMALL:
         {
@@ -445,7 +472,10 @@ class PurchaseHelper with ChangeNotifier {
     AnalyticsHelper().sendCustomAnalyticsEvent(eventName: 'purchase', eventParameters: eventMap);
   }
 
-  void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {}
+  void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {
+    logger.e('_handleInvalidPurchase: Purchase status is ${purchaseDetails.status}');
+    showSnackBar!(message: '_handleInvalidPurchase: Purchase status is ${purchaseDetails.status}');
+  }
 
   Future<void> consumeForDebuggingOnly({required String sku}) async {
     logger.d('$sku');
@@ -462,4 +492,24 @@ class PurchaseHelper with ChangeNotifier {
   //        purchaseDetails.billingClientPurchase.originalJson,
   //        purchaseDetails.billingClientPurchase.signature));
   //  }
+}
+
+/// Example implementation of the
+/// [`SKPaymentQueueDelegate`](https://developer.apple.com/documentation/storekit/skpaymentqueuedelegate?language=objc).
+///
+/// The payment queue delegate can be implementated to provide information
+/// needed to complete transactions.
+class ExamplePaymentQueueDelegate implements SKPaymentQueueDelegateWrapper {
+  @override
+  bool shouldContinueTransaction(
+    SKPaymentTransactionWrapper transaction,
+    SKStorefrontWrapper storefront,
+  ) {
+    return true;
+  }
+
+  @override
+  bool shouldShowPriceConsent() {
+    return false;
+  }
 }
