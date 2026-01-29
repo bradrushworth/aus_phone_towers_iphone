@@ -16,6 +16,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="Aus Phone Towers iPhone"
         android:largeHeap="false"
+        android:enableOnBackInvokedCallback="true"
         android:launchMode="singleTop"
         android:theme="@style/LaunchTheme"
         android:windowSoftInputMode="adjustResize">

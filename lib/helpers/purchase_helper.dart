@@ -278,6 +278,7 @@ class PurchaseHelper with ChangeNotifier {
     //This is required only for iOS
     for (PurchaseDetails? purchase in _purchases) {
       logger.d('purchased item is ${purchase!.productID}');
+      showSnackBar!(message: 'purchased item is ${purchase!.productID}');
       if (Platform.isIOS) {
         InAppPurchase.instance.completePurchase(purchase);
       }
@@ -301,6 +302,7 @@ class PurchaseHelper with ChangeNotifier {
       }
     } else {
       logger.i('No previous purchases found...');
+      showSnackBar!(message: 'No previous purchases found...');
     }
 
     if (_products.isNotEmpty) {
@@ -309,6 +311,7 @@ class PurchaseHelper with ChangeNotifier {
       }, orElse: () => null);
       if (productToBuy != null) {
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
+        showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
         _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
       }
     } else {
