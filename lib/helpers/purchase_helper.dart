@@ -93,7 +93,7 @@ class PurchaseHelper with ChangeNotifier {
           _listenToPurchaseUpdated(purchaseDetailsList);
         },
         onDone: () {
-          _subscription!.cancel();
+          //_subscription!.cancel();
 
           String error = 'PurchaseHelper.onDone';
           logger.i(error);
@@ -197,7 +197,8 @@ class PurchaseHelper with ChangeNotifier {
     Map<String, PurchaseDetails> purchases = Map.fromEntries(
       _purchases.map((PurchaseDetails? purchase) {
         if (purchase!.pendingCompletePurchase) {
-          _inAppPurchase.completePurchase(purchase);
+          showSnackBar!(message: "_hasPurchase: ${purchase.productID} has pendingCompletePurchase=${purchase.pendingCompletePurchase}");
+          //_inAppPurchase.completePurchase(purchase);
         }
         return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
       }),
@@ -283,12 +284,12 @@ class PurchaseHelper with ChangeNotifier {
     hasPurchaseProcessed = true;
     notifyListeners();
 
-    //This is required only for iOS
     for (PurchaseDetails? purchase in _purchases) {
       logger.d('purchased item is ${purchase!.productID}');
-      showSnackBar!(message: 'purchased item is ${purchase!.productID}');
+      showSnackBar!(message: 'purchased item is ${purchase.productID}');
+      //This is required only for iOS
       if (Platform.isIOS) {
-        InAppPurchase.instance.completePurchase(purchase);
+        // InAppPurchase.instance.completePurchase(purchase);
       }
     }
 
@@ -305,9 +306,13 @@ class PurchaseHelper with ChangeNotifier {
       PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
         return product!.productID == sku;
       }, orElse: () => null as PurchaseDetails?);
-      if (purchaseDetails != null) {
-        await _inAppPurchase.completePurchase(purchaseDetails);
-      }
+      // if (purchaseDetails != null) {
+      //   await _inAppPurchase.completePurchase(purchaseDetails);
+      // }
+      String error = 'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
+      logger.i(error);
+      showSnackBar!(message: error);
+      return;
     } else {
       logger.i('No previous purchases found...');
     }
@@ -347,6 +352,7 @@ class PurchaseHelper with ChangeNotifier {
       Map<String, Object> eventMap = Map<String, Object>();
       if (purchaseDetails.status == PurchaseStatus.pending) {
         logger.w('Purchase status is ${purchaseDetails.status}');
+        showSnackBar!(message: 'Purchase status is ${purchaseDetails.status}');
       } else {
         if (purchaseDetails.status == PurchaseStatus.error) {
           logger.e('Purchase status is ${purchaseDetails.status}');
@@ -361,6 +367,8 @@ class PurchaseHelper with ChangeNotifier {
             eventParameters: eventMap,
           );
         } else if (purchaseDetails.status == PurchaseStatus.purchased) {
+          logger.i('Purchase status is ${purchaseDetails.status}');
+          showSnackBar!(message: 'Purchase status is ${purchaseDetails.status}');
           bool valid = true;
           //await _verifyPurchase(purchaseDetails);
           if (valid) {
@@ -369,9 +377,9 @@ class PurchaseHelper with ChangeNotifier {
             _handleInvalidPurchase(purchaseDetails);
           }
         }
-        if (Platform.isIOS) {
-          InAppPurchase.instance.completePurchase(purchaseDetails);
-        }
+        // if (Platform.isIOS) {
+        //   InAppPurchase.instance.completePurchase(purchaseDetails);
+        // }
       }
     });
   }
