@@ -292,7 +292,6 @@ class PurchaseHelper with ChangeNotifier {
 
   Future<void> initiatePurchase({required String sku}) async {
     logger.i('Trying to purchase: ${sku}');
-    showSnackBar!(message: 'Trying to purchase1: ${sku}');
     if (_purchases.isNotEmpty) {
       //If product is already purchased, First consume it and then buy again
       PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
@@ -304,16 +303,17 @@ class PurchaseHelper with ChangeNotifier {
     } else {
       logger.i('No previous purchases found...');
     }
-    showSnackBar!(message: 'Trying to purchase ${sku} from ${_products.first!.id} ${_products.first!.title}');
 
     if (_products.isNotEmpty) {
-      ProductDetails? productToBuy = _products.firstWhere((product) {
+      ProductDetails? productToBuy = _products.singleWhere((product) {
         return product!.id == sku;
-      }, orElse: () => null);
+      });
       if (productToBuy != null) {
+        showSnackBar!(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
         showSnackBar!(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
         _inAppPurchase.buyConsumable(purchaseParam: purchaseParam, autoConsume: false);
+        showSnackBar!(message: 'Bought: productDetails=${purchaseParam.productDetails.title}');
       } else {
         String error = 'The product being bought does not match the inventory... _products=${_products.length}';
         logger.e("PurchaseHelper: " + error);
