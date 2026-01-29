@@ -105,11 +105,11 @@ class PurchaseHelper with ChangeNotifier {
             : 'The Payment platform is not ready and available',
       },
     );
-    showSnackBar(
-      message: available
-          ? 'The Payment platform is ready and available'
-          : 'The Payment platform is NOT ready and available',
-    );
+    // showSnackBar(
+    //   message: available
+    //       ? 'The Payment platform is ready and available'
+    //       : 'The Payment platform is NOT ready and available',
+    // );
 
     if (available) {
       await _inAppPurchase.restorePurchases();
@@ -182,7 +182,7 @@ class PurchaseHelper with ChangeNotifier {
     _purchasePending = false;
     _loading = false;
     String error = "In-App Billing is completed!";
-    showSnackBar(message: error);
+    //showSnackBar(message: error);
     logger.i("PurchaseHelper: " + error);
   }
 
@@ -210,7 +210,7 @@ class PurchaseHelper with ChangeNotifier {
             message:
                 "_hasPurchase: ${purchase.productID} has pendingCompletePurchase=${purchase.pendingCompletePurchase}",
           );
-          _inAppPurchase.completePurchase(purchase);
+          //_inAppPurchase.completePurchase(purchase);
         }
         return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
       }),
@@ -319,9 +319,9 @@ class PurchaseHelper with ChangeNotifier {
       PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
         return product!.productID == sku;
       }, orElse: () => null as PurchaseDetails?);
-      if (purchaseDetails != null) {
-        await _inAppPurchase.completePurchase(purchaseDetails);
-      }
+      // if (purchaseDetails != null) {
+      //   await _inAppPurchase.completePurchase(purchaseDetails);
+      // }
       String error =
           'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
       logger.i(error);
@@ -406,13 +406,13 @@ class PurchaseHelper with ChangeNotifier {
           showSnackBar(message: 'Purchase status is ${purchaseDetails.status}');
           bool valid = await _verifyPurchase(purchaseDetails);
           if (valid) {
-            unawaited(deliverProduct(purchaseDetails, eventMap));
+            await deliverProduct(purchaseDetails, eventMap);
           } else {
             _handleInvalidPurchase(purchaseDetails);
           }
         }
-        if (purchaseDetails.pendingCompletePurchase) {
-          await _inAppPurchase.completePurchase(purchaseDetails);
+        if (Platform.isIOS || purchaseDetails.pendingCompletePurchase) {
+          //await _inAppPurchase.completePurchase(purchaseDetails);
         }
       }
     }
