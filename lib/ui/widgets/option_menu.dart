@@ -234,7 +234,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
       }).toList(),
     );
 
-    int selectedOptionItem = listSingleRowItem.indexOf(singleRowItem!);
+    if (singleRowItem == null) return;
+    int selectedOptionItem = listSingleRowItem.indexOf(singleRowItem);
     switch (menuType) {
       // case kClearMenu: //Clear map menu option
       //   {

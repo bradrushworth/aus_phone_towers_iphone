@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
@@ -43,7 +41,7 @@ class PurchaseHelper with ChangeNotifier {
   static const String SKU_DONATION_SMALL = "donation_small";
   static const String SKU_DONATION_MEDIUM = "donation_medium";
   static const String SKU_DONATION_LARGE = "donation_large";
-  static const String SKU_SUBSCRIBE_PERMANENTLY = "permanant_adfree";
+  static const String SKU_SUBSCRIBE_PERMANENTLY = "permanent_adfree";
   static const String SKU_SUBSCRIBE_ONE_YEAR = "yearly_adfree";
 
   final Set<String> _kProductIds = Set.from([
@@ -159,6 +157,62 @@ class PurchaseHelper with ChangeNotifier {
       return;
     }
 
+    // if (!kIsWeb && Platform.isAndroid) {
+    //   // For testing purposes
+    //   List<ProductDetails> _products = [];
+    //   _products.add(ProductDetails(
+    //       id: SKU_SUBSCRIBE_ONE_YEAR,
+    //       title: 'One Year Ad Free',
+    //       description: 'This removes all ads from app for one year.',
+    //       price: '\$14.99',
+    //       rawPrice: 14.99,
+    //       currencyCode: 'AUD'));
+    //   _products.add(ProductDetails(
+    //       id: SKU_SUBSCRIBE_PERMANENTLY,
+    //       title: 'Permanent Ad Free',
+    //       description: 'This removes all ads from app permanently.',
+    //       price: '\24.99',
+    //       rawPrice: 24.99,
+    //       currencyCode: 'AUD'));
+    //   _products.add(ProductDetails(
+    //       id: SKU_DONATION_SMALL,
+    //       title: 'Morning Coffee',
+    //       description: 'I am very appreciative for a coffee. Thanks!',
+    //       price: '\$5.99',
+    //       rawPrice: 5.99,
+    //       currencyCode: 'AUD'));
+    //   _products.add(ProductDetails(
+    //       id: SKU_DONATION_MEDIUM,
+    //       title: 'Coffee and Cake',
+    //       description: 'Coffee and cake! I\'m getting a sugar fix...',
+    //       price: '\$14.99',
+    //       rawPrice: 14.99,
+    //       currencyCode: 'AUD'));
+    //   _products.add(ProductDetails(
+    //       id: SKU_DONATION_LARGE,
+    //       title: 'Thanks For Lunch',
+    //       description: 'You\'re awesome! Thanks for lunch :-)',
+    //       price: '\$14.99',
+    //       rawPrice: 14.99,
+    //       currencyCode: 'AUD'));
+    //
+    //   List<String> consumables = await ConsumableStore.load();
+    //   _notFoundIds = productDetailResponse.notFoundIDs;
+    //   _consumables = consumables;
+    //   _purchasePending = false;
+    //   _loading = false;
+    //   if (_products.isNotEmpty) {
+    //     String error = "Faking Google Store!";
+    //     //showSnackBar(message: error);
+    //     logger.i("PurchaseHelper: " + error);
+    //   } else {
+    //     String error = "Faking Google Store didn't work!";
+    //     //showSnackBar(message: error);
+    //     logger.e("PurchaseHelper: " + error);
+    //   }
+    //   return;
+    // }
+
     if (productDetailResponse.productDetails.isEmpty) {
       String error = "In-App Billing is empty!";
       showSnackBar(message: error);
@@ -222,13 +276,18 @@ class PurchaseHelper with ChangeNotifier {
     //1) Operation to show / hide donate previous menu
     PurchaseDetails? purchaseDetailsForDonation = null;
     if (_purchases.isNotEmpty) {
-      purchaseDetailsForDonation = _purchases.firstWhere(
-        (purchaseDetails) =>
+      try {
+        purchaseDetailsForDonation = _purchases.firstWhere(
+                (purchaseDetails) =>
             purchaseDetails!.productID == SKU_DONATION_SMALL ||
-            purchaseDetails.productID == SKU_DONATION_MEDIUM ||
-            purchaseDetails.productID == SKU_DONATION_LARGE,
-        orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
-      );
+                purchaseDetails.productID == SKU_DONATION_MEDIUM ||
+                purchaseDetails.productID == SKU_DONATION_LARGE
+        );
+      } catch (e) {
+        String error = "Couldn't find a donation purchase";
+        logger.e(error);
+        showSnackBar(message: error);
+      }
     }
     // Thank the user for donating in the past :-)
     eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
@@ -237,10 +296,15 @@ class PurchaseHelper with ChangeNotifier {
     //2)  Operation to perform when user has removed ad for one year
     PurchaseDetails? purchaseDetailsForOneYearSubscription = null;
     if (_purchases.isNotEmpty) {
-      purchaseDetailsForOneYearSubscription = _purchases.singleWhere(
-        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR,
-        orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
-      );
+      try {
+        purchaseDetailsForOneYearSubscription = _purchases.singleWhere(
+          (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR
+        );
+      } catch (e) {
+        String error = "Couldn't find a one year subscription purchase";
+        logger.e(error);
+        showSnackBar(message: error);
+      }
     }
     if (purchaseDetailsForOneYearSubscription != null) {
       int purchaseTime = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
@@ -261,10 +325,15 @@ class PurchaseHelper with ChangeNotifier {
     // This needs to be after the consume everything above
     PurchaseDetails? purchaseDetailsForPermanentSubscription = null;
     if (_purchases.isNotEmpty) {
-      purchaseDetailsForPermanentSubscription = _purchases.singleWhere(
-        (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY,
-        orElse: () => null as PurchaseDetails?, // Explicitly cast null to the nullable type
-      );
+      try {
+        purchaseDetailsForPermanentSubscription = _purchases.singleWhere(
+          (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY
+        );
+      } catch (e) {
+        String error = "Couldn't find a permanent subscription purchase";
+        logger.e(error);
+        showSnackBar(message: error);
+      }
     }
     bool permanent = purchaseDetailsForPermanentSubscription != null ? true : false;
     bool yearly = purchaseDetailsForOneYearSubscription != null ? true : false;
@@ -314,27 +383,46 @@ class PurchaseHelper with ChangeNotifier {
 
   Future<void> initiatePurchase({required String sku}) async {
     logger.i('Trying to purchase: ${sku}');
+
+    _products.forEach((product) {
+      logger.w('products in inventory: ${product!.title}');
+    });
+
     if (_purchases.isNotEmpty) {
-      //If product is already purchased, First consume it and then buy again
-      PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
-        return product!.productID == sku;
-      }, orElse: () => null as PurchaseDetails?);
-      // if (purchaseDetails != null) {
-      //   await _inAppPurchase.completePurchase(purchaseDetails);
-      // }
-      String error =
-          'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
-      logger.i(error);
-      showSnackBar(message: error);
+      try {
+        //If product is already purchased, First consume it and then buy again
+        PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
+          return product!.productID == sku;
+        });
+        // if (purchaseDetails != null) {
+        //   await _inAppPurchase.completePurchase(purchaseDetails);
+        // }
+        String error =
+            'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
+        logger.i(error);
+        showSnackBar(message: error);
+      } catch (e) {
+        String error = "Couldn't find a ${sku} purchase";
+        logger.e(error);
+        showSnackBar(message: error);
+      }
       return;
     } else {
       logger.i('No previous purchases found...');
     }
 
     if (_products.isNotEmpty) {
-      ProductDetails? productToBuy = _products.singleWhere((product) {
-        return product!.id == sku;
-      });
+      ProductDetails? productToBuy = null;
+      try {
+        productToBuy = _products.singleWhere((product) {
+          return product!.id == sku;
+        });
+      } catch (e) {
+        String error = "Couldn't find the product: ${sku}";
+        logger.e(error);
+        showSnackBar(message: error);
+      }
+
       if (productToBuy != null) {
         //showSnackBar(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
         final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
@@ -355,9 +443,12 @@ class PurchaseHelper with ChangeNotifier {
         );
       } else {
         String error =
-            'The product being bought does not match the inventory... _products=${_products.length}';
+            'The product being bought does not match the inventory... _products = ${_products.length}';
         logger.e("PurchaseHelper: " + error);
         showSnackBar(message: error);
+        _products.forEach((product) {
+          logger.e('products in inventory: ${product!.title}');
+        });
       }
     } else {
       String error = 'No products in inventory found...';
@@ -389,10 +480,9 @@ class PurchaseHelper with ChangeNotifier {
         showSnackBar(message: 'Purchase status is ${purchaseDetails.status}');
       } else {
         if (purchaseDetails.status == PurchaseStatus.error) {
-          logger.e('Purchase status is ${purchaseDetails.status}');
-          String error = 'Failed purchase: ${purchaseDetails.status}';
+          String error = 'Failed purchase of ${purchaseDetails.productID} ${purchaseDetails.purchaseID} ${purchaseDetails.error} ${purchaseDetails.transactionDate} ${purchaseDetails.verificationData} ${purchaseDetails.pendingCompletePurchase} ';
           showSnackBar(message: error);
-          logger.w("PurchaseHelper: " + error);
+          logger.e("PurchaseHelper: " + error);
           eventMap['failure'] = error;
           AnalyticsHelper().log(error);
 
@@ -507,7 +597,7 @@ class PurchaseHelper with ChangeNotifier {
     logger.d('$sku');
     PurchaseDetails? purchaseDetails = _purchases.firstWhere((product) {
       return product!.productID == sku;
-    }, orElse: () => null as PurchaseDetails?);
+    });
     if (purchaseDetails != null) {
       await _inAppPurchase.completePurchase(purchaseDetails);
     }
