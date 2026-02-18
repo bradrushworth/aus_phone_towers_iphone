@@ -64,7 +64,7 @@ Future<void> main() async {
       }
     }
 
-    // Initialise Crashlytics
+    // Initialise Crashlytics and ads
     if (!kIsWeb) {
       if (useFirebase) {
         if (!Foundation.kDebugMode) {

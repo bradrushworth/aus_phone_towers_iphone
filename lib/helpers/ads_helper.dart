@@ -19,7 +19,12 @@ class AdsHelper {
   static String iOSLandscapeAdUnitId = 'ca-app-pub-6156750794650893/6818248500';
 
   void initialize() {
-    MobileAds.instance.initialize();
+    MobileAds.instance.initialize()
+        .then((initializationStatus) {
+      initializationStatus.adapterStatuses.forEach((key, value) {
+        debugPrint('Adapter status for $key: ${value.description}');
+      });
+    });
   }
 
   void showBannerAd(AdSize bannerAdSize, String adUnitId) {
