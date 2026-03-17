@@ -144,6 +144,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
                       ? Strings.subscribed_permanently
                       : Strings.remove_ads_permanent
                   ..isEnabled = !PurchaseHelper().isSubscribedPermanently;
+                listRemoveAdsItem.elementAt(4)
+                  ..isEnabled = !PurchaseHelper().isSubscribed;
                 showSingleRowOptionMenu(listRemoveAdsItem, kRemoveAds);
                 break;
               }
@@ -294,6 +296,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
               {
                 PurchaseHelper().initiatePurchase(
                     sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY);
+                break;
+              }
+            case 4: //Restore purchases
+              {
+                PurchaseHelper().restorePurchases();
                 break;
               }
           }
@@ -475,6 +482,9 @@ List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
           ? Strings.subscribed_permanently
           : Strings.remove_ads_permanent,
       isEnabled: !PurchaseHelper().isSubscribedPermanently),
+  SingleRowItem(
+      title: Strings.restore_purchases,
+      isEnabled: true),
 ];
 
 List<SingleRowItem> listDonateItem = <SingleRowItem>[

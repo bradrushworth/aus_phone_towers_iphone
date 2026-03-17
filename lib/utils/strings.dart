@@ -76,9 +76,10 @@ class Strings {
   static String remove_ads = 'Remove Ads';
   static String remove_ads_subscribe_previous =
       'You are subscribed! Thanking you.';
-  static String remove_ads_year = 'One Year Ad Free (\$14.99)';
+  static String remove_ads_year = 'One Year Ad Free (\$9.99)';
   static String remove_ads_permanent = 'Permanent Ad Free (\$24.99)';
   static String subscribed_permanently = 'Permanently subscribed.';
+  static String restore_purchases = 'Restore Purchases';
 
   static String donate = 'Donate';
   static String donatePrevious = 'Thanks for your previous donation!';

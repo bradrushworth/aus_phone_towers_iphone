@@ -110,7 +110,7 @@ class PurchaseHelper with ChangeNotifier {
     // );
 
     if (available) {
-      await _inAppPurchase.restorePurchases();
+      restorePurchases();
       await _getProducts();
       //await _hasPurchase();
     } else {
@@ -128,6 +128,11 @@ class PurchaseHelper with ChangeNotifier {
       _loading = false;
       return;
     }
+  }
+
+  /// Restore all purchases from the store
+  void restorePurchases() async {
+    await _inAppPurchase.restorePurchases();
   }
 
   /// Get all products available for sale
