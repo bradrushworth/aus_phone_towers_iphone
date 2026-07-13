@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
@@ -16,7 +14,11 @@ import 'package:phonetowers/utils/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-typedef void ShowSnackBar({String message});
+typedef void ShowSnackBar({
+  required String message,
+  Duration duration,
+  bool isDismissible,
+});
 
 class OptionsMenu extends StatefulWidget {
   final ShowSnackBar showSnackBar;

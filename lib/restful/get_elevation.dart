@@ -67,6 +67,7 @@ class GetElevation {
         //mapsActivity.addMarkerToMap(new MarkerOptions().position(point).title("Elevation").alpha(0.2f), site);
         measurements++;
       }
+
     }
 
     String positionString = sb.toString().substring(0, sb.length - 1);

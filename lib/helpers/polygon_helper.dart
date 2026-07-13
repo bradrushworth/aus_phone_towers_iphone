@@ -13,14 +13,17 @@ import '../model/site.dart';
 import '../restful/get_elevation.dart';
 import '../restful/get_licenceHRP.dart';
 import '../utils/polygon_container.dart';
-import 'analytics_helper.dart';
 import 'let_type_helper.dart';
 import 'map_helper.dart';
 import 'network_type_helper.dart';
 import 'site_helper.dart';
 import 'telco_helper.dart';
 
-typedef void ShowSnackBar({String message});
+typedef void ShowSnackBar({
+  required String message,
+  Duration duration,
+  bool isDismissible,
+});
 
 class PolygonHelper with ChangeNotifier {
   static final PolygonHelper _singleton = new PolygonHelper._internal();
@@ -129,8 +132,8 @@ class PolygonHelper with ChangeNotifier {
     }
 
     // Prepare for the download
-    if (!sitesPolygons!.containsKey(site)) {
-      sitesPolygons![site] = Map<DeviceDetails, Set<PolygonContainer>>();
+    if (!sitesPolygons.containsKey(site)) {
+      sitesPolygons[site] = Map<DeviceDetails, Set<PolygonContainer>>();
     }
 
     //This is helpful in cancelling all apis which refers to this token
@@ -279,7 +282,7 @@ class PolygonHelper with ChangeNotifier {
         points: data[i],
       );
 
-      if (PolygonHelper.sitesPolygons!.containsKey(site)) {
+      if (PolygonHelper.sitesPolygons.containsKey(site)) {
 //        List<GroundOverlay> overlays = new ArrayList<>();
 //
 //                // Only draw frequency on the outer most polygon
@@ -332,7 +335,7 @@ class PolygonHelper with ChangeNotifier {
     }
 
     // Be prepared for other threads removing the site
-    if (sitesPolygons!.containsKey(site)) {
+    if (sitesPolygons.containsKey(site)) {
       // Save the polygons
       allPolygons.addAll(polygons);
       sitesPolygons[site]![device] = polygons;
@@ -366,7 +369,6 @@ class PolygonHelper with ChangeNotifier {
   }
 
   void createBasicPolygon(DeviceDetails device, Site site, List<List<LatLng>> results) {
-    if (site == null || device == null) return;
     // If we can't use the Licence HRP table, lets make a circle estimate
 //    double eirp = d.eirp;
 //    if (eirp == null) eirp = 0.0;

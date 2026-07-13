@@ -39,7 +39,7 @@ class GetAntenna {
 
     deviceDetails.antenna!.gain = double.tryParse(values!.gain!.value) ?? 0;
     deviceDetails.antenna!.frontToBack =
-        double.tryParse(values!.frontToBack!.value) ?? 0;
+        double.tryParse(values.frontToBack!.value) ?? 0;
     deviceDetails.antenna!.horizontalBeamwidth =
         double.tryParse(values.hBeamwidth!.value) ?? 0;
 

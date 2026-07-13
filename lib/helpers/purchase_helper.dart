@@ -12,7 +12,11 @@ import 'package:phonetowers/billing/consumable_store.dart';
 
 import 'analytics_helper.dart';
 
-typedef void ShowSnackBar({String message, bool isDismissible});
+typedef void ShowSnackBar({
+  required String message,
+  Duration duration,
+  bool isDismissible,
+});
 
 class PurchaseHelper with ChangeNotifier {
   static final PurchaseHelper _singleton = new PurchaseHelper._internal();
@@ -29,14 +33,21 @@ class PurchaseHelper with ChangeNotifier {
   bool available = false;
   final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
+  // ignore: unused_field
   List<String> _notFoundIds = [];
   List<ProductDetails?> _products = [];
   List<PurchaseDetails?> _purchases = [];
+  // ignore: unused_field
   List<String> _consumables = [];
+  // ignore: unused_field
   bool _isAvailable = false;
+  // ignore: unused_field
   bool _purchasePending = false;
+  // ignore: unused_field
   bool _loading = true;
+  // ignore: unused_field
   String? _queryProductError;
+
 
   static const String SKU_DONATION_SMALL = "donation_small";
   static const String SKU_DONATION_MEDIUM = "donation_medium";
@@ -67,7 +78,7 @@ class PurchaseHelper with ChangeNotifier {
 
   bool hasPurchaseProcessed = false;
 
-  void initStoreInfo({required void Function({String message, bool isDismissible}) showSnackBar}) async {
+  void initStoreInfo({required ShowSnackBar showSnackBar}) async {
     this.showSnackBar = showSnackBar;
 
     // Listen to new purchases immediately

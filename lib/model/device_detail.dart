@@ -327,7 +327,7 @@ class DeviceDetails {
     double radiationPatternLoss =
         (math.pow(1 - math.cos(GetLicenceHRP.toRadians(referenceAngle)), 1.15)).abs() *
             frontToBackRatio;
-    if (double.nan == (radiationPatternLoss)) {
+    if (radiationPatternLoss.isNaN) {
       radiationPatternLoss = frontToBackRatio;
     }
 
@@ -372,7 +372,6 @@ class DeviceDetails {
     return deviceRegistrationIdentifier!;
   }
 
-  @override
   int compareTo(DeviceDetails other) {
     return deviceRegistrationIdentifier!.compareTo(other.deviceRegistrationIdentifier!);
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:phonetowers/helpers/frequency_range_helper.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
@@ -717,12 +716,12 @@ class _NavigationMenuState extends State<NavigationMenu> {
 }
 
 class LicenceesMenuItem extends StatelessWidget {
-  String valueName;
-  Telco telco;
-  bool isValueVisible;
-  MenuItemChanged onMenuItemChanged;
-  String prefsKey;
-  SharedPreferences? prefs;
+  final String valueName;
+  final Telco telco;
+  final bool isValueVisible;
+  final MenuItemChanged onMenuItemChanged;
+  final String prefsKey;
+  final SharedPreferences? prefs;
 
   LicenceesMenuItem(
       {required this.valueName,
@@ -743,12 +742,12 @@ class LicenceesMenuItem extends StatelessWidget {
                 .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
-          isValueVisible = !isValueVisible;
-          onMenuItemChanged(itemChanged: isValueVisible);
-          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: isValueVisible, prefs: prefs!);
-          Provider.of<SiteHelper>(context, listen: false).toggleTelcoMarkers(telco, isValueVisible);
+          final newValue = !isValueVisible;
+          onMenuItemChanged(itemChanged: newValue);
+          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: newValue, prefs: prefs!);
+          Provider.of<SiteHelper>(context, listen: false).toggleTelcoMarkers(telco, newValue);
 
-          if (isValueVisible) {
+          if (newValue) {
             //If any of telco is selected, Make Telecommunication option as selected in Transmitter type.
             NavigationMenu.isTelcoVisible = true;
             SharedPreferencesHelper.saveBoolean(
@@ -763,12 +762,12 @@ class LicenceesMenuItem extends StatelessWidget {
 }
 
 class NetworkTypeMenu extends StatelessWidget {
-  String valueName;
-  NetworkType networkType;
-  bool isValueVisible;
-  MenuItemChanged onMenuItemChanged;
-  String prefsKey;
-  SharedPreferences prefs;
+  final String valueName;
+  final NetworkType networkType;
+  final bool isValueVisible;
+  final MenuItemChanged onMenuItemChanged;
+  final String prefsKey;
+  final SharedPreferences prefs;
 
   NetworkTypeMenu(
       {required this.valueName,
@@ -789,11 +788,11 @@ class NetworkTypeMenu extends StatelessWidget {
                 .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
-          isValueVisible = !isValueVisible;
-          onMenuItemChanged(itemChanged: isValueVisible);
-          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: isValueVisible, prefs: prefs);
+          final newValue = !isValueVisible;
+          onMenuItemChanged(itemChanged: newValue);
+          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: newValue, prefs: prefs);
           Provider.of<SiteHelper>(context, listen: false)
-              .toggleTelcoNetwork(networkType, isValueVisible);
+              .toggleTelcoNetwork(networkType, newValue);
         },
       ),
     );
@@ -801,12 +800,12 @@ class NetworkTypeMenu extends StatelessWidget {
 }
 
 class MultiplexTypeMenu extends StatelessWidget {
-  String valueName;
+  final String valueName;
   //NetworkType networkType;
-  bool isValueVisible;
-  MenuItemChanged onMenuItemChanged;
-  String prefsKey;
-  SharedPreferences prefs;
+  final bool isValueVisible;
+  final MenuItemChanged onMenuItemChanged;
+  final String prefsKey;
+  final SharedPreferences prefs;
 
   MultiplexTypeMenu(
       {required this.valueName,
@@ -826,11 +825,11 @@ class MultiplexTypeMenu extends StatelessWidget {
                 .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
-          isValueVisible = !isValueVisible;
-          onMenuItemChanged(itemChanged: isValueVisible);
-          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: isValueVisible, prefs: prefs);
+          final newValue = !isValueVisible;
+          onMenuItemChanged(itemChanged: newValue);
+          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: newValue, prefs: prefs);
           SiteHelper().refreshSites();
-          PolygonHelper().refreshPolygons(!isValueVisible);
+          PolygonHelper().refreshPolygons(!newValue);
         },
       ),
     );
@@ -838,12 +837,12 @@ class MultiplexTypeMenu extends StatelessWidget {
 }
 
 class FrequencyTypeMenu extends StatelessWidget {
-  String valueName;
-  FrequencyRanges frequencyRanges;
-  bool isValueVisible;
-  MenuItemChanged onMenuItemChanged;
-  String prefsKey;
-  SharedPreferences prefs;
+  final String valueName;
+  final FrequencyRanges frequencyRanges;
+  final bool isValueVisible;
+  final MenuItemChanged onMenuItemChanged;
+  final String prefsKey;
+  final SharedPreferences prefs;
 
   FrequencyTypeMenu(
       {required this.valueName,
@@ -864,11 +863,11 @@ class FrequencyTypeMenu extends StatelessWidget {
                 .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
-          isValueVisible = !isValueVisible;
-          onMenuItemChanged(itemChanged: isValueVisible);
-          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: isValueVisible, prefs: prefs);
+          final newValue = !isValueVisible;
+          onMenuItemChanged(itemChanged: newValue);
+          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: newValue, prefs: prefs);
           Provider.of<SiteHelper>(context, listen: false).toggleFrequencyRange(
-              isValueVisible, FrequencyRangesHelper.getValue(frequencyRanges));
+              newValue, FrequencyRangesHelper.getValue(frequencyRanges));
         },
       ),
     );
@@ -876,12 +875,12 @@ class FrequencyTypeMenu extends StatelessWidget {
 }
 
 class RadiationModelTypeMenu extends StatelessWidget {
-  String valueName;
-  CityDensity modelSelection;
-  bool isValueVisible;
-  MenuItemChanged onMenuItemChanged;
-  String prefsKey;
-  SharedPreferences prefs;
+  final String valueName;
+  final CityDensity modelSelection;
+  final bool isValueVisible;
+  final MenuItemChanged onMenuItemChanged;
+  final String prefsKey;
+  final SharedPreferences prefs;
 
   RadiationModelTypeMenu(
       {required this.valueName,
@@ -902,11 +901,11 @@ class RadiationModelTypeMenu extends StatelessWidget {
                 .labelLarge!
                 .copyWith(color: isValueVisible ? HexColor('3F51B5') : Colors.black)),
         onTap: () {
-          isValueVisible = !isValueVisible;
-          onMenuItemChanged(itemChanged: isValueVisible);
-          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: isValueVisible, prefs: prefs);
+          final newValue = !isValueVisible;
+          onMenuItemChanged(itemChanged: newValue);
+          SharedPreferencesHelper.saveBoolean(key: prefsKey, value: newValue, prefs: prefs);
           Provider.of<SiteHelper>(context, listen: false)
-              .toggleCityDensity(isValueVisible, modelSelection);
+              .toggleCityDensity(newValue, modelSelection);
         },
       ),
     );

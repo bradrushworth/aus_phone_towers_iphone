@@ -12,7 +12,11 @@ import '../helpers/network_type_helper.dart';
 import '../restful/get_antenna.dart';
 
 typedef void TowerInfoChanged({String message});
-typedef void ShowSnackBar({String message});
+typedef void ShowSnackBar({
+  required String message,
+  Duration duration,
+  bool isDismissible,
+});
 
 class GetDevices {
   String url;

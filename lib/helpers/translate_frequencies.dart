@@ -8,7 +8,7 @@ double logBase(num x, num base) => log(x) / log(base);
 
 class TranslateFrequencies {
   static String formatFrequency(int freq, bool showDecimal) {
-    if (freq == null || freq == 0) {
+    if (freq == 0) {
       return "Unknown";
     }
     // Only use e.g. MHz when over 10,000 kHz
@@ -35,7 +35,7 @@ class TranslateFrequencies {
   }
 
   static String formatBandwidth(int freq, bool showDecimal) {
-    if (freq == null || freq == 0) {
+    if (freq == 0) {
       return "Unknown";
     }
     // Only use e.g. MHz when over 10,000 kHz

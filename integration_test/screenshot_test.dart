@@ -4,8 +4,7 @@ import 'package:phonetowers/main.dart' as app;
 
 Future<void> main() async {
   final IntegrationTestWidgetsFlutterBinding binding =
-      IntegrationTestWidgetsFlutterBinding.ensureInitialized()
-          as IntegrationTestWidgetsFlutterBinding;
+      IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('take screenshot', (WidgetTester tester) async {
     // Build the app and pump a frame.

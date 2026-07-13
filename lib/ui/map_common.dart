@@ -46,7 +46,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../helpers/ads_helper.dart';
 import '../utils/app_constants.dart';
 
 class MapScreen extends StatefulWidget {
@@ -226,7 +225,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
 }
 
 class MapBody extends StatefulWidget {
-  ScreenshotController screenshotController;
+  final ScreenshotController screenshotController;
 
   MapBody(this.screenshotController);
 
@@ -306,7 +305,7 @@ class MapBodyState extends AbstractMapBodyState {
               ),
             ),
             Container(
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.5)),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -1103,14 +1102,14 @@ class MapBodyState extends AbstractMapBodyState {
   }
 
   void showSnackbar({
-    String? message,
+    required String message,
     Duration duration = const Duration(seconds: 1),
     bool isDismissible = false,
   }) {
     final SnackBar snackBar = SnackBar(
-      content: Text(message!),
+      content: Text(message),
       duration: duration,
-      backgroundColor: HexColor('3F51B5').withOpacity(0.8),
+      backgroundColor: HexColor('3F51B5').withValues(alpha: 0.8),
       action: isDismissible
           ? SnackBarAction(
               label: Strings.dismiss,
@@ -1592,13 +1591,13 @@ class MapBodyState extends AbstractMapBodyState {
   }
 
   launchURL(String siteId) async {
-    String url =
-        'https://web.acma.gov.au/rrl/site_search.site_lookup?pSITE_ID=$siteId&pSORT_BY=frequency';
-    if (await canLaunch(url)) {
-      await launch(url);
+    final uri = Uri.parse(
+        'https://web.acma.gov.au/rrl/site_search.site_lookup?pSITE_ID=$siteId&pSORT_BY=frequency');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
     } else {
       //throw 'Could not launch $url';
-      logger.w('Could not luanch url');
+      logger.w('Could not launch url');
     }
   }
 

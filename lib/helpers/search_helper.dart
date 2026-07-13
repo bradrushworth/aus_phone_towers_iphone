@@ -9,7 +9,11 @@ import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 
-typedef void ShowSnackBar({String message, bool isDismissible});
+typedef void ShowSnackBar({
+  required String message,
+  Duration duration,
+  bool isDismissible,
+});
 
 class SearchHelper with ChangeNotifier {
   static bool calculatingSearchResults = false;

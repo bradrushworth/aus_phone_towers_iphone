@@ -65,58 +65,21 @@ class NetworkTypeHelper {
   static String resolveNetworkToName(NetworkType networkType) {
     switch (networkType) {
       case NetworkType.UNKNOWN:
-        {
-          return '??';
-        }
-        break;
-
+        return '??';
       case NetworkType.GSM:
-        {
-          return '2G';
-        }
-        break;
-
+        return '2G';
       case NetworkType.UMTS:
-        {
-          return '3G';
-        }
-        break;
-
+        return '3G';
       case NetworkType.LTE:
-        {
-          return '4G';
-        }
-        break;
-
+        return '4G';
       case NetworkType.NR:
-        {
-          return '5G';
-        }
-        break;
-
+        return '5G';
       case NetworkType.CDMA:
-        {
-          return 'CD';
-        }
-        break;
-
+        return 'CD';
       case NetworkType.NB_IOT:
-        {
-          return 'LP';
-        }
-        break;
-
+        return 'LP';
       case NetworkType.OTHER:
-        {
-          return 'OT';
-        }
-        break;
-
-      default:
-        {
-          return '??';
-        }
-        break;
+        return 'OT';
     }
   }
 

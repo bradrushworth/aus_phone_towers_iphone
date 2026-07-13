@@ -58,6 +58,7 @@ Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
 Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
+      return null;
     }
   }
 
@@ -75,6 +76,7 @@ Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
 Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
+      return null;
     }
   }
 
@@ -92,6 +94,7 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
       if (CancelToken.isCancel(e)) {
         print('Cancelled $path: $e');
       }
+      return null;
     }
   }
 
@@ -109,6 +112,7 @@ Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
 Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
+      return null;
     }
   }
 
@@ -126,6 +130,7 @@ Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
 Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
+      return null;
     }
   }
 
@@ -143,6 +148,7 @@ Error type is ${e.type}
 Error is ${e.error}
 For request ${e.requestOptions.path}
 Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
+      return null;
     }
   }
 }

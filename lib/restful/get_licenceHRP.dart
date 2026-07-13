@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/translate_frequencies.dart';
@@ -14,7 +13,11 @@ import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 
-typedef void ShowSnackBar({String message});
+typedef void ShowSnackBar({
+  required String message,
+  Duration duration,
+  bool isDismissible,
+});
 
 class GetLicenceHRP {
   static final double EARTH_MEAN_RADIUS_KILOMETERS = 6371.009;
@@ -38,10 +41,7 @@ class GetLicenceHRP {
       this.list,
       this.dataFound = false,
       this.showSnackBar,
-      this.cancelToken})
-      : assert(url != null, "Url should not be empty"),
-        assert(site != null, "site should not be empty"),
-        assert(device != null, "device should not be empty");
+      this.cancelToken});
 
   Future getLicenceHRPData() async {
     //logger.d('get licence HRP url $url');
@@ -263,7 +263,6 @@ class GetLicenceHRP {
       final int towerHeight) {
     //Log.d("GetLicenceHRP", "\n\n");
     //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: transmissionDistance="+transmissionDistance);
-    final polygonHelper = PolygonHelper();
     // The Earth's Refractive Index
     final double K = 0.8; //1.33;
 
@@ -382,7 +381,6 @@ class GetLicenceHRP {
   }
 
   static int getClosestSampleDistanceIndex(double transmissionDistance) {
-    var polygonHelper = PolygonHelper();
     //Arrays.binarySearch(GetElevation.SAMPLE_DISTANCES, 0, GetElevation.SAMPLE_DISTANCES.length, transmissionDistance) - 1
     for (int i = 0; i < GetElevation.SAMPLE_DISTANCES.length; i++) {
       if (GetElevation.SAMPLE_DISTANCES[i] < transmissionDistance) {

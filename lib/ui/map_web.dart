@@ -1,10 +1,8 @@
 import 'dart:core';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
-import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
@@ -83,7 +81,7 @@ abstract class AbstractMapBodyState extends State<MapBody> {
   }
 
   void showSnackbar(
-      {@required String message,
+      {required String message,
       Duration duration = const Duration(seconds: 1),
       bool isDismissible = false});
 

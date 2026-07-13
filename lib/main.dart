@@ -8,7 +8,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart' as Foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
@@ -147,7 +146,7 @@ class AusPhoneTowers extends StatelessWidget {
           appBarTheme: AppBarTheme(
               iconTheme: new IconThemeData(color: Colors.grey, size: 32),
               elevation: 0.0,
-              color: Colors.white.withOpacity(0.85)),
+              backgroundColor: Colors.white.withValues(alpha: 0.85)),
           textTheme: TextTheme(
               bodySmall: TextStyle(fontFamily: 'RobotoMono', color: Colors.grey[800], fontSize: 10),
               labelLarge: TextStyle(color: Colors.grey[700])),

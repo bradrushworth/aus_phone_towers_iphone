@@ -424,6 +424,8 @@ class CellIdentity {
 
   static double calculateGsmFrequency(int N) {
     double c1 = 0;
+    // Uplink frequency offset (kept for reference / future use)
+    // ignore: unused_local_variable
     double c2 = 0;
     if (N >= 259 && N <= 293) {
       c1 = 450.6 + 0.2 * (N - 259);
@@ -509,9 +511,13 @@ class CellIdentity {
   static double calculateLteFrequency(int N) {
     double FDL_Low = 0;
     int NDL_Offset = 0;
+    // Uplink parameters kept for reference / future use
+    // ignore: unused_local_variable
     double FUL_Low = 0;
+    // ignore: unused_local_variable
     int NUL_Offset = 0;
     int N1 = 0;
+    // ignore: unused_local_variable
     int NUL = 0;
     if (N >= 0 && N <= 599) {
       FDL_Low = 2110;
@@ -868,8 +874,11 @@ class CellIdentity {
 // http://www.rfwireless-world.com/Terminology/UMTS-UARFCN-to-frequency-conversion.html
   static double calculateUmtsFrequency(int Ndl) {
     int FDL_offset = 0;
+    // Uplink parameters kept for reference / future use
+    // ignore: unused_local_variable
     int FUL_offset = 0;
     int diff = 0;
+    // ignore: unused_local_variable
     int Nul = 0;
     if (Ndl >= 10562 && Ndl <= 10838) {
       FDL_offset = 0;
