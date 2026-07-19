@@ -196,7 +196,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
       if (!PurchaseHelper().isSubscribed) {
         // Show ads only if user has not subscribed to any of remove ads menu item
         // Get an AnchoredAdaptiveBannerAdSize before loading the ad.
-        final bannerAdSize = await AdSize.getInlineAdaptiveBannerAdSize(
+        final AdSize bannerAdSize = AdSize.getInlineAdaptiveBannerAdSize(
           MediaQuery.sizeOf(context).width.truncate(),
           100,
         );

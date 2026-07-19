@@ -11,12 +11,12 @@ class AdsHelper {
   AdsHelper._internal();
 
   BannerAd? bannerAd;
-  static String androidAdmobAppId = 'ca-app-pub-6156750794650893~6040337543';
-  static String androidPortraitAdUnitId = 'ca-app-pub-6156750794650893/9444411844';
-  static String androidLandscapeAdUnitId = 'ca-app-pub-6156750794650893/6818248500';
+  static String androidAdmobAppId = 'ca-app-pub-6156750794650893~5795736618';
+  static String androidPortraitAdUnitId = 'ca-app-pub-6156750794650893/7272469813';
+  static String androidLandscapeAdUnitId = 'ca-app-pub-6156750794650893/2424837889';
   static String iOSAdmobAppId = 'ca-app-pub-6156750794650893~6040337543';
-  static String iOSPortraitAdUnitId = 'ca-app-pub-6156750794650893/9444411844';
-  static String iOSLandscapeAdUnitId = 'ca-app-pub-6156750794650893/6818248500';
+  static String iOSPortraitAdUnitId = 'ca-app-pub-6156750794650893/6818248500';
+  static String iOSLandscapeAdUnitId = 'ca-app-pub-6156750794650893/9444411844';
 
   void initialize() {
     MobileAds.instance.initialize()
