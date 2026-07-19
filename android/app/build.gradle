@@ -42,7 +42,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'au.com.bitbot.phonetowers.flutter'
 
-    compileSdkVersion rootProject.ext.compileSdkVersion
+    compileSdk = rootProject.ext.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     sourceSets {
@@ -50,21 +50,20 @@ android {
         main.kotlin.srcDirs += 'src/main/kotlin'
     }
 
-
     kotlin {
-        jvmToolchain(21)
+        jvmToolchain = 21
     }
 
     java {
         toolchain {
-            languageVersion.set(JavaLanguageVersion.of(21))
+            languageVersion = JavaLanguageVersion.of(21)
         }
     }
 
     defaultConfig {
         applicationId "au.com.bitbot.phonetowers.flutter"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdk = rootProject.ext.minSdkVersion
+        targetSdk = rootProject.ext.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
