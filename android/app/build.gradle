@@ -1,5 +1,6 @@
 plugins {
     id "com.android.application"
+    id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -41,7 +42,7 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'au.com.bitbot.phonetowers.flutter'
 
-    compileSdk = rootProject.ext.compileSdkVersion
+    compileSdkVersion rootProject.ext.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     sourceSets {
@@ -49,16 +50,21 @@ android {
         main.kotlin.srcDirs += 'src/main/kotlin'
     }
 
+
+    kotlin {
+        jvmToolchain(21)
+    }
+
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion.set(JavaLanguageVersion.of(21))
         }
     }
 
     defaultConfig {
         applicationId "au.com.bitbot.phonetowers.flutter"
-        minSdk = rootProject.ext.minSdkVersion
-        targetSdk = rootProject.ext.targetSdkVersion
+        minSdkVersion rootProject.ext.targetSdkVersion
+        targetSdkVersion rootProject.ext.compileSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
