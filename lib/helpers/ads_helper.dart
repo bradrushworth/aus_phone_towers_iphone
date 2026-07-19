@@ -27,7 +27,8 @@ class AdsHelper {
     });
   }
 
-  void showBannerAd(AdSize bannerAdSize, String adUnitId) {
+  void showBannerAd(AdSize bannerAdSize, String adUnitId,
+      {void Function()? onAdLoaded}) {
     // Configure my personal devices so I don't get in trouble with Google
     List<String> testDevices = [];
     testDevices.add("A04D16B625198F3E16D9214B07CCAAD1"); // My Pixel 3 XL (laptop)
@@ -78,6 +79,7 @@ class AdsHelper {
           // Called when an ad is successfully received.
           debugPrint("Ads was loaded.");
           bannerAd = ad as BannerAd;
+          onAdLoaded?.call();
         },
         onAdFailedToLoad: (ad, err) {
           // Called when an ad request failed.

@@ -187,12 +187,6 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   //Ad Integration in the widget
   Future<void> configureAds() async {
     if (!kIsWeb) {
-      if (!PurchaseHelper().hasPurchaseProcessed) {
-        return;
-      }
-    }
-
-    if (!kIsWeb) {
       if (!PurchaseHelper().isSubscribed) {
         // Show ads only if user has not subscribed to any of remove ads menu item
         // Get an AnchoredAdaptiveBannerAdSize before loading the ad.
@@ -216,7 +210,8 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
         }
 
         //AdsHelper().hideBannerAd();
-        AdsHelper().showBannerAd(bannerAdSize, adUnitId);
+        AdsHelper().showBannerAd(bannerAdSize, adUnitId,
+            onAdLoaded: () => setState(() {}));
       } else {
         AdsHelper().hideBannerAd();
       }
