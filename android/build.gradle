@@ -3,7 +3,8 @@ allprojects {
         kotlin_version = "2.3.0"
         agpVersion = "8.13.2"
         compileSdkVersion = 36
-        targetSdkVersion = 24
+        minSdkVersion = 24
+        targetSdkVersion = 34
         appCompatVersion = "1.6.1"
         lifeCycleRuntimeVersion = "2.7.0"
         lifeCycleExtensionsVersion = "2.2.0"
