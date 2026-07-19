@@ -385,10 +385,6 @@ class PurchaseHelper with ChangeNotifier {
     for (PurchaseDetails? purchase in _purchases) {
       logger.d('purchased item is ${purchase!.productID}');
       showSnackBar(message: 'purchased item is ${purchase.productID}');
-      //This is required only for iOS
-      if (Platform.isIOS) {
-        await _inAppPurchase.completePurchase(purchase);
-      }
     }
 
     AnalyticsHelper().sendCustomAnalyticsEvent(
@@ -404,27 +400,20 @@ class PurchaseHelper with ChangeNotifier {
       logger.w('products in inventory: ${product!.title}');
     });
 
-    if (_purchases.isNotEmpty) {
-      try {
-        //If product is already purchased, First consume it and then buy again
-        PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
-          return product!.productID == sku;
-        });
-        // if (purchaseDetails != null) {
-        //   await _inAppPurchase.completePurchase(purchaseDetails);
-        // }
-        String error =
-            'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
-        logger.i(error);
-        showSnackBar(message: error);
-      } catch (e) {
-        String error = "Couldn't find a ${sku} purchase";
-        logger.e(error);
-        showSnackBar(message: error);
-      }
+    // Only block if the exact SKU being purchased is already owned.
+    // On Apple devices restorePurchases() populates _purchases with all past
+    // purchases, so we must not block every purchase just because one exists.
+    try {
+      PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
+        return product!.productID == sku;
+      });
+      String error =
+          'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
+      logger.i(error);
+      showSnackBar(message: error);
       return;
-    } else {
-      logger.i('No previous purchases found...');
+    } catch (e) {
+      logger.i('No previous matching purchase found for $sku, continuing...');
     }
 
     if (_products.isNotEmpty) {
@@ -517,8 +506,11 @@ class PurchaseHelper with ChangeNotifier {
             _handleInvalidPurchase(purchaseDetails);
           }
         }
-        if (Platform.isIOS || purchaseDetails.pendingCompletePurchase) {
-          //await _inAppPurchase.completePurchase(purchaseDetails);
+        // Always finish the transaction so it leaves the payment queue.
+        // On iOS/StoreKit this is mandatory; on Android it is required for
+        // consumables purchased with autoConsume: false (our donations).
+        if (purchaseDetails.pendingCompletePurchase) {
+          await _inAppPurchase.completePurchase(purchaseDetails);
         }
       }
     }
