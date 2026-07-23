@@ -636,26 +636,26 @@ packages:
     dependency: "direct main"
     description:
       name: location
-      sha256: c75641edf6a3709963c5a5c11655820da1fe706b8123b168967a93bbe1999574
+      sha256: b080053c181c7d152c43dd576eec6436c40e25f326933051c330da563ddd5333
       url: "https://pub.dev"
     source: hosted
-    version: "10.0.1"
+    version: "8.0.1"
   location_platform_interface:
     dependency: transitive
     description:
       name: location_platform_interface
-      sha256: "0b1aff439c77f1ec204c95ee84640f5eb8c5904cc11f0a613a6842ac1116272c"
+      sha256: ca8700bb3f6b1e8b2afbd86bd78b2280d116c613ca7bfa1d4d7b64eba357d749
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "6.0.1"
   location_web:
     dependency: transitive
     description:
       name: location_web
-      sha256: "1a50fe9eb4d7d33c70d65a3f2c83acbba20c380be699bcb5357b6756ef195eba"
+      sha256: b8e3add5efe0d65c5e692b7a135d80a4015c580d3ea646fa71973e97668dd868
       url: "https://pub.dev"
     source: hosted
-    version: "7.0.0"
+    version: "6.0.1"
   logger:
     dependency: "direct main"
     description:
