@@ -31,13 +31,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>App needs location permission to show nearest towers around you.</string>
+	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>App needs location permission to show nearest towers around you.</string>
+	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>App needs location permission to show nearest towers around you.</string>
+	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
 	<key>NSMotionUsageDescription</key>
-	<string>App needs motion to operate map directions.</string>
+	<string>Aus Phone Towers uses motion data to determine your device orientation and movement for accurately displaying map directions and your heading on the map. For example, when navigating to a tower location, the app uses your device's heading to orient the map in the direction you are facing.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -66,7 +66,7 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<string>NO</string>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier will be used to deliver personalized ads to you.</string>
+	<string>This identifier is used to deliver personalized advertisements and measure ad performance within Aus Phone Towers. For example, the app may show ads relevant to your interests and track how many users interact with those ads.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 	  <dict>
