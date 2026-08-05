@@ -34,3 +34,8 @@ const int kDonate = 4;
 const int kLinks = 5;
 
 const String kAppleId = '1488594332';
+
+// User Guide link. The repository is public, so we point directly at the
+// GitHub-rendered Markdown page in the main branch.
+const String kUserGuideUrl =
+    'https://github.com/bradrushworth/aus_phone_towers_iphone/blob/main/docs/USER_GUIDE.md';

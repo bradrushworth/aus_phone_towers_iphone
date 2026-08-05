@@ -91,6 +91,7 @@ class Strings {
   static String regularMode = 'Regular Mode';
 
   static String reportProblem = 'Report Problem';
+  static String userGuide = 'User Guide';
   static String rateApp = 'Rate App';
   static String links = 'Links';
   static String ausphonetowers = 'AusPhoneTowers.com.au';
