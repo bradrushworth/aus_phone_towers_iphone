@@ -11,7 +11,23 @@ this app presents all you ever wanted to know about your local mobile phone towe
 
 The app includes details of Telstra, Optus, Vodafone, NBN, TPG, TV, pagers, government, CBRS and aviation transmitters!
 
-The Android version can identify which towers your phone is using, however this feature hasn't been ported to this version of the app yet.
+## Connected tower feature
+
+The Android version can identify which towers your phone is using. This is not available on iOS
+because Apple's public APIs do not expose the required cell-tower data.
+
+On Android, `TelephonyManager.getAllCellInfo()` can read the serving and neighbouring cells,
+including cell ID, LAC/TAC, MCC/MNC, signal strength, ARFCN and timing advance. The app then looks
+those cells up against ACMA / OpenCellID data and shows the connected tower on the map.
+
+On iOS, `CoreTelephony` / `CTTelephonyNetworkInfo` only exposes the carrier name, MCC/MNC,
+country code and current radio access technology (e.g. 4G or 5G). It does **not** provide the
+connected cell tower ID, signal strength, ARFCN, timing advance or neighbour cell data. Richer
+cell data would require private APIs or restricted entitlements that Apple does not allow in
+App Store apps.
+
+For that reason, the iOS app shows nearby towers based on your GPS location, but it cannot
+currently display the specific tower your phone is connected to.
 
 Some relevant links:
 
