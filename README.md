@@ -1,5 +1,15 @@
 # Aus Phone Towers (iPhone)
 
+## User Guide
+
+For end users, a full **[User Guide](docs/USER_GUIDE.md)** is available covering the main
+features, what the map's colours and symbols mean (tower marker icons, coverage polygons,
+and the location dot), the toolbar menu, the navigation-drawer filters and important
+behaviours.
+
+The app also links to this guide from the toolbar menu (**⋯ → User Guide**). Because this
+repository is public, the link opens the GitHub-rendered page directly.
+
 Have you ever wondered where your nearest mobile phone tower was? What services does it support?
 How fast are the 4G Internet speeds in your area? How far does the signal reach? Which is the best phone provider for you?
 Is 5G available in your area?

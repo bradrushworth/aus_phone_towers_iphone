@@ -186,6 +186,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 showSingleRowOptionMenu(listLinksItem, kLinks);
                 break;
               }
+            case 10: //User Guide
+              {
+                Utils.launchURL(kUserGuideUrl);
+                break;
+              }
           }
         },
       ),
@@ -443,6 +448,7 @@ List<OptionItem> listOptionItem = <OptionItem>[
           ? Strings.regularMode
           : Strings.developerMode),
   OptionItem(title: Strings.reportProblem),
+  OptionItem(title: Strings.userGuide),
   OptionItem(title: Strings.links, trailing: true),
 ];
 
