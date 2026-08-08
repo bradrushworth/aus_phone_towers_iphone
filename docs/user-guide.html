@@ -22,23 +22,23 @@
 </head>
 <body>
 
-<h1>Aus Phone Towers (iPhone &amp; Web) — User Guide</h1>
+<h1>Aus Phone Towers (iPhone & Web) — User Guide</h1>
 
 <p><em>Aus Phone Towers</em> (<code>phonetowers</code>) is a Flutter app for <strong>iPhone</strong> and <strong>Web</strong> that maps the mobile phone towers across Australia. It downloads tower locations from ACMA / OpenCellID datasets and draws each transmitter on a Google Map together with its estimated coverage polygon.</p>
 
 <div class="note">
-  <strong>Note:</strong> This iPhone/Web edition is a port of the Android app and currently has <strong>fewer features</strong>. In particular it does <em>not</em> yet identify the specific tower your phone is connected to, so there is no "Cell Information" bar, no timing-advance ring and no crowd-sourced observation markers yet.
+  <strong>Note:</strong> This iPhone/Web edition is a port of the Android app and currently has <strong>fewer features</strong>. In particular it does <em>not</em> yet identify the specific tower your phone is connected to, so there is no "Cell Information" bar, no timing-advance ring and no crowd-sourced observation markers yet. Those features are planned but not ported.
 </div>
 
 <h2>1. The map</h2>
 <ul>
   <li><strong>Tower markers</strong> — one marker per transmitter. Instead of plain coloured pins, each tower is shown as the <strong>carrier's logo icon</strong> (Telstra, Optus, Vodafone, NBN, Dense Air, Other, or a generic non-telco icon). Tap a marker for details.</li>
-  <li><strong>Coverage polygons</strong> — coloured shaded areas showing the estimated coverage of each antenna. The colour matches the carrier (see the legend below). Toggle the outline with <strong>Show / Hide Borders</strong>.</li>
+  <li><strong>Coverage polygons</strong> — coloured shaded areas showing the estimated coverage of each antenna. The colour matches the carrier (see the legend below). Toggle the outline with <strong>Show / Hide Borders</strong>. Each ring also shows a small label at its centre with the <strong>frequency</strong> (e.g. <code>850 MHz</code>) and the <strong>network technology</strong> (2G / 3G / 4G / 5G) of that transmitter.</li>
   <li><strong>Your location</strong> — a semi-transparent azure dot (requires Location permission). The app can centre the map on you; there is no automatic "follow while driving" mode yet.</li>
 </ul>
 
-<h2>2. Colour &amp; symbol legend</h2>
-<p>Tower markers use carrier logo icons. The colours below are used for the <strong>coverage polygons</strong> (fill and outline).</p>
+<h2>2. Colour & symbol legend</h2>
+<p>Tower markers use carrier logo icons. The colours below are used for the <strong>coverage polygons</strong> (fill and outline) and for the tower's icon where applicable.</p>
 
 <table>
   <thead>
@@ -49,24 +49,25 @@
     <tr><td><span class="swatch" style="background:#007F87"></span> Optus</td><td>Teal / Cyan (0, 127, 135)</td><td>Optus towers</td></tr>
     <tr><td><span class="swatch" style="background:#FF0000"></span> Vodafone</td><td>Red (255, 0, 0)</td><td>Vodafone towers</td></tr>
     <tr><td><span class="swatch" style="background:#11354F"></span> Dense Air</td><td>Navy (17, 53, 79)</td><td>Dense Air small cells</td></tr>
-    <tr><td><span class="swatch" style="background:#910F91"></span> NBN</td><td>Magenta / Violet (145, 15, 145)</td><td>NBN fixed-wireless &amp; mobile</td></tr>
+    <tr><td><span class="swatch" style="background:#910F91"></span> NBN</td><td>Magenta / Violet (145, 15, 145)</td><td>NBN fixed-wireless & mobile</td></tr>
     <tr><td><span class="swatch" style="background:#007FFF"></span> Other</td><td>Azure (0, 127, 255)</td><td>Other providers (TPG, Lycamobile, Vivid Wireless, ...)</td></tr>
     <tr><td><span class="swatch" style="background:#FFB1D8"></span> Radio / TV / Civil / Pager / Aviation / CBRS</td><td>Pink (255, 177, 216)</td><td>Non-telco transmitters</td></tr>
     <tr><td><span class="swatch" style="background:#007FFF;opacity:.6"></span> Your location</td><td>Azure dot</td><td>Your device's position (semi-transparent)</td></tr>
   </tbody>
 </table>
 
-<h2>3. Toolbar menu (top-right)</h2>
+<h2>3. Toolbar menu (top-right <code>⋯</code>)</h2>
 <ul>
   <li><strong>Show / Hide Borders</strong> — toggle the radiation polygon outlines.</li>
   <li><strong>Search Sites</strong> — find a specific tower / site.</li>
   <li><strong>Reload Everything</strong> — clear the map and re-download all towers for the current area.</li>
   <li><strong>Map Mode</strong> — Terrain / Hybrid / Satellite / Normal base map.</li>
-  <li><strong>Hiding Menu</strong> — Hide / Show Radiation on Click.</li>
-  <li><strong>Remove Ads</strong> — subscribe to remove advertising (currently hidden).</li>
-  <li><strong>Donate</strong> — support development with an in-app purchase (not shown on Web).</li>
+  <li><strong>Hiding Menu</strong> — Hide / Show Radiation on Click (draw a tower's coverage polygon when you tap it).</li>
+  <li><strong>Remove Ads</strong> — subscribe to remove advertising (currently hidden from the menu; ads still show for non-subscribers).</li>
+  <li><strong>Donate</strong> — support development with an in-app purchase (not shown on the Web build).</li>
   <li><strong>Developer / Regular Mode</strong> — show extra diagnostic overlays.</li>
   <li><strong>Report Problem</strong> — take a screenshot to send feedback.</li>
+  <li><strong>Export</strong> — save the coverage polygons currently drawn on the map (with their tower and device details) to <strong>GeoJSON</strong>, <strong>CSV</strong> and <strong>KML</strong> files in the app's documents folder. The three files are timestamped and can be opened in GIS tools such as QGIS or Google Earth. If no polygons are drawn, nothing is exported.</li>
   <li><strong>Links</strong> — Rate App, AusPhoneTowers.com.au, iOS App Store, Source Code.</li>
   <li><strong>User Guide</strong> — opens this page.</li>
 </ul>
@@ -74,10 +75,10 @@
 <h2>4. Navigation-drawer filters</h2>
 <p>Open the drawer (top-left) to control what is shown:</p>
 <ul>
-  <li><strong>Licencees</strong> — Telstra, Optus, Vodafone, NBN, Other.</li>
+  <li><strong>Licencees</strong> — Telstra, Optus, Vodafone, NBN, Other. (Dense Air is downloaded but not yet a toggle.)</li>
   <li><strong>2G / 3G / 4G / 5G</strong> — GSM, UMTS, LTE, NR.</li>
   <li><strong>Multiplex Type</strong> — NOT LTE, FD-LTE, TD-LTE.</li>
-  <li><strong>Frequencies</strong> — &lt; 700 MHz, 700–1000 MHz, 1.0–2.4 GHz, 2.4–3.8 GHz, &ge; 3.8 GHz.</li>
+  <li><strong>Frequencies</strong> — < 700 MHz, 700–1000 MHz, 1.0–2.4 GHz, 2.4–3.8 GHz, &ge; 3.8 GHz.</li>
   <li><strong>Radiation Models</strong> (city density) — Metropolitan, Urban, Suburban, Open.</li>
   <li><strong>Signal Strength</strong> — Maximum, Strong, Good, Weak.</li>
   <li><strong>Transmitter Type</strong> — Telecommunications, Radio, TV, Civil, Pager, CBRS, Aviation.</li>
@@ -85,15 +86,30 @@
 
 <h2>5. Important behaviours</h2>
 <ul>
-  <li><strong>Zoom to load</strong> — towers are downloaded in tiles as you pan / zoom. Zoom in to populate an area.</li>
-  <li><strong>Location is optional</strong> — the app works without granting location; you just won't see your position.</li>
-  <li><strong>Web vs iPhone</strong> — the Web build hides Donate buttons and uses web-optimised icon assets.</li>
-  <li><strong>Coverage polygons are estimates</strong> — generated from ACMA licence / HRP data and a radiation model, not official carrier maps.</li>
-  <li><strong>No connected-tower features yet</strong> — this edition does not show which tower you are using, the timing-advance ring, or observation markers.</li>
+  <li><strong>Zoom to load</strong> — towers are downloaded in tiles as you pan / zoom. Zoom in ("Zoom in further to download towers…") to populate an area.</li>
+  <li><strong>Location is optional</strong> — the app works without granting location; you just won't see your position or get location-based centring.</li>
+  <li><strong>Web vs iPhone</strong> — the Web build hides the Donate buttons (App Store purchases aren't available in a browser) and uses web-optimised icon assets. Rate App uses the in-app review prompt where supported.</li>
+  <li><strong>Coverage polygons are estimates</strong> — generated from ACMA licence / HRP data and a radiation model, not official carrier coverage maps.</li>
+  <li><strong>No connected-tower features yet</strong> — unlike the Android app, this edition does not yet show which tower you are using, the Cell Information bar, the timing-advance ring, or crowd-sourced observation markers.</li>
 </ul>
 
-<h2>6. Feedback &amp; support</h2>
-<p>Use <strong>Report Problem</strong> (screenshot) or the <strong>Links</strong> menu. Feedback is welcome at <a href="mailto:bitbot@bitbot.com.au">bitbot@bitbot.com.au</a>.</p>
+<h2>6. Differences from the Android app</h2>
+<table>
+  <thead>
+    <tr><th>Feature</th><th>Android</th><th>iPhone / Web</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Tower markers</td><td>Coloured pins (rotated)</td><td>Carrier logo icons</td></tr>
+    <tr><td>Connected-tower / Cell Info bar</td><td>Yes</td><td>Not yet</td></tr>
+    <tr><td>Timing-advance ring</td><td>Yes</td><td>Not yet</td></tr>
+    <tr><td>Observation markers (yellow / orange)</td><td>Yes</td><td>Not yet</td></tr>
+    <tr><td>Follow-GPS drive mode</td><td>Yes</td><td>Not yet</td></tr>
+    <tr><td>Shows your location dot</td><td>Yes</td><td>Yes (azure dot)</td></tr>
+  </tbody>
+</table>
+
+<h2>7. Feedback & support</h2>
+<p>Use <strong>Report Problem</strong> (screenshot) or the <strong>Links</strong> menu (Rate App / AusPhoneTowers.com.au / iOS App Store / Source Code). The Web/iOS app is still under active development — feedback is welcome at <a href="mailto:bitbot@bitbot.com.au">bitbot@bitbot.com.au</a>.</p>
 
 </body>
 </html>
