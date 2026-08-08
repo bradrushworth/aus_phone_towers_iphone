@@ -14,13 +14,18 @@ project, you MUST also update the relevant documentation before considering the 
 This applies to new menu items, exported formats, map overlays/labels, settings, and any
 behaviour change a user would notice. Do not leave docs stale after a code change.
 
-## Do NOT push directly to the `main` branch
-Pushing directly to `main` is forbidden. This protects the release branch from accidental
-or unreviewed changes. All other branches (feature, develop, etc.) may be pushed normally.
+## Push to `main` only for an explicit release
+A Codemagic build is triggered by every push, and each build costs money, so:
 
-- If you are on `main`, create or switch to a non-main branch before pushing.
-- Codemagic builds on every push, so keep work off `main` until it is reviewed/merged.
-- This rule does NOT block pushes from other branches, even without a version bump.
+- **Do NOT push to `main` for ordinary / non-release commits.** Keep that work on a branch
+  (or simply don't push) so a build is not started on every commit.
+- You **may** push directly to `main` only when the user explicitly asks for a release of a
+  new version of the app. An explicit release always includes a version bump (see
+  "Only bump version when releasing" below), which is what signals a real release.
+- When releasing, bump the version and push to `main`. A separate release branch is not
+  required unless the user asks for one.
+- If the user asks for a normal commit / branch push (not a release), push the branch only —
+  do not push to `main`.
 
 ## Only bump version when releasing
 The iOS app version lives in `pubspec.yaml` (`version:` — `x.y.z+build`). Bump it as part of
