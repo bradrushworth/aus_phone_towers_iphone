@@ -56,6 +56,22 @@ iOS. The table below lists each one and whether it can be brought to iOS.
 | Link-speed estimate (`LinkSpeedEstimator`) | Not available | No (Android-only API) |
 | Background tower service + notifications (`TowerService`) | Not available | No (iOS background limits) |
 | Coverage polygons (`PolygonHelper`, `GetLicenceHRP`) | Available | Yes (see note below) |
+| In-app purchases — Remove Ads (1 year / permanent) & Donations | Available (Google Play) | Yes (App Store) |
+
+### In-app purchases
+
+Both apps use the platform store for entitlements:
+
+- **Remove Ads — 1 Year**: a non-consumable purchase that grants ad-free for 365 days. It is
+  restored automatically on launch (via `restorePurchases()`); after 12 months it expires, ads
+  return, and the user may buy it again.
+- **Remove Ads — Permanent**: a non-consumable purchase that removes ads forever and is restored
+  on every launch.
+- **Donations** (small / medium / large): one-off consumable purchases that support development.
+  They are repeatable and do **not** remove ads.
+
+A banner advertisement is shown to non-subscribed users only after an ad has actually loaded; the
+"Advertisement" label is hidden until then (and whenever ads are not shown).
 
 ### Signal-propagation math consistency
 

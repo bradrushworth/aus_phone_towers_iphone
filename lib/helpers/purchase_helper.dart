@@ -309,8 +309,13 @@ class PurchaseHelper with ChangeNotifier {
     eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
     isDonated = purchaseDetailsForDonation != null ? true : false;
 
-    //2)  Operation to perform when user has removed ad for one year
+    //2)  Operation to perform when user has removed ad for one year.
+    // A yearly purchase is non-consumable (so it restores across app restarts and
+    // survives within the valid year), but only grants ad-free for 365 days. Once
+    // expired it is finished/consumed and dropped from the active purchases so ads
+    // return and the user is free to buy it again.
     PurchaseDetails? purchaseDetailsForOneYearSubscription = null;
+    bool yearlyActive = false;
     if (_purchases.isNotEmpty) {
       try {
         purchaseDetailsForOneYearSubscription = _purchases.singleWhere(
@@ -324,16 +329,23 @@ class PurchaseHelper with ChangeNotifier {
     }
     if (purchaseDetailsForOneYearSubscription != null) {
       int purchaseTime = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
-      if (purchaseTime > 0 &&
-          purchaseTime < DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
-        // Remove ads for one year is now over
-        logger.i(
-          "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
-        );
-        showSnackBar(message: "BillingHelper Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!");
-        eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
-        await _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
-        isSubscribed = false;
+      if (purchaseTime > 0) {
+        if (purchaseTime < DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
+          // The one year of ad-free is over: finish/consume the transaction and
+          // drop it from the active list so the user returns to ads (and can buy again).
+          logger.i(
+            "Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
+          );
+          showSnackBar(message: "Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!");
+          eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
+          if (purchaseDetailsForOneYearSubscription.pendingCompletePurchase) {
+            await _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
+          }
+          _purchases.removeWhere((p) => p!.productID == SKU_SUBSCRIBE_ONE_YEAR);
+        } else {
+          // Still within the purchased year.
+          yearlyActive = true;
+        }
       }
     }
 
@@ -352,7 +364,7 @@ class PurchaseHelper with ChangeNotifier {
       }
     }
     bool permanent = purchaseDetailsForPermanentSubscription != null ? true : false;
-    bool yearly = purchaseDetailsForOneYearSubscription != null ? true : false;
+    bool yearly = yearlyActive;
     bool subscription = permanent || yearly;
 
     eventMap['permanent'] = permanent;
@@ -367,7 +379,7 @@ class PurchaseHelper with ChangeNotifier {
     isSubscribed = subscription;
     isSubscribedPermanently = permanent;
     if (yearly) {
-      int expiry = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
+      int expiry = int.tryParse(purchaseDetailsForOneYearSubscription!.transactionDate!) ?? 0;
       expiry += EXPIRY_PERIOD;
       DateTime date = new DateTime.fromMillisecondsSinceEpoch(expiry);
       await initializeDateFormatting("en-AU", null);
@@ -428,21 +440,27 @@ class PurchaseHelper with ChangeNotifier {
         showSnackBar(message: error);
       }
 
-      if (productToBuy != null) {
-        //showSnackBar(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
-        final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
-        //showSnackBar(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
-        bool bought = false;
-        if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY) {
-          bought = await _inAppPurchase.buyNonConsumable(
-            purchaseParam: purchaseParam,
-          );
-        } else {
-          bought = await _inAppPurchase.buyConsumable(
-            purchaseParam: purchaseParam,
-            autoConsume: false,
-          );
-        }
+        if (productToBuy != null) {
+          //showSnackBar(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
+          final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
+          //showSnackBar(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
+          bool bought = false;
+          if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY ||
+              productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR) {
+            // Ad-free purchases are non-consumable so they persist on the App Store and
+            // are returned by restorePurchases() on future app launches. Consumables are
+            // never restored on iOS, which would otherwise silently drop the ad-free
+            // entitlement (e.g. yearly_adfree) after the app is closed and reopened.
+            // This matches the Android app, which acknowledges but never consumes these SKUs.
+            bought = await _inAppPurchase.buyNonConsumable(
+              purchaseParam: purchaseParam,
+            );
+          } else {
+            bought = await _inAppPurchase.buyConsumable(
+              purchaseParam: purchaseParam,
+              autoConsume: false,
+            );
+          }
         showSnackBar(
           message: 'Selected to buy ${bought}: productDetails=${purchaseParam.productDetails.title}',
         );
