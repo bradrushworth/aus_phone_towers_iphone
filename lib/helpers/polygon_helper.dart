@@ -389,8 +389,8 @@ class PolygonHelper with ChangeNotifier {
   /// Draw frequency + technology labels along the outer signal-strength ring, mirroring the
   /// Android app's GroundOverlay behaviour. google_maps_flutter's Polygon cannot render text, so
   /// we use lightweight Markers whose icons are bitmaps rendered from the label text.
-  static void addOuterRingLabels(
-      Site site, DeviceDetails device, List<LatLng> ring) {
+  static Future<void> addOuterRingLabels(
+      Site site, DeviceDetails device, List<LatLng> ring) async {
     if (ring.length < 3) return;
     // Remove any existing labels for this site so re-draws don't duplicate them.
     labelOverlays.removeWhere((MapOverlay overlay) => overlay.site == site);
@@ -399,7 +399,7 @@ class PolygonHelper with ChangeNotifier {
     final String tech = NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
     final String text = '$frequencyMhz MHz $tech';
     final Color color = TelcoHelper.getColor(telco, 255);
-    unawaited(_buildLabels(site, device, ring, text, color));
+    await _buildLabels(site, device, ring, text, color);
   }
 
   static Future<void> _buildLabels(Site site, DeviceDetails device, List<LatLng> ring,
@@ -421,7 +421,10 @@ class PolygonHelper with ChangeNotifier {
       );
       labelOverlays.add(MapOverlay(marker: marker, site: site));
     }
-    notifyListeners();
+    // PolygonHelper is a ChangeNotifier singleton; notify its listeners (the map) so the
+    // newly added label markers are rendered. Called on the singleton instance because
+    // this is a static method.
+    PolygonHelper().notifyListeners();
   }
 
   /// Render a small rounded label bitmap for use as a Marker icon.
@@ -430,10 +433,10 @@ class PolygonHelper with ChangeNotifier {
     final BitmapDescriptor? cached = _labelIconCache[key];
     if (cached != null) return cached;
 
-    final ui.TextStyle textStyle = ui.TextStyle(
-      color: ui.Color(0xFFFFFFFF),
+    final TextStyle textStyle = const TextStyle(
+      color: Color(0xFFFFFFFF),
       fontSize: 14,
-      fontWeight: ui.FontWeight.bold,
+      fontWeight: FontWeight.bold,
     );
     final TextPainter painter = TextPainter(
       text: TextSpan(text: text, style: textStyle),

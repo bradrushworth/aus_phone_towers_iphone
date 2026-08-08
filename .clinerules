@@ -1,0 +1,12 @@
+# Project Rules
+
+## Documentation must be kept in sync
+Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
+project, you MUST also update the relevant documentation before considering the task complete:
+
+- `docs/USER_GUIDE.md` — the end-user guide (toolbar menu, map features, behaviours, legends).
+- `README.md` — the developer/feature overview, including the Android-vs-iOS feature-comparison
+  table and the signal-propagation notes.
+
+This applies to new menu items, exported formats, map overlays/labels, settings, and any
+behaviour change a user would notice. Do not leave docs stale after a code change.
