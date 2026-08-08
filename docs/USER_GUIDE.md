@@ -44,9 +44,12 @@ Tower markers use carrier logo icons. The colours below are used for the **cover
 - **Reload Everything** — clear the map and re‑download all towers for the current area.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.
 - **Hiding Menu** — Hide / Show Radiation on Click (draw a tower's coverage polygon when you tap it).
-- **Remove Ads** — subscribe to remove advertising (currently hidden from the menu; ads still
-  show for non‑subscribers).
-- **Donate** — support development with an in‑app purchase (not shown on the Web build).
+- **Remove Ads** — buy *1 Year Ad‑Free* or *Permanent Ad‑Free* to remove the banner
+  advertisement. The purchase is restored automatically on future launches (tap **Restore
+  Purchases** if needed). The yearly option reverts to showing ads after 12 months and can be
+  bought again; the permanent option never expires.
+- **Donate** — support development with a one‑off in‑app purchase (small / medium / large).
+  Donations are repeatable and do **not** remove ads (not shown on the Web build).
 - **Developer / Regular Mode** — show extra diagnostic overlays.
 - **Report Problem** — take a screenshot to send feedback.
 - **Export** — save the coverage polygons currently drawn on the map (with their tower and device

@@ -1,4 +1,7 @@
-# Project Rules
+# Project Rules — aus_phone_towers_iphone (iOS)
+
+These rules apply ONLY to this iPhone/iOS repository. The Android project
+(`aus_phone_towers`) has its own separate `.clinerules` and should not share these.
 
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
@@ -11,13 +14,15 @@ project, you MUST also update the relevant documentation before considering the 
 This applies to new menu items, exported formats, map overlays/labels, settings, and any
 behaviour change a user would notice. Do not leave docs stale after a code change.
 
-## Only push to the repo after a version change
-Do NOT push commits to the remote repository unless the app version has been bumped in the
-same change. Codemagic builds on every push, so pushing without a version bump wastes build
-minutes/money for no release benefit.
+## Do NOT push directly to the `main` branch
+Pushing directly to `main` is forbidden. This protects the release branch from accidental
+or unreviewed changes. All other branches (feature, develop, etc.) may be pushed normally.
 
-- The iOS version lives in `pubspec.yaml` (`version:` — `x.y.z+build`).
-- The Android version lives in `app/build.gradle` (`appVersionCode` / `versionName`).
-- Bump the relevant version (and build number) as part of the change that you are pushing.
-- Pure doc-only or non-release commits should be kept local (or squashed into the next
-  version-bump commit) rather than pushed on their own.
+- If you are on `main`, create or switch to a non-main branch before pushing.
+- Codemagic builds on every push, so keep work off `main` until it is reviewed/merged.
+- This rule does NOT block pushes from other branches, even without a version bump.
+
+## Only bump version when releasing
+The iOS app version lives in `pubspec.yaml` (`version:` — `x.y.z+build`). Bump it as part of
+a release. Pure doc-only or non-release commits do not require a version bump and may be
+pushed from a non-main branch normally.

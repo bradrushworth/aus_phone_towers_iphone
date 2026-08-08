@@ -68,6 +68,9 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
 
   late TrackingStatus _iOSTrackingStatus;
 
+  // Guards configureAds() so we only request an ad once (and not on every rebuild).
+  bool _adsConfigured = false;
+
   @override
   void initState() {
     super.initState();
@@ -163,20 +166,29 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
               ),
             ),
             Consumer<PurchaseHelper>(
-              builder: (context, purchaseHelper, child) => Visibility(
-                visible: !purchaseHelper.isSubscribed,
-                child: Column(
-                  children: <Widget>[
-                    OrientationBuilder(
-                      builder: (context, orientation) {
-                        screenOrientation = MediaQuery.of(context).orientation;
-                        configureAds();
-                        return Container();
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              builder: (context, purchaseHelper, child) {
+                // React to subscription changes: configure once when not
+                // subscribed, and tear the ad down when the user is ad free.
+                if (purchaseHelper.isSubscribed) {
+                  _adsConfigured = false;
+                  AdsHelper().hideBannerAd();
+                } else {
+                  _configureAdsOnce();
+                }
+                return Visibility(
+                  visible: !purchaseHelper.isSubscribed,
+                  child: Column(
+                    children: <Widget>[
+                      OrientationBuilder(
+                        builder: (context, orientation) {
+                          screenOrientation = MediaQuery.of(context).orientation;
+                          return Container();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -185,6 +197,12 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   }
 
   //Ad Integration in the widget
+  void _configureAdsOnce() {
+    if (_adsConfigured) return;
+    _adsConfigured = true;
+    configureAds();
+  }
+
   Future<void> configureAds() async {
     if (!kIsWeb) {
       if (!PurchaseHelper().isSubscribed) {
@@ -409,12 +427,13 @@ class MapBodyState extends AbstractMapBodyState {
                 alignment: AlignmentGeometry.center,
                 child: Column(
                   children: [
-                    Text(
-                      "Advertisement",
-                      maxLines: 1,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
+                    if (AdsHelper().bannerAd != null)
+                      Text(
+                        "Advertisement",
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     SizedBox(
                       width: AdsHelper().bannerAd == null
                           ? 0
