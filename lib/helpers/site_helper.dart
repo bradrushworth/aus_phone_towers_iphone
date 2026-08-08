@@ -196,6 +196,7 @@ class SiteHelper with ChangeNotifier {
     });
     PolygonHelper.sitesPolygons.clear();
     PolygonHelper.allPolygons.clear();
+    PolygonHelper.labelOverlays.clear();
 //    CurrentCellHelper.currentCellMarkers.clear();
 //    CurrentCellHelper.currentCellCircles.clear();
 //    CurrentCellHelper.currentCellLine = null;
@@ -211,6 +212,7 @@ class SiteHelper with ChangeNotifier {
     PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
       return !mapOverlay.polygon!.polygonId.value.contains('developer');
     });
+    PolygonHelper.labelOverlays.clear();
     PolygonHelper.sitesPolygons.clear();
     PolygonHelper.allPolygons.clear();
     notifyListeners();

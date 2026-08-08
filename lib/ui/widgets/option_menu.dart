@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:logger/logger.dart';
+import 'package:phonetowers/helpers/export_helper.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
@@ -189,6 +190,29 @@ class _OptionsMenuState extends State<OptionsMenu> {
             case 10: //User Guide
               {
                 Utils.launchURL(kUserGuideUrl);
+                break;
+              }
+            case 11: //Export coverage
+              {
+                widget.showSnackBar(
+                    message: 'Exporting coverage polygons...');
+                ExportHelper.exportSignalPolygons().then((List<String> paths) {
+                  if (paths.isEmpty) {
+                    widget.showSnackBar(
+                        message:
+                            'There are no signal polygons on the map to export. Tap a tower to draw its coverage first...');
+                  } else {
+                    final StringBuffer message = StringBuffer();
+                    message.write(
+                        'Exported ${paths.length} files to the app documents folder:\n');
+                    for (final String path in paths) {
+                      message.write('$path\n');
+                    }
+                    widget.showSnackBar(
+                        message: message.toString(),
+                        duration: const Duration(seconds: 10));
+                  }
+                });
                 break;
               }
           }
@@ -450,6 +474,7 @@ List<OptionItem> listOptionItem = <OptionItem>[
   OptionItem(title: Strings.reportProblem),
   OptionItem(title: Strings.userGuide),
   OptionItem(title: Strings.links, trailing: true),
+  OptionItem(title: Strings.exportPolygons),
 ];
 
 //********************** Clear map ***************************//

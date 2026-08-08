@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 
@@ -60,6 +63,14 @@ class PolygonHelper with ChangeNotifier {
   static List<MapOverlay> globalListPolygons = [];
   static CancelToken? cancelFetchingPolygonRequestToken;
   static String terrainAwarenessKey = '';
+
+  /// Cache of generated label icons keyed by "text|argb" so we don't re-render text every time.
+  static final Map<String, BitmapDescriptor> _labelIconCache =
+      <String, BitmapDescriptor>{};
+
+  /// Frequency / technology labels drawn along the outer signal ring (replaces the Android
+  /// GroundOverlay text, since google_maps_flutter's Polygon has no text support).
+  static List<MapOverlay> labelOverlays = [];
 
   void queryForSignalPolygon(Site site, bool refreshingPolygons, bool cachingPolygons,
       {Set<DeviceDetails>? specificDevices, ShowSnackBar? showSnackBar}) {
@@ -329,6 +340,13 @@ class PolygonHelper with ChangeNotifier {
         globalListPolygons.add(mapOverlay);
         notifyListeners();
         polygons.add(new PolygonContainer(order: i, polygon: po));
+
+        // Draw frequency / technology labels along the outer-most ring (Android draws a
+        // GroundOverlay of text here; google_maps_flutter has no Polygon text, so we use
+        // Marker icons instead).
+        if (i == data.length - 1) {
+          addOuterRingLabels(site, device, data[i]);
+        }
       } else {
         // Skip it, since it arrived too late
       }
@@ -366,6 +384,84 @@ class PolygonHelper with ChangeNotifier {
 
   static int getPolygonSignalStrengthPosition() {
     return polygonSignalStrengthPos;
+  }
+
+  /// Draw frequency + technology labels along the outer signal-strength ring, mirroring the
+  /// Android app's GroundOverlay behaviour. google_maps_flutter's Polygon cannot render text, so
+  /// we use lightweight Markers whose icons are bitmaps rendered from the label text.
+  static void addOuterRingLabels(
+      Site site, DeviceDetails device, List<LatLng> ring) {
+    if (ring.length < 3) return;
+    // Remove any existing labels for this site so re-draws don't duplicate them.
+    labelOverlays.removeWhere((MapOverlay overlay) => overlay.site == site);
+    final Telco telco = site.getTelco();
+    final int frequencyMhz = (device.frequency! / 1000 / 1000).toInt();
+    final String tech = NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
+    final String text = '$frequencyMhz MHz $tech';
+    final Color color = TelcoHelper.getColor(telco, 255);
+    unawaited(_buildLabels(site, device, ring, text, color));
+  }
+
+  static Future<void> _buildLabels(Site site, DeviceDetails device, List<LatLng> ring,
+      String text, Color color) async {
+    final BitmapDescriptor icon = await _createLabelIcon(text, color);
+    if (!sitesPolygons.containsKey(site)) return;
+    final int step = ring.length > 24
+        ? (ring.length / 6).round().clamp(1, ring.length)
+        : ring.length;
+    for (int j = 0; j < ring.length; j += step) {
+      final LatLng position = ring[j];
+      final Marker marker = Marker(
+        markerId: MarkerId('label_${device.sddId}_$j'),
+        position: position,
+        icon: icon,
+        anchor: const Offset(0.5, 0.5),
+        zIndex: 2,
+        consumeTapEvents: false,
+      );
+      labelOverlays.add(MapOverlay(marker: marker, site: site));
+    }
+    notifyListeners();
+  }
+
+  /// Render a small rounded label bitmap for use as a Marker icon.
+  static Future<BitmapDescriptor> _createLabelIcon(String text, Color color) async {
+    final String key = '$text|${color.value}';
+    final BitmapDescriptor? cached = _labelIconCache[key];
+    if (cached != null) return cached;
+
+    final ui.TextStyle textStyle = ui.TextStyle(
+      color: ui.Color(0xFFFFFFFF),
+      fontSize: 14,
+      fontWeight: ui.FontWeight.bold,
+    );
+    final TextPainter painter = TextPainter(
+      text: TextSpan(text: text, style: textStyle),
+      textDirection: ui.TextDirection.ltr,
+    );
+    painter.layout();
+    const double padding = 6;
+    final double width = painter.width + padding * 2;
+    final double height = painter.height + padding * 2;
+
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final ui.Canvas canvas = ui.Canvas(recorder);
+    final ui.Paint bg = ui.Paint()..color = ui.Color(color.value);
+    canvas.drawRRect(
+      ui.RRect.fromRectAndRadius(
+        ui.Rect.fromLTWH(0, 0, width, height),
+        const ui.Radius.circular(6),
+      ),
+      bg,
+    );
+    painter.paint(canvas, ui.Offset(padding, padding));
+    final ui.Image image =
+        await recorder.endRecording().toImage(width.ceil(), height.ceil());
+    final ByteData? bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    final BitmapDescriptor descriptor =
+        BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
+    _labelIconCache[key] = descriptor;
+    return descriptor;
   }
 
   void createBasicPolygon(DeviceDetails device, Site site, List<List<LatLng>> results) {

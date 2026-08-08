@@ -289,9 +289,7 @@ class MapBodyState extends AbstractMapBodyState {
                 zoomControlsEnabled: true,
                 zoomGesturesEnabled: true,
                 initialCameraPosition: CameraPosition(target: kLagLongBathurst, zoom: kDefaultZoom),
-                markers: SiteHelper.globalListMapOverlay.isNotEmpty
-                    ? SiteHelper.globalListMapOverlay.map((data) => data.marker!).toSet()
-                    : Set(),
+                markers: _buildMarkerSet(),
                 polygons: PolygonHelper.globalListPolygons.isNotEmpty
                     ? PolygonHelper.globalListPolygons.map((data) => data.polygon!).toSet()
                     : Set(),
@@ -1611,6 +1609,19 @@ class MapBodyState extends AbstractMapBodyState {
       );
     }
     return siteTitleDetails;
+  }
+
+  /// Combine the tower markers with the frequency / technology labels drawn along the outer
+  /// signal rings (PolygonHelper.labelOverlays).
+  Set<Marker> _buildMarkerSet() {
+    final Set<Marker> markers = <Marker>{};
+    for (final MapOverlay overlay in SiteHelper.globalListMapOverlay) {
+      if (overlay.marker != null) markers.add(overlay.marker!);
+    }
+    for (final MapOverlay overlay in PolygonHelper.labelOverlays) {
+      if (overlay.marker != null) markers.add(overlay.marker!);
+    }
+    return markers;
   }
 
   void takeScreenshot() {

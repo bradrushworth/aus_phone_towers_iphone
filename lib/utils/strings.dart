@@ -91,6 +91,7 @@ class Strings {
   static String regularMode = 'Regular Mode';
 
   static String reportProblem = 'Report Problem';
+  static String exportPolygons = 'Export Coverage';
   static String userGuide = 'User Guide';
   static String rateApp = 'Rate App';
   static String links = 'Links';
