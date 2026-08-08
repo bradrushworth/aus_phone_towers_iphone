@@ -39,6 +39,39 @@ App Store apps.
 For that reason, the iOS app shows nearby towers based on your GPS location, but it cannot
 currently display the specific tower your phone is connected to.
 
+## Feature comparison with the Android app
+
+The Android app (`au.com.bitbot.phonetowers`) has several features that have not been ported to
+iOS. The table below lists each one and whether it can be brought to iOS.
+
+| Android feature | iOS status | Feasible on iOS? |
+| --- | --- | --- |
+| Connected-cell info bar + tower lookup (`CellIdentity`, `CalculateConnectedTower`) | Not available (CoreTelephony only exposes carrier / MCC-MNC / radio type) | No |
+| Crowd-sourced cell observation upload (`PostObservedLocation`, OpenCellID) | Not available | Partial (GPS-only, no auto cell detection) |
+| Export towers / coverage as GeoJSON or CSV (`ExportHelper`) | Not available (screenshot only) | Yes |
+| User ranking / gamification (`GetUserRanking`) | Not available | Yes (pure API) |
+| Mozilla Location Service geolocation (`PostMlsGeolocate`) | Not available | Yes (network only) |
+| Follow-GPS map centring + heading rotation (`RotationVectorSensorEventListener`) | TODO in code | Yes (sensors plugin) |
+| Tower / contact list views (`ListsActivity`) | Not available (map only) | Yes |
+| Link-speed estimate (`LinkSpeedEstimator`) | Not available | No (Android-only API) |
+| Background tower service + notifications (`TowerService`) | Not available | No (iOS background limits) |
+| Coverage polygons (`PolygonHelper`, `GetLicenceHRP`) | Available | Yes (see note below) |
+
+### Signal-propagation math consistency
+
+The coverage-polygon math was checked against the Android implementation and is now consistent:
+
+- Both apps use the same Okumura-Hata / COST-231-Hata path-loss model (`calculateDistance`), the
+  same terrain-loss (`calculateTerrainLosses`), the same spherical `travel` destination-point
+  formula, and the same ring generation (`BEARING_START = 1.25`, `BEARING_INCREMENT = 2.5`,
+  10 m tower-height floor, 100 km distance cap).
+- **Fix applied:** the iOS app previously hard-coded the radiation model to `SUBURBAN` for every
+  polygon. It now reads the per-device radiation model (`device.getRadiationModel()`) exactly as
+  Android does, so METRO / URBAN / OPEN etc. sites draw with the correct path loss.
+- Polygon border styling was aligned to match Android (`lineAlpha = 30 + alpha`, `strokeWidth = 6`).
+- Visual text overlays (frequency / signal-strength labels on polygons) remain commented out on iOS
+  and are a cosmetic gap only — they do not affect the propagation calculation.
+
 Some relevant links:
 
 * [This repository](https://github.com/bradrushworth/aus_phone_towers_iphone)

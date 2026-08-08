@@ -270,14 +270,14 @@ class PolygonHelper with ChangeNotifier {
       }
 
       int lineAlpha = 0;
-      if (showPolygonBorders) lineAlpha = 25 + alpha;
+      if (showPolygonBorders) lineAlpha = 30 + alpha;
 
       //Log.d("PolygonHelper", "i=" + i + " capacity=" + capacity + " alpha=" + alpha);
       Polygon po = Polygon(
         polygonId: PolygonId("polygon_${i}_${device.sddId}"),
         strokeColor:
             i != data.length - 1 ? Colors.transparent : TelcoHelper.getColor(telco, lineAlpha),
-        strokeWidth: 4,
+        strokeWidth: 6,
         fillColor: TelcoHelper.getColor(telco, alpha),
         points: data[i],
       );
@@ -413,8 +413,13 @@ class PolygonHelper with ChangeNotifier {
         int receiver_dBm = polygons[p];
         double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
-        double distanceKm = GetLicenceHRP.calculateDistance(GetLicenceHRP.radiationModel,
-            freeSpaceLoss_dBi, freqInMHz.toDouble(), towerHeight + hillHeight.toDouble());
+        CityDensity model = (device.getRadiationModel() ??
+            GetLicenceHRP.defaultRadiationModel) as CityDensity;
+        double distanceKm = GetLicenceHRP.calculateDistance(
+            model,
+            freeSpaceLoss_dBi,
+            freqInMHz.toDouble(),
+            towerHeight + hillHeight.toDouble());
         //Log.d("PolygonHelper", "distanceKm="+distanceKm);
 
 //    TreeSet<HeightDistancePair> heightToDistance = site.getHeightsAlongBearing(distanceKm, bearing);//TODO later on

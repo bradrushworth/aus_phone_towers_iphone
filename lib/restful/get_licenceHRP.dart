@@ -23,7 +23,8 @@ class GetLicenceHRP {
   static final double EARTH_MEAN_RADIUS_KILOMETERS = 6371.009;
   static final double HEIGHT_RECEIVER_FROM_GROUND = 1;
   final ShowSnackBar? showSnackBar;
-  static CityDensity radiationModel = CityDensity.SUBURBAN;
+  // Default used only if a device has no associated site density (matches Android behaviour).
+  static const CityDensity defaultRadiationModel = CityDensity.SUBURBAN;
   Logger logger = new Logger();
   Api api = Api.initialize();
 
@@ -117,8 +118,13 @@ class GetLicenceHRP {
         double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
         // Calculate the distance the signal will travel
-        double distanceKm = calculateDistance(radiationModel, freeSpaceLoss_dBi,
-            freqInMHz, towerHeight.toDouble());
+        CityDensity model =
+            (device.getRadiationModel() ?? defaultRadiationModel) as CityDensity;
+        double distanceKm = calculateDistance(
+            model,
+            freeSpaceLoss_dBi,
+            freqInMHz,
+            towerHeight.toDouble());
         if (PolygonHelper.calculateTerrain) {
           distanceKm = calculateTerrainLosses(site, heightToDistance,
               distanceKm, bearing, freqInMHz.toDouble(), towerHeight);
