@@ -81,10 +81,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
             } else if (optionItemPosition == 6) {
               // Only show donations on non-web platforms
               return !kIsWeb;
-            } else if (optionItemPosition == 5) {
-              // TODO: Hide the "Remove Ads" (purchasing ad-free) option for now.
-              // Ads still display for users who haven't previously bought ad-free.
-              return false;
             } else {
               return true;
             }
