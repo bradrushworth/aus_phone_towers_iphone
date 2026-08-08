@@ -352,6 +352,90 @@ class PurchaseHelper with ChangeNotifier {
       eventParameters: eventMap,
     );
   }
+
+  Future<void> initiatePurchase({required String sku}) async {
+    logger.i('Trying to purchase: ${sku}');
+
+    _products.forEach((product) {
+      logger.w('products in inventory: ${product!.title}');
+    });
+
+    // Only block if the exact SKU being purchased is already owned.
+    // On Apple devices restorePurchases() populates _purchases with all past
+    // purchases, so we must not block every purchase just because one exists.
+    try {
+      PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
+        return product!.productID == sku;
+      });
+      String error =
+          'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
+      logger.i(error);
+      showSnackBar(message: error);
+      return;
+    } catch (e) {
+      logger.i('No previous matching purchase found for $sku, continuing...');
+    }
+
+    if (_products.isNotEmpty) {
+      ProductDetails? productToBuy = null;
+      try {
+        productToBuy = _products.singleWhere((product) {
+          return product!.id == sku;
+        });
+      } catch (e) {
+        String error = "Couldn't find the product: ${sku}";
+        logger.e(error);
+        showSnackBar(message: error);
+      }
+
+        if (productToBuy != null) {
+          //showSnackBar(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
+          final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
+          //showSnackBar(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
+          bool bought = false;
+          if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY ||
+              productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR) {
+            // Ad-free purchases are non-consumable so they persist on the App Store and
+            // are returned by restorePurchases() on future app launches. Consumables are
+            // never restored on iOS, which would otherwise silently drop the ad-free
+            // entitlement (e.g. yearly_adfree) after the app is closed and reopened.
+            // This matches the Android app, which acknowledges but never consumes these SKUs.
+            bought = await _inAppPurchase.buyNonConsumable(
+              purchaseParam: purchaseParam,
+            );
+          } else {
+            bought = await _inAppPurchase.buyConsumable(
+              purchaseParam: purchaseParam,
+              autoConsume: false,
+            );
+          }
+        showSnackBar(
+          message: 'Selected to buy ${bought}: productDetails=${purchaseParam.productDetails.title}',
+        );
+      } else {
+        String error =
+            'The product being bought does not match the inventory... _products = ${_products.length}';
+        logger.e("PurchaseHelper: " + error);
+        showSnackBar(message: error);
+        _products.forEach((product) {
+          logger.e('products in inventory: ${product!.title}');
+        });
+      }
+    } else {
+      String error = 'No products in inventory found...';
+      showSnackBar(message: error);
+      logger.e("PurchaseHelper: " + error);
+      Map<String, Object> eventMap = Map<String, Object>();
+      eventMap['failure'] = error;
+      AnalyticsHelper().log(error);
+
+      AnalyticsHelper().sendCustomAnalyticsEvent(
+        eventName: 'purchase_error',
+        eventParameters: eventMap,
+      );
+    }
+  }
+
   Future<bool> _verifyPurchase(PurchaseDetails purchaseDetails) {
     // IMPORTANT!! Always verify a purchase before delivering the product.
     // For the purpose of an example, we directly return true.
