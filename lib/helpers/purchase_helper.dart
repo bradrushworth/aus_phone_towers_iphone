@@ -5,12 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/billing/consumable_store.dart';
 
 import 'analytics_helper.dart';
+import 'entitlement_evaluator.dart';
 
 typedef void ShowSnackBar({
   required String message,
@@ -289,104 +288,53 @@ class PurchaseHelper with ChangeNotifier {
 
     Map<String, Object> eventMap = Map<String, Object>();
 
-    //1) Operation to show / hide donate previous menu
-    PurchaseDetails? purchaseDetailsForDonation = null;
-    if (_purchases.isNotEmpty) {
-      try {
-        purchaseDetailsForDonation = _purchases.firstWhere(
-                (purchaseDetails) =>
-            purchaseDetails!.productID == SKU_DONATION_SMALL ||
-                purchaseDetails.productID == SKU_DONATION_MEDIUM ||
-                purchaseDetails.productID == SKU_DONATION_LARGE
-        );
-      } catch (e) {
-        String error = "Couldn't find a donation purchase";
-        logger.e(error);
-        showSnackBar(message: error);
-      }
-    }
-    // Thank the user for donating in the past :-)
-    eventMap['donation'] = purchaseDetailsForDonation != null ? true : false;
-    isDonated = purchaseDetailsForDonation != null ? true : false;
+    // Delegate the pure decision logic (donation / yearly expiry / permanent) to
+    // a testable, side-effect-free evaluator. The evaluator is deterministic given
+    // the injected purchases and clock, so this method retains only the side
+    // effects (finishing an expired yearly purchase, analytics, UI signal).
+    final PurchaseEntitlement entitlement = await evaluateEntitlements(
+      _purchases,
+      nowMillis: DateTime.now().millisecondsSinceEpoch,
+      expiryPeriod: EXPIRY_PERIOD,
+    );
 
-    //2)  Operation to perform when user has removed ad for one year.
-    // A yearly purchase is non-consumable (so it restores across app restarts and
-    // survives within the valid year), but only grants ad-free for 365 days. Once
-    // expired it is finished/consumed and dropped from the active purchases so ads
-    // return and the user is free to buy it again.
-    PurchaseDetails? purchaseDetailsForOneYearSubscription = null;
-    bool yearlyActive = false;
-    if (_purchases.isNotEmpty) {
+    // 2a) Finish/consume an expired yearly purchase so ads return and the user
+    // can buy it again. (evaluateEntitlements is pure, so the mutation lives here.)
+    if (entitlement.yearlyPurchaseExpired) {
+      PurchaseDetails? expired;
       try {
-        purchaseDetailsForOneYearSubscription = _purchases.singleWhere(
-          (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR
-        );
+        expired = _purchases.singleWhere(
+            (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR);
       } catch (e) {
-        String error = "Couldn't find a one year subscription purchase";
-        logger.e(error);
-        showSnackBar(message: error);
+        expired = null;
       }
-    }
-    if (purchaseDetailsForOneYearSubscription != null) {
-      int purchaseTime = int.tryParse(purchaseDetailsForOneYearSubscription.transactionDate!) ?? 0;
-      if (purchaseTime > 0) {
-        if (purchaseTime < DateTime.now().millisecondsSinceEpoch - EXPIRY_PERIOD) {
-          // The one year of ad-free is over: finish/consume the transaction and
-          // drop it from the active list so the user returns to ads (and can buy again).
-          logger.i(
-            "Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!",
-          );
-          showSnackBar(message: "Consuming the " + SKU_SUBSCRIBE_ONE_YEAR + " purchase because it expired!");
-          eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
-          if (purchaseDetailsForOneYearSubscription.pendingCompletePurchase) {
-            await _inAppPurchase.completePurchase(purchaseDetailsForOneYearSubscription);
-          }
-          _purchases.removeWhere((p) => p!.productID == SKU_SUBSCRIBE_ONE_YEAR);
-        } else {
-          // Still within the purchased year.
-          yearlyActive = true;
+      if (expired != null) {
+        eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
+        if (expired.pendingCompletePurchase) {
+          await _inAppPurchase.completePurchase(expired);
         }
+        _purchases.removeWhere((p) => p!.productID == SKU_SUBSCRIBE_ONE_YEAR);
       }
     }
 
-    //3) This is just for analytics
-    // This needs to be after the consume everything above
-    PurchaseDetails? purchaseDetailsForPermanentSubscription = null;
-    if (_purchases.isNotEmpty) {
-      try {
-        purchaseDetailsForPermanentSubscription = _purchases.singleWhere(
-          (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_PERMANENTLY
-        );
-      } catch (e) {
-        String error = "Couldn't find a permanent subscription purchase";
-        logger.e(error);
-        showSnackBar(message: error);
-      }
-    }
-    bool permanent = purchaseDetailsForPermanentSubscription != null ? true : false;
-    bool yearly = yearlyActive;
-    bool subscription = permanent || yearly;
+    // Apply the computed entitlement state.
+    isDonated = entitlement.isDonated;
+    isSubscribed = entitlement.isSubscribed;
+    isSubscribedPermanently = entitlement.isSubscribedPermanently;
+    timeToExpireYearlySubscription = entitlement.timeToExpireYearlySubscription;
 
-    eventMap['permanent'] = permanent;
+    final bool yearly = entitlement.isSubscribed && !entitlement.isSubscribedPermanently;
+    eventMap['donation'] = entitlement.isDonated;
+    eventMap['permanent'] = entitlement.isSubscribedPermanently;
     eventMap['yearly'] = yearly;
-    eventMap['subscription'] = subscription;
+    eventMap['subscription'] = entitlement.isSubscribed;
     List<String> listAllOwnedSkus = _purchases
-        .map((purchaseDetails) => purchaseDetails!.productID)
+        .whereType<PurchaseDetails>()
+        .map((purchaseDetails) => purchaseDetails.productID)
         .toList();
     eventMap['owned_sku'] = listAllOwnedSkus.toString();
-
-    // Stop users from subscribing more than once
-    isSubscribed = subscription;
-    isSubscribedPermanently = permanent;
     if (yearly) {
-      int expiry = int.tryParse(purchaseDetailsForOneYearSubscription!.transactionDate!) ?? 0;
-      expiry += EXPIRY_PERIOD;
-      DateTime date = new DateTime.fromMillisecondsSinceEpoch(expiry);
-      await initializeDateFormatting("en-AU", null);
-      var formatter = DateFormat.yMMMd('en-AU');
-      String expiryDate = formatter.format(date);
-      timeToExpireYearlySubscription = 'Expires $expiryDate';
-      eventMap['yearly_expiry'] = expiry;
+      eventMap['yearly_expiry'] = entitlement.yearlyExpiryEpoch;
     }
 
     // Remove or display the ads
@@ -404,90 +352,6 @@ class PurchaseHelper with ChangeNotifier {
       eventParameters: eventMap,
     );
   }
-
-  Future<void> initiatePurchase({required String sku}) async {
-    logger.i('Trying to purchase: ${sku}');
-
-    _products.forEach((product) {
-      logger.w('products in inventory: ${product!.title}');
-    });
-
-    // Only block if the exact SKU being purchased is already owned.
-    // On Apple devices restorePurchases() populates _purchases with all past
-    // purchases, so we must not block every purchase just because one exists.
-    try {
-      PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
-        return product!.productID == sku;
-      });
-      String error =
-          'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
-      logger.i(error);
-      showSnackBar(message: error);
-      return;
-    } catch (e) {
-      logger.i('No previous matching purchase found for $sku, continuing...');
-    }
-
-    if (_products.isNotEmpty) {
-      ProductDetails? productToBuy = null;
-      try {
-        productToBuy = _products.singleWhere((product) {
-          return product!.id == sku;
-        });
-      } catch (e) {
-        String error = "Couldn't find the product: ${sku}";
-        logger.e(error);
-        showSnackBar(message: error);
-      }
-
-        if (productToBuy != null) {
-          //showSnackBar(message: 'Trying to purchase ${sku} as ${productToBuy.id} ${productToBuy.title}');
-          final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
-          //showSnackBar(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
-          bool bought = false;
-          if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY ||
-              productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR) {
-            // Ad-free purchases are non-consumable so they persist on the App Store and
-            // are returned by restorePurchases() on future app launches. Consumables are
-            // never restored on iOS, which would otherwise silently drop the ad-free
-            // entitlement (e.g. yearly_adfree) after the app is closed and reopened.
-            // This matches the Android app, which acknowledges but never consumes these SKUs.
-            bought = await _inAppPurchase.buyNonConsumable(
-              purchaseParam: purchaseParam,
-            );
-          } else {
-            bought = await _inAppPurchase.buyConsumable(
-              purchaseParam: purchaseParam,
-              autoConsume: false,
-            );
-          }
-        showSnackBar(
-          message: 'Selected to buy ${bought}: productDetails=${purchaseParam.productDetails.title}',
-        );
-      } else {
-        String error =
-            'The product being bought does not match the inventory... _products = ${_products.length}';
-        logger.e("PurchaseHelper: " + error);
-        showSnackBar(message: error);
-        _products.forEach((product) {
-          logger.e('products in inventory: ${product!.title}');
-        });
-      }
-    } else {
-      String error = 'No products in inventory found...';
-      showSnackBar(message: error);
-      logger.e("PurchaseHelper: " + error);
-      Map<String, Object> eventMap = Map<String, Object>();
-      eventMap['failure'] = error;
-      AnalyticsHelper().log(error);
-
-      AnalyticsHelper().sendCustomAnalyticsEvent(
-        eventName: 'purchase_error',
-        eventParameters: eventMap,
-      );
-    }
-  }
-
   Future<bool> _verifyPurchase(PurchaseDetails purchaseDetails) {
     // IMPORTANT!! Always verify a purchase before delivering the product.
     // For the purpose of an example, we directly return true.
