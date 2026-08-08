@@ -48,7 +48,7 @@ iOS. The table below lists each one and whether it can be brought to iOS.
 | --- | --- | --- |
 | Connected-cell info bar + tower lookup (`CellIdentity`, `CalculateConnectedTower`) | Not available (CoreTelephony only exposes carrier / MCC-MNC / radio type) | No |
 | Crowd-sourced cell observation upload (`PostObservedLocation`, OpenCellID) | Not available | Partial (GPS-only, no auto cell detection) |
-| Export towers / coverage as GeoJSON or CSV (`ExportHelper`) | Not available (screenshot only) | Yes |
+| Export towers / coverage as GeoJSON, CSV or KML (`ExportHelper`) | Available (GeoJSON / CSV / KMZ) | Yes (GeoJSON / CSV / KML) |
 | User ranking / gamification (`GetUserRanking`) | Not available | Yes (pure API) |
 | Mozilla Location Service geolocation (`PostMlsGeolocate`) | Not available | Yes (network only) |
 | Follow-GPS map centring + heading rotation (`RotationVectorSensorEventListener`) | TODO in code | Yes (sensors plugin) |
@@ -69,8 +69,9 @@ The coverage-polygon math was checked against the Android implementation and is 
   polygon. It now reads the per-device radiation model (`device.getRadiationModel()`) exactly as
   Android does, so METRO / URBAN / OPEN etc. sites draw with the correct path loss.
 - Polygon border styling was aligned to match Android (`lineAlpha = 30 + alpha`, `strokeWidth = 6`).
-- Visual text overlays (frequency / signal-strength labels on polygons) remain commented out on iOS
-  and are a cosmetic gap only — they do not affect the propagation calculation.
+- Visual text overlays (frequency / network-technology labels on each coverage ring) are now drawn
+  on iOS using a small centroid marker per polygon. They are a cosmetic aid only and do not affect
+  the propagation calculation.
 
 Some relevant links:
 

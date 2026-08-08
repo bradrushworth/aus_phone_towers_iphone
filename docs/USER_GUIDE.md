@@ -49,6 +49,10 @@ Tower markers use carrier logo icons. The colours below are used for the **cover
 - **Donate** — support development with an in‑app purchase (not shown on the Web build).
 - **Developer / Regular Mode** — show extra diagnostic overlays.
 - **Report Problem** — take a screenshot to send feedback.
+- **Export** — save the coverage polygons currently drawn on the map (with their tower and device
+  details) to **GeoJSON**, **CSV** and **KML** files in the app's documents folder. The three files
+  are timestamped and can be opened in GIS tools such as QGIS or Google Earth. If no polygons are
+  drawn, nothing is exported.
 - **Links** — Rate App, AusPhoneTowers.com.au, iOS App Store, Source Code.
 - **User Guide** — opens this page.
 
