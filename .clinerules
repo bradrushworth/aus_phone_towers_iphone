@@ -10,3 +10,14 @@ project, you MUST also update the relevant documentation before considering the 
 
 This applies to new menu items, exported formats, map overlays/labels, settings, and any
 behaviour change a user would notice. Do not leave docs stale after a code change.
+
+## Only push to the repo after a version change
+Do NOT push commits to the remote repository unless the app version has been bumped in the
+same change. Codemagic builds on every push, so pushing without a version bump wastes build
+minutes/money for no release benefit.
+
+- The iOS version lives in `pubspec.yaml` (`version:` — `x.y.z+build`).
+- The Android version lives in `app/build.gradle` (`appVersionCode` / `versionName`).
+- Bump the relevant version (and build number) as part of the change that you are pushing.
+- Pure doc-only or non-release commits should be kept local (or squashed into the next
+  version-bump commit) rather than pushed on their own.
