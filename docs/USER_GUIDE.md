@@ -68,7 +68,7 @@ Open the drawer (top‑left) to control what is shown:
 - **Multiplex Type** — NOT LTE, FD‑LTE, TD‑LTE.
 - **Frequencies** — < 700 MHz, 700–1000 MHz, 1.0–2.4 GHz, 2.4–3.8 GHz, ≥ 3.8 GHz.
 - **Radiation Models** (city density) — Metropolitan, Urban, Suburban, Open.
-- **Signal Strength** — Maximum, Strong, Good, Weak.
+- **Signal Strength** — Maximum, Strong, Good, Weak (default: Strong).
 - **Transmitter Type** — Telecommunications, Radio, TV, Civil, Pager, CBRS, Aviation.
 
 ## 5. Important behaviours

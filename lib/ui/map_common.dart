@@ -1145,6 +1145,8 @@ class MapBodyState extends AbstractMapBodyState {
       PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
         return !mapOverlay.polygon!.polygonId.value.contains('developer');
       });
+      // Drop this site's labels as well so they don't remain after the polygons are cleared.
+      PolygonHelper.labelOverlays.removeWhere((mapOverlay) => mapOverlay.site == site);
     });
 
     //disableFollowGPS(); //TODO

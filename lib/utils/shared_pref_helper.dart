@@ -71,7 +71,7 @@ class SharedPreferencesHelper {
     //return prefs.getInt(key ?? kSuburbanRadiationModel);
     return prefs.containsKey(key)
         ? prefs.getInt(key)!
-        : kWeakSignalStrength;
+        : kStrongSignalStrength;
   }
 
   static int getMapMode({required String key, required SharedPreferences prefs}) {

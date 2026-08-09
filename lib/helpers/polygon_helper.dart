@@ -15,6 +15,7 @@ import '../model/overlay.dart';
 import '../model/site.dart';
 import '../restful/get_elevation.dart';
 import '../restful/get_licenceHRP.dart';
+import '../utils/app_constants.dart';
 import '../utils/polygon_container.dart';
 import 'let_type_helper.dart';
 import 'map_helper.dart';
@@ -40,8 +41,10 @@ class PolygonHelper with ChangeNotifier {
   static final double BEARING_START = 1.25;
   static final double BEARING_INCREMENT = 2.50;
 
-  static int polygonSignalStrengthPos =
-      NetworkTypeHelper.getNetworkBars(NetworkType.LTE).length - 1;
+  /// Default signal-strength ring drawn on first launch (or before any stored
+  /// preference is applied). Indexes into NetworkTypeHelper.getNetworkBars():
+  /// 0 = Maximum, 1 = Strong, 2 = Good, 3 = Weak. We default to Strong.
+  static int polygonSignalStrengthPos = kStrongSignalStrength;
   static bool showPolygonBorders = true;
   static bool preventPolygonRefresh = false;
 
@@ -97,6 +100,8 @@ class PolygonHelper with ChangeNotifier {
       globalListPolygons.removeWhere((mapOverlay) {
         return !mapOverlay.polygon!.polygonId.value.contains('developer');
       });
+      // Remove this site's labels too, so they don't linger once the polygon is gone.
+      labelOverlays.removeWhere((mapOverlay) => mapOverlay.site == site);
 
       for (DeviceDetails device in sitesPolygons[site]!.keys) {
         Set<PolygonContainer> polygons = sitesPolygons[site]![device]!;
@@ -393,7 +398,11 @@ class PolygonHelper with ChangeNotifier {
       Site site, DeviceDetails device, List<LatLng> ring) async {
     if (ring.length < 3) return;
     // Remove any existing labels for this site so re-draws don't duplicate them.
-    labelOverlays.removeWhere((MapOverlay overlay) => overlay.site == site);
+    // Remove only this device's previous labels so re-draws don't duplicate them,
+    // while other antennas on the same site keep their own labels.
+    labelOverlays.removeWhere((MapOverlay overlay) =>
+        overlay.site == site &&
+        overlay.marker?.markerId.value.startsWith('label_${device.sddId}') == true);
     final Telco telco = site.getTelco();
     final int frequencyMhz = (device.frequency! / 1000 / 1000).toInt();
     final String tech = NetworkTypeHelper.resolveNetworkToName(device.getNetworkType());
@@ -406,21 +415,21 @@ class PolygonHelper with ChangeNotifier {
       String text, Color color) async {
     final BitmapDescriptor icon = await _createLabelIcon(text, color);
     if (!sitesPolygons.containsKey(site)) return;
-    final int step = ring.length > 24
-        ? (ring.length / 6).round().clamp(1, ring.length)
-        : ring.length;
-    for (int j = 0; j < ring.length; j += step) {
-      final LatLng position = ring[j];
-      final Marker marker = Marker(
-        markerId: MarkerId('label_${device.sddId}_$j'),
-        position: position,
-        icon: icon,
-        anchor: const Offset(0.5, 0.5),
-        zIndex: 2,
-        consumeTapEvents: false,
-      );
-      labelOverlays.add(MapOverlay(marker: marker, site: site));
-    }
+    // Draw a single label at a randomised point on the outermost (furthest) signal
+    // ring. The outer ring is the point furthest from the tower, and the random
+    // bearing stops labels from multiple antennas / neighbouring towers piling up
+    // on top of one another.
+    final int index = (math.Random().nextDouble() * ring.length).floor() % ring.length;
+    final LatLng position = ring[index];
+    final Marker marker = Marker(
+      markerId: MarkerId('label_${device.sddId}'),
+      position: position,
+      icon: icon,
+      anchor: const Offset(0.5, 0.5),
+      zIndex: 2,
+      consumeTapEvents: false,
+    );
+    labelOverlays.add(MapOverlay(marker: marker, site: site));
     // PolygonHelper is a ChangeNotifier singleton; notify its listeners (the map) so the
     // newly added label markers are rendered. Called on the singleton instance because
     // this is a static method.

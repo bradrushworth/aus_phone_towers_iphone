@@ -78,6 +78,9 @@ class SiteHelper with ChangeNotifier {
             mapOverlay.site!.getTelco() == telco;
       });
     }
+    // Remove the matching labels so they don't outlive their polygons.
+    PolygonHelper.labelOverlays.removeWhere((mapOverlay) =>
+        mapOverlay.site != null && mapOverlay.site!.getTelco() == telco);
 
     notifyListeners(); //Refresh main UI
   }
