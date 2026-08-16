@@ -37,8 +37,8 @@ Future<void> main() async {
 
     if (!kIsWeb && Platform.isIOS) {
       // Show tracking authorization dialog and ask for permission
-      final status = await AppTrackingTransparency.requestTrackingAuthorization();
-      final uuid = await AppTrackingTransparency.getAdvertisingIdentifier();
+      await AppTrackingTransparency.requestTrackingAuthorization();
+      await AppTrackingTransparency.getAdvertisingIdentifier();
     }
 
     // Initialize Firebase

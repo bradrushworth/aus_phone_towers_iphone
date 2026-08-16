@@ -119,7 +119,7 @@ class GetLicenceHRP {
 
         // Calculate the distance the signal will travel
         CityDensity model =
-            (device.getRadiationModel() ?? defaultRadiationModel) as CityDensity;
+            device.getRadiationModel() ?? defaultRadiationModel;
         double distanceKm = calculateDistance(
             model,
             freeSpaceLoss_dBi,

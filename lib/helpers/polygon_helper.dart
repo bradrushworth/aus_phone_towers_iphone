@@ -526,8 +526,8 @@ class PolygonHelper with ChangeNotifier {
         // (learned from observed signal strengths), instead of only the density-only
         // coefficients. The composite lookup degrades gracefully
         // (composite -> density-only -> analytic Hata), identical to the mapping path.
-        CityDensity model = (device.getRadiationModel() ??
-            GetLicenceHRP.defaultRadiationModel) as CityDensity;
+        CityDensity model = device.getRadiationModel() ??
+            GetLicenceHRP.defaultRadiationModel;
         double distanceKm = GetLicenceHRP.calculateDistanceWithContext(
             TelcoHelper.getMnc(site.getTelco()),
             device.getNetworkType(),
