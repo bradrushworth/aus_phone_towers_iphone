@@ -521,13 +521,20 @@ class PolygonHelper with ChangeNotifier {
         int receiver_dBm = polygons[p];
         double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
+        // Use the composite (mnc + networkType + density + frequency-band) overload so the
+        // estimate is tuned to the SAME trained coefficients as the connected-tower path
+        // (learned from observed signal strengths), instead of only the density-only
+        // coefficients. The composite lookup degrades gracefully
+        // (composite -> density-only -> analytic Hata), identical to the mapping path.
         CityDensity model = (device.getRadiationModel() ??
             GetLicenceHRP.defaultRadiationModel) as CityDensity;
-        double distanceKm = GetLicenceHRP.calculateDistance(
+        double distanceKm = GetLicenceHRP.calculateDistanceWithContext(
+            TelcoHelper.getMnc(site.getTelco()),
+            device.getNetworkType(),
             model,
             freeSpaceLoss_dBi,
             freqInMHz.toDouble(),
-            towerHeight + hillHeight.toDouble());
+            (towerHeight + hillHeight).toDouble());
         //Log.d("PolygonHelper", "distanceKm="+distanceKm);
 
 //    TreeSet<HeightDistancePair> heightToDistance = site.getHeightsAlongBearing(distanceKm, bearing);//TODO later on
