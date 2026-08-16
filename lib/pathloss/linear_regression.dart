@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 /// Ordinary-least-squares multiple linear regression solved via the normal equations
 /// (XᵀX)β = Xᵀy using Gaussian elimination with partial pivoting. Pure Dart — no external ML
 /// dependency — so it runs on-device and in unit tests as well as in the trainer.
