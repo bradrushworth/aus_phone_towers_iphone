@@ -1,7 +1,12 @@
 # Project Rules — aus_phone_towers_iphone (iOS)
 
+> **This file is kept for backwards compatibility.** The canonical agent instructions now live in
+> **`AGENTS.md`** at the project root. That file is recognised by all AI coding agents (Cline,
+> Claude Code, OpenHands, Cursor, etc.). If you make changes, update `AGENTS.md` and keep this
+> file as a pointer.
+
 These rules apply ONLY to this iPhone/iOS repository. The Android project
-(`aus_phone_towers`) has its own separate `.clinerules` and should not share these.
+(`aus_phone_towers_java`) has its own `AGENTS.md` and should not share these.
 
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this

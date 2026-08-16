@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
-import 'package:phonetowers/helpers/translate_frequencies.dart';
+import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
 import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
@@ -119,7 +119,7 @@ class GetLicenceHRP {
 
         // Calculate the distance the signal will travel
         CityDensity model =
-            (device.getRadiationModel() ?? defaultRadiationModel) as CityDensity;
+            device.getRadiationModel() ?? defaultRadiationModel;
         double distanceKm = calculateDistance(
             model,
             freeSpaceLoss_dBi,
@@ -167,74 +167,24 @@ class GetLicenceHRP {
     }
   }
 
-  // Distance in km
+  // Distance in km.
+  // The Okumura-Hata / COST-231-Hata analytic formulas are now delegated to the pluggable
+  // PathLossModel (see package:phonetowers/pathloss/). The active model is learned from real
+  // observations fetched from the server; until that completes (or if it fails), the learned
+  // model falls back to the analytic Hata/COST-231 formulas, preserving the original behaviour.
   static double calculateDistance(
       CityDensity density, double levelInDb, double freqInMHz, double height) {
-    double hb =
-        height; // base station antenna height above local terrain height [m]
-    double hm =
-        HEIGHT_RECEIVER_FROM_GROUND; // mobile station antenna height above local terrain height [m]
-    double fc = freqInMHz;
+    return PathLossModelProvider.calculateDistance(
+        density, levelInDb, freqInMHz, height);
+  }
 
-    // http://www.comlab.hut.fi/opetus/333/2004_2005_slides/Path_loss_models
-    double A = 69.55 + 26.16 * log10(fc) - 13.82 * log10(hb);
-    double B = 44.9 - 6.55 * log10(hb);
-
-    if (density == CityDensity.METRO) {
-      // COST 231-Hata model
-      // For medium to small cities
-      double E = (1.1 * log10(fc) - 0.7) * hm - (1.56 * log10(fc) - 0.8);
-      double F = 46.3 + 33.9 * log10(fc) - 13.82 * log10(hb);
-      // 0 dB medium sized cities and suburban areas
-      // 3 dB metropolitan areas
-      double G = 3;
-      // LdB = F + B * log10(R) – E + G
-      double R = math.pow(10, (levelInDb + E - F - G) / B) as double;
-      return R;
-    } else if (density == CityDensity.URBAN && freqInMHz >= 300) {
-      // Okumura-Hata model
-      // For large cities, fc >= 300MHz
-      double E = 3.2 * math.pow(log10(11.7554 * hm), 2) - 4.97;
-      // LdB = F + B * log10(R) – E + G
-      double R = math.pow(10, (levelInDb + E - A) / B) as double;
-      return R;
-    } else if (density == CityDensity.URBAN) {
-      // Okumura-Hata model
-      // For large cities, fc < 300MHz
-      double E = 8.29 * math.pow(log10(1.54 * hm), 2) - 1.1;
-      // LdB = F + B * log10(R) – E + G
-      double R = math.pow(10, (levelInDb + E - A) / B) as double;
-      return R;
-    } else if (density == CityDensity.MEDIUM) {
-      // Okumura-Hata model
-      // For medium to small cities
-      double E = (1.1 * log10(fc) - 0.7) * hm - (1.56 * log10(fc) - 0.8);
-      // LdB = A + B * log10(R) - E;
-      double R = math.pow(10, (levelInDb + E - A) / B) as double;
-      return R;
-    } else if (density == CityDensity.SUBURBAN) {
-      // Okumura-Hata model
-      // Suburban areas
-      double C = 2 * math.pow(log10(fc / 28), 2) + 5.4;
-      // Reach seems slightly too far, decrease by 4.42 dB since
-      // mean absolute error = 4.42 dB in urban environment
-      C -= 4.42;
-      // LdB = A + B * log10(R) - C;
-      double R = math.pow(10, (levelInDb + C - A) / B) as double;
-      return R;
-    } else if (density == CityDensity.OPEN) {
-      // Okumura-Hata model
-      // Open areas
-      double D = 4.78 * math.pow(log10(fc), 2) - 18.33 * log10(fc) + 40.94;
-      // Reach seems slightly too far, decrease by 4.42 dB since
-      // mean absolute error = 4.42 dB in urban environment
-      D -= 4.42 * 2;
-      // LdB = A + B * log10(R) - D;
-      double R = math.pow(10, (levelInDb + D - A) / B) as double;
-      return R;
-    } else {
-      return 0;
-    }
+  /// Context-aware overload (see PathLossModel.calculateDistanceWithContext). Selects the
+  /// learned coefficients for the (mnc, networkType, band, density) stratum, falling back to
+  /// density-only / analytic inside the model when no composite coefficients exist yet.
+  static double calculateDistanceWithContext(int mnc, NetworkType networkType,
+      CityDensity density, double levelInDb, double freqInMHz, double height) {
+    return PathLossModelProvider.calculateDistanceWithContext(
+        mnc, networkType, density, levelInDb, freqInMHz, height);
   }
 
   // Distance in km

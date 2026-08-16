@@ -13,6 +13,7 @@ import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
+import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
 import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/utils/secretloader.dart';
 import 'package:phonetowers/utils/strings.dart';
@@ -36,8 +37,8 @@ Future<void> main() async {
 
     if (!kIsWeb && Platform.isIOS) {
       // Show tracking authorization dialog and ask for permission
-      final status = await AppTrackingTransparency.requestTrackingAuthorization();
-      final uuid = await AppTrackingTransparency.getAdvertisingIdentifier();
+      await AppTrackingTransparency.requestTrackingAuthorization();
+      await AppTrackingTransparency.getAdvertisingIdentifier();
     }
 
     // Initialize Firebase
@@ -91,6 +92,11 @@ Future<void> main() async {
     AdsHelper.iOSLandscapeAdUnitId = secret.iOSLandscapeAdUnitId;
     PolygonHelper.terrainAwarenessKey = secret.terrainAwarenessKey;
     //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
+
+    // Fetch learned path-loss coefficients from the server (fire-and-forget). The app
+    // continues with the analytic Hata/COST-231 fallback until the fetch completes, then
+    // the learned model is swapped in — matching the Android app's behaviour.
+    PathLossModelProvider.initProvider();
 
     /*
   * runZoned Provides monitoring on whole app and reporting to the FireBase.
