@@ -18,6 +18,12 @@ datasets and draws each transmitter on a Google Map together with its estimated 
 - **Coverage polygons** — coloured shaded areas showing the estimated coverage of each antenna.
   The colour matches the carrier (see the legend below). Toggle the outline with **Show/Hide
   Borders**.
+- **Coverage labels** — each tower's outermost coverage ring carries a small text label showing its
+  **frequency and technology** (e.g. `850 MHz 4G LTE`). The label is pinned to the point on that
+  ring that is *furthest* from the tower, so it sits on the outer edge of the coverage area rather
+  than piling up on top of the site marker. Because HRP coverage rings are irregular (terrain,
+  hills, sector directions), the label may appear at a different angle for each tower — that is
+  expected. Tapping a tower redraws its coverage and refreshes the label position.
 - **Your location** — a semi‑transparent azure dot (requires Location permission). Use the
   **Follow GPS** menu item to keep the map centred on you as you move ("drive mode").
 

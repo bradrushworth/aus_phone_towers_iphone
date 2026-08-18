@@ -426,12 +426,22 @@ class PolygonHelper with ChangeNotifier {
       String text, Color color) async {
     final BitmapDescriptor icon = await _createLabelIcon(text, color);
     if (!sitesPolygons.containsKey(site)) return;
-    // Draw a single label at a randomised point on the outermost (furthest) signal
-    // ring. The outer ring is the point furthest from the tower, and the random
-    // bearing stops labels from multiple antennas / neighbouring towers piling up
-    // on top of one another.
-    final int index = (math.Random().nextDouble() * ring.length).floor() % ring.length;
-    final LatLng position = ring[index];
+    // Place the label at the point on the outer signal-strength ring that is *furthest*
+    // from the tower. HRP rings are irregular (terrain, hills), so a random point can land
+    // on the near side of the ring and end up piled up around the site marker. Choosing the
+    // furthest point pushes the label to the outer edge of the coverage polygon, matching the
+    // Android app's behaviour of drawing frequency/technology text away from the tower.
+    final LatLng sitePos = site.getLatLng();
+    int bestIndex = 0;
+    double maxDist = -1;
+    for (int k = 0; k < ring.length; k++) {
+      final double d = _distanceMetres(sitePos, ring[k]);
+      if (d > maxDist) {
+        maxDist = d;
+        bestIndex = k;
+      }
+    }
+    final LatLng position = ring[bestIndex];
     final Marker marker = Marker(
       markerId: MarkerId('label_${device.sddId}'),
       position: position,
@@ -445,6 +455,19 @@ class PolygonHelper with ChangeNotifier {
     // newly added label markers are rendered. Called on the singleton instance because
     // this is a static method.
     PolygonHelper().notifyListeners();
+  }
+
+  /// Great-circle distance (metres) between two coordinates, via the haversine formula.
+  /// Used to find the ring point furthest from the tower when placing text labels.
+  static double _distanceMetres(LatLng a, LatLng b) {
+    const double earthRadius = 6371000.0;
+    final double lat1 = a.latitude * math.pi / 180;
+    final double lat2 = b.latitude * math.pi / 180;
+    final double dLat = (b.latitude - a.latitude) * math.pi / 180;
+    final double dLon = (b.longitude - a.longitude) * math.pi / 180;
+    final double h = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) * math.cos(lat2) * math.sin(dLon / 2) * math.sin(dLon / 2);
+    return 2 * earthRadius * math.asin(math.min(1.0, math.sqrt(h)));
   }
 
   /// Render a small rounded label bitmap for use as a Marker icon.
