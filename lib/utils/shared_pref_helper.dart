@@ -44,6 +44,9 @@ class SharedPreferencesHelper {
   static final String kMapMode = 'mapMode';
   static final String kdrawPolygonsOnClick = 'drawPolygonsOnClick';
   static final String kcalculateTerrain = 'calculateTerrain';
+  static final String krefarmEnabled = 'refarmEnabled';
+  static final String kpolygonPrecision = 'polygonPrecision';
+  static final String kfollowGPS = 'followGPS';
 
   static final String betaLaunchPopup = 'betaLaunchPopup';
 

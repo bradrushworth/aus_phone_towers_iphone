@@ -66,8 +66,9 @@ class GetDevices {
       double eirp = values.eirp != null ? double.tryParse(values.eirp!.value) ?? 0.0 : 0.0;
       int antennaId = values.antennaId != null ? int.tryParse(values.antennaId!.value) ?? 0 : 0;
 
-      for (NetworkType networkType
-          in DeviceDetails.getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId)) {
+      for (NetworkType networkType in <NetworkType>[
+        DeviceDetails.getNetworkTypeForLicence(emission, frequency, bandwidth, telco, antennaId)
+      ]) {
         //Prepare device details
         DeviceDetails device = DeviceDetails(
           sddId: values.sddId!.value,

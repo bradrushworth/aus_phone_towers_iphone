@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/export_helper.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
+import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
@@ -14,12 +15,34 @@ import 'package:phonetowers/utils/strings.dart';
 import 'package:phonetowers/utils/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:phonetowers/model/device_detail.dart';
 
 typedef void ShowSnackBar({
   required String message,
   Duration duration,
   bool isDismissible,
 });
+
+/// Top-level option-menu items, ordered to mirror the Android app's popup menu
+/// (Reload Everything, Follow GPS, Hide Borders, Search, Map Mode, Hiding Menu,
+/// Export Data, Polygon Precision, Remove Ads, Donate, Problems Menu, Rate App, Close App).
+/// Using an enum (rather than an index into a list) guarantees the label shown always
+/// maps to the correct behaviour — fixing the old "labels don't match the action" bug.
+enum OptionMenuItem {
+  reloadEverything,
+  followGPS,
+  hideBorders,
+  searchSites,
+  mapMode,
+  hidingMenu,
+  exportData,
+  polygonPrecision,
+  removeAds,
+  donate,
+  problemsMenu,
+  rateApp,
+  closeApp,
+}
 
 class OptionsMenu extends StatefulWidget {
   final ShowSnackBar showSnackBar;
@@ -48,92 +71,128 @@ class _OptionsMenuState extends State<OptionsMenu> {
 
   void _loadSharedPreference() async {
     prefs = await SharedPreferences.getInstance();
+    // Restore persisted preference-driven toggles.
+    DeviceDetails.refarmEnabled =
+        prefs.getBool(SharedPreferencesHelper.krefarmEnabled) ?? true;
+    final int precisionIndex = SharedPreferencesHelper.getInt(
+        key: SharedPreferencesHelper.kpolygonPrecision, prefs: prefs);
+    PolygonHelper.polygonBearingIncrement = _precisionIncrement(precisionIndex);
+  }
+
+  static double _precisionIncrement(int index) {
+    switch (index) {
+      case 0:
+        return PolygonHelper.kPolygonPrecisionLow;
+      case 2:
+        return PolygonHelper.kPolygonPrecisionHigh;
+      default:
+        return PolygonHelper.kPolygonPrecisionMedium;
+    }
+  }
+
+  static int _precisionIndex(double increment) {
+    if ((increment - PolygonHelper.kPolygonPrecisionLow).abs() < 1e-9) return 0;
+    if ((increment - PolygonHelper.kPolygonPrecisionHigh).abs() < 1e-9) return 2;
+    return 1;
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<PurchaseHelper>(
-      builder: (context, purchaseHelper, child) => PopupMenuButton<OptionItem>(
+      builder: (context, purchaseHelper, child) => PopupMenuButton<OptionMenuItem>(
         icon: Icon(Icons.more_vert),
         itemBuilder: (BuildContext context) {
-          return listOptionItem
-              .map<PopupMenuItem<OptionItem>>((OptionItem optionItem) {
-            return PopupMenuItem<OptionItem>(
-              value: optionItem,
+          return OptionMenuItem.values
+              .where((OptionMenuItem item) {
+                // Donations are not available on the Web build (no App Store purchases).
+                if (item == OptionMenuItem.donate) return !kIsWeb;
+                return true;
+              })
+              .map<PopupMenuItem<OptionMenuItem>>((OptionMenuItem item) {
+            return PopupMenuItem<OptionMenuItem>(
+              value: item,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Text(optionItem.title),
-                  if (optionItem.trailing) ...[
+                  Text(_topLevelTitle(item)),
+                  if (_hasSubmenu(item)) ...[
+                    Icon(Icons.play_arrow, color: Colors.black54, size: 12)
+                  ] else if (item == OptionMenuItem.hideBorders ||
+                      item == OptionMenuItem.followGPS) ...[
                     Icon(
-                      Icons.play_arrow,
+                      item == OptionMenuItem.hideBorders
+                          ? (PolygonHelper.showPolygonBorders
+                              ? Icons.check_box_outline_blank
+                              : Icons.check_box)
+                          : (MapBodyState.followGPS
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank),
                       color: Colors.black54,
-                      size: 12,
+                      size: 14,
                     )
                   ]
                 ],
               ),
             );
-          }).where((optionItem) {
-            int optionItemPosition = listOptionItem.indexOf(optionItem.value!);
-            if (optionItemPosition == 1) {
-              return !SearchHelper.calculatingSearchResults;
-            } else if (optionItemPosition == 6) {
-              // Only show donations on non-web platforms
-              return !kIsWeb;
-            } else {
-              return true;
-            }
           }).toList();
         },
-        onSelected: (optionItem) async {
-          int selectedOptionItem = listOptionItem.indexOf(optionItem);
-          switch (selectedOptionItem) {
-            case 0: //Show / Hide border
-              {
-                PolygonHelper.showPolygonBorders =
-                    !PolygonHelper.showPolygonBorders;
-                optionItem.title = PolygonHelper.showPolygonBorders
-                    ? Strings.hide_border
-                    : Strings.show_border;
-                widget.showSnackBar(
-                    message:
-                        '${PolygonHelper.showPolygonBorders ? 'Showing' : 'Hiding'} polygon radiation borders!');
-                //Make UI changes
-                Provider.of<PolygonHelper>(context, listen: false)
-                    .refreshPolygons(true);
-                //Saving in shared pref
-                SharedPreferencesHelper.saveBoolean(
-                    key: SharedPreferencesHelper.kshowPolygonBorders,
-                    value: PolygonHelper.showPolygonBorders,
-                    prefs: prefs);
-                break;
-              }
-            case 1: //Search sites
-              {
-                logger.d('search sites');
-                Provider.of<SearchHelper>(context, listen: false)
-                    .setSearchStatus(true);
-                break;
-              }
-            case 2: //Clear everything
+        onSelected: (OptionMenuItem item) async {
+          switch (item) {
+            case OptionMenuItem.reloadEverything:
               {
                 SiteHelper().clearMap(
                     onCameraMoveFromLastLocation:
                         widget.onCameraMoveFromLastLocation);
                 break;
               }
-            case 3: //Map mode
+            case OptionMenuItem.followGPS:
+              {
+                await MapBodyState.toggleFollowGPS();
+                break;
+              }
+            case OptionMenuItem.hideBorders:
+              {
+                PolygonHelper.showPolygonBorders = !PolygonHelper.showPolygonBorders;
+                widget.showSnackBar(
+                    message:
+                        '${PolygonHelper.showPolygonBorders ? 'Showing' : 'Hiding'} polygon radiation borders!');
+                Provider.of<PolygonHelper>(context, listen: false)
+                    .refreshPolygons(true);
+                SharedPreferencesHelper.saveBoolean(
+                    key: SharedPreferencesHelper.kshowPolygonBorders,
+                    value: PolygonHelper.showPolygonBorders,
+                    prefs: prefs);
+                setState(() {});
+                break;
+              }
+            case OptionMenuItem.searchSites:
+              {
+                logger.d('search sites');
+                Provider.of<SearchHelper>(context, listen: false)
+                    .setSearchStatus(true);
+                break;
+              }
+            case OptionMenuItem.mapMode:
               {
                 showRadioOptionMenu();
                 break;
               }
-            case 4: //Hiding menu
+            case OptionMenuItem.hidingMenu:
               {
-                showSingleRowOptionMenu(listHidingMenuItem, kHidingMenu);
+                showHidingMenu();
                 break;
               }
-            case 5: //Remove ads
+            case OptionMenuItem.exportData:
+              {
+                showExportMenu();
+                break;
+              }
+            case OptionMenuItem.polygonPrecision:
+              {
+                showPolygonPrecisionMenu();
+                break;
+              }
+            case OptionMenuItem.removeAds:
               {
                 listRemoveAdsItem.elementAt(2)
                   ..title =
@@ -152,7 +211,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 showSingleRowOptionMenu(listRemoveAdsItem, kRemoveAds);
                 break;
               }
-            case 6: //Donate
+            case OptionMenuItem.donate:
               {
                 listDonateItem.elementAt(2)
                   ..isEnabled = !purchaseHelper.isDonateSmallPurchased;
@@ -163,58 +222,245 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 showSingleRowOptionMenu(listDonateItem, kDonate);
                 break;
               }
-            case 7: //Developer or Regular mode
+            case OptionMenuItem.problemsMenu:
               {
-                MapHelper().developerMode = !MapHelper().developerMode;
-                optionItem.title = MapHelper().developerMode
-                    ? Strings.regularMode
-                    : Strings.developerMode;
-                MapHelper().toggleDeveloperMode();
-                PolygonHelper().refreshPolygons(false);
+                showProblemsMenu();
                 break;
               }
-            case 8: //Report problem
+            case OptionMenuItem.rateApp:
               {
-                widget.takeScreenshot();
+                final InAppReview inAppReview = InAppReview.instance;
+                if (await inAppReview.isAvailable()) {
+                  inAppReview.requestReview();
+                } else {
+                  Utils.launchURL(
+                      'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
+                }
                 break;
               }
-            case 9: //Source code
+            case OptionMenuItem.closeApp:
               {
-                showSingleRowOptionMenu(listLinksItem, kLinks);
-                break;
-              }
-            case 10: //User Guide
-              {
-                Utils.launchURL(kUserGuideUrl);
-                break;
-              }
-            case 11: //Export coverage
-              {
+                // iOS (and Web) do not permit an app to programmatically exit, so we just
+                // inform the user. On Android the equivalent menu item fully exits the app.
                 widget.showSnackBar(
-                    message: 'Exporting coverage polygons...');
-                ExportHelper.exportSignalPolygons().then((List<String> paths) {
-                  if (paths.isEmpty) {
-                    widget.showSnackBar(
-                        message:
-                            'There are no signal polygons on the map to export. Tap a tower to draw its coverage first...');
-                  } else {
-                    final StringBuffer message = StringBuffer();
-                    message.write(
-                        'Exported ${paths.length} files to the app documents folder:\n');
-                    for (final String path in paths) {
-                      message.write('$path\n');
-                    }
-                    widget.showSnackBar(
-                        message: message.toString(),
-                        duration: const Duration(seconds: 10));
-                  }
-                });
+                    message:
+                        'Close App is not available on this platform — use the device '
+                        'switcher / home button to leave the app.');
                 break;
               }
           }
         },
       ),
     );
+  }
+
+  String _topLevelTitle(OptionMenuItem item) {
+    switch (item) {
+      case OptionMenuItem.reloadEverything:
+        return Strings.reload_everything;
+      case OptionMenuItem.followGPS:
+        return MapBodyState.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
+      case OptionMenuItem.hideBorders:
+        return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
+      case OptionMenuItem.searchSites:
+        return Strings.search_sites;
+      case OptionMenuItem.mapMode:
+        return Strings.map_mode;
+      case OptionMenuItem.hidingMenu:
+        return Strings.hiding_menu;
+      case OptionMenuItem.exportData:
+        return Strings.export_data;
+      case OptionMenuItem.polygonPrecision:
+        return Strings.polygon_precision;
+      case OptionMenuItem.removeAds:
+        return Strings.remove_ads;
+      case OptionMenuItem.donate:
+        return Strings.donate;
+      case OptionMenuItem.problemsMenu:
+        return Strings.problems_menu;
+      case OptionMenuItem.rateApp:
+        return Strings.rateApp;
+      case OptionMenuItem.closeApp:
+        return Strings.closeApp;
+    }
+  }
+
+  bool _hasSubmenu(OptionMenuItem item) =>
+      item == OptionMenuItem.mapMode ||
+      item == OptionMenuItem.hidingMenu ||
+      item == OptionMenuItem.exportData ||
+      item == OptionMenuItem.polygonPrecision ||
+      item == OptionMenuItem.problemsMenu;
+
+  // ----- Hiding Menu (mirrors Android: Hide Radiation on Click + Disable frequency refarming) -----
+  Future showHidingMenu() async {
+    final SingleRowItem hideRadiation = SingleRowItem(
+      title: PolygonHelper.drawPolygonsOnClick
+          ? Strings.hiding_menu_hide_radiation
+          : Strings.hiding_menu_draw_radiation,
+      isEnabled: true,
+    );
+    final SingleRowItem disableRefarm = SingleRowItem(
+      title: Strings.disable_refarming,
+      isEnabled: true,
+      isChecked: !DeviceDetails.refarmEnabled,
+    );
+    final List<SingleRowItem> items = <SingleRowItem>[
+      SingleRowItem(isTitle: true, title: Strings.hiding_menu, isEnabled: false),
+      hideRadiation,
+      disableRefarm,
+    ];
+    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kHidingMenu);
+    if (chosen == null) return;
+    if (chosen == hideRadiation) {
+      PolygonHelper.drawPolygonsOnClick = !PolygonHelper.drawPolygonsOnClick;
+      SharedPreferencesHelper.saveBoolean(
+          key: SharedPreferencesHelper.kdrawPolygonsOnClick,
+          value: PolygonHelper.drawPolygonsOnClick,
+          prefs: prefs);
+      if (!PolygonHelper.drawPolygonsOnClick) {
+        PolygonHelper().clearSitePatterns(false);
+      }
+      setState(() {});
+    } else if (chosen == disableRefarm) {
+      DeviceDetails.refarmEnabled = !DeviceDetails.refarmEnabled;
+      SharedPreferencesHelper.saveBoolean(
+          key: SharedPreferencesHelper.krefarmEnabled,
+          value: DeviceDetails.refarmEnabled,
+          prefs: prefs);
+      // Re-classify licences: reload sites + polygons with the new refarm setting.
+      SiteHelper().clearMap(
+          onCameraMoveFromLastLocation: widget.onCameraMoveFromLastLocation);
+      setState(() {});
+      widget.showSnackBar(
+          message: DeviceDetails.refarmEnabled
+              ? 'Refarming on: legacy 3G licences in 4G/5G bands shown at their current reuse (4G LTE).'
+              : 'Refarming off: showing the literal licence type (e.g. 3G UMTS).');
+    }
+  }
+
+  // ----- Export Data (mirrors Android: Export Towers GeoJSON/CSV + Export Coverage GeoJSON) -----
+  Future showExportMenu() async {
+    final List<SingleRowItem> items = <SingleRowItem>[
+      SingleRowItem(isTitle: true, title: Strings.export_data, isEnabled: false),
+      SingleRowItem(title: Strings.export_towers_geojson, isEnabled: true),
+      SingleRowItem(title: Strings.export_towers_csv, isEnabled: true),
+      SingleRowItem(title: Strings.export_coverage_geojson, isEnabled: true),
+    ];
+    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kExportMenu);
+    if (chosen == null) return;
+    if (chosen.title == Strings.export_towers_geojson ||
+        chosen.title == Strings.export_towers_csv) {
+      widget.showSnackBar(message: 'Exporting towers...');
+      ExportHelper.exportTowers().then((List<String> paths) {
+        _reportExport(paths, 'towers');
+      });
+    } else if (chosen.title == Strings.export_coverage_geojson) {
+      widget.showSnackBar(message: 'Exporting coverage polygons...');
+      ExportHelper.exportSignalPolygons().then((List<String> paths) {
+        _reportExport(paths, 'coverage polygons');
+      });
+    }
+  }
+
+  void _reportExport(List<String> paths, String what) {
+    if (paths.isEmpty) {
+      widget.showSnackBar(
+          message:
+              'There are no $what on the map to export. Load some towers${what == "coverage polygons" ? " and tap one to draw its coverage" : ""} first...');
+    } else {
+      final StringBuffer message = StringBuffer();
+      message.write('Exported ${paths.length} files to the app documents folder:\n');
+      for (final String path in paths) {
+        message.write('$path\n');
+      }
+      widget.showSnackBar(message: message.toString(), duration: const Duration(seconds: 10));
+    }
+  }
+
+  // ----- Polygon Precision (number of points per ring) -----
+  Future showPolygonPrecisionMenu() async {
+    final int current = _OptionsMenuState._precisionIndex(PolygonHelper.polygonBearingIncrement);
+    final List<SingleRowItem> items = <SingleRowItem>[
+      SingleRowItem(isTitle: true, title: Strings.polygon_precision, isEnabled: false),
+      SingleRowItem(
+          title: Strings.polygon_precision_low,
+          isEnabled: true,
+          isChecked: current == 0),
+      SingleRowItem(
+          title: Strings.polygon_precision_medium,
+          isEnabled: true,
+          isChecked: current == 1),
+      SingleRowItem(
+          title: Strings.polygon_precision_high,
+          isEnabled: true,
+          isChecked: current == 2),
+    ];
+    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kPolygonPrecision);
+    if (chosen == null) return;
+    int index;
+    if (chosen.title == Strings.polygon_precision_low) {
+      index = 0;
+    } else if (chosen.title == Strings.polygon_precision_high) {
+      index = 2;
+    } else {
+      index = 1;
+    }
+    PolygonHelper.polygonBearingIncrement = _precisionIncrement(index);
+    SharedPreferencesHelper.setInt(
+        key: SharedPreferencesHelper.kpolygonPrecision, value: index, prefs: prefs);
+    setState(() {});
+    widget.showSnackBar(
+        message: 'Polygon precision set to ${_topLevelPrecisionLabel(index)}. '
+            'Newly drawn coverage will use this.');
+  }
+
+  String _topLevelPrecisionLabel(int index) {
+    switch (index) {
+      case 0:
+        return 'Low';
+      case 2:
+        return 'High';
+      default:
+        return 'Medium';
+    }
+  }
+
+  // ----- Problems Menu (mirrors Android: Developer Mode, User Guide, Report Problem,
+  //      plus the Links items — AusPhoneTowers.com.au, iOS App Store, Source Code) -----
+  Future showProblemsMenu() async {
+    final List<SingleRowItem> items = <SingleRowItem>[
+      SingleRowItem(isTitle: true, title: Strings.problems_menu, isEnabled: false),
+      SingleRowItem(
+          title: MapHelper().developerMode ? Strings.regularMode : Strings.developerMode,
+          isEnabled: true),
+      SingleRowItem(title: Strings.userGuide, isEnabled: true),
+      SingleRowItem(title: Strings.reportProblem, isEnabled: true),
+      SingleRowItem(isTitle: true, title: Strings.links, isEnabled: false),
+      SingleRowItem(title: Strings.ausphonetowers, isEnabled: true),
+      SingleRowItem(title: Strings.iosAppStore, isEnabled: true),
+      SingleRowItem(title: Strings.sourceCode, isEnabled: true),
+    ];
+    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kProblemsMenu);
+    if (chosen == null) return;
+    if (chosen.title == Strings.userGuide) {
+      Utils.launchURL(kUserGuideUrl);
+    } else if (chosen.title == Strings.reportProblem) {
+      widget.takeScreenshot();
+    } else if (chosen.title == Strings.ausphonetowers) {
+      Utils.launchURL('https://ausphonetowers.com.au/');
+    } else if (chosen.title == Strings.iosAppStore) {
+      Utils.launchURL(
+          'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
+    } else if (chosen.title == Strings.sourceCode) {
+      Utils.launchURL(
+          'https://github.com/bradrushworth/aus_phone_towers_iphone');
+    } else {
+      MapHelper().developerMode = !MapHelper().developerMode;
+      MapHelper().toggleDeveloperMode();
+      PolygonHelper().refreshPolygons(false);
+      setState(() {});
+    }
   }
 
   Future showSingleRowOptionMenu(
@@ -237,6 +483,10 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 ),
               ] else ...[
                 if (singleRowItem.prefix != null) ...[singleRowItem.prefix!],
+                if (singleRowItem.isChecked) ...[
+                  Icon(Icons.check_box, color: Colors.black54, size: 14),
+                  SizedBox(width: 8),
+                ],
                 Expanded(
                   child: Padding(
                     padding: EdgeInsets.only(
@@ -288,32 +538,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
       //     }
       //     break;
       //   }
-      case kHidingMenu: //Hiding menu
-        {
-          switch (selectedOptionItem) {
-            case 1: //Hide/ Show radiation on click
-              {
-                PolygonHelper.drawPolygonsOnClick =
-                    !PolygonHelper.drawPolygonsOnClick;
-                singleRowItem.title = PolygonHelper.drawPolygonsOnClick
-                    ? Strings.hiding_menu_hide_radiation
-                    : Strings.hiding_menu_draw_radiation;
-                setState(() {});
-                if (!PolygonHelper.drawPolygonsOnClick) {
-                  PolygonHelper().clearSitePatterns(false);
-                  SiteHelper().clearPolygons();
-                  //disableFollowGPS(); TODO
-                }
-                //Saving in shared pref
-                SharedPreferencesHelper.saveBoolean(
-                    key: SharedPreferencesHelper.kdrawPolygonsOnClick,
-                    value: PolygonHelper.drawPolygonsOnClick,
-                    prefs: prefs);
-                break;
-              }
-          }
-          break;
-        }
       case kRemoveAds:
         {
           switch (selectedOptionItem) {
@@ -356,43 +580,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
               {
                 PurchaseHelper()
                     .initiatePurchase(sku: PurchaseHelper.SKU_DONATION_LARGE);
-                break;
-              }
-          }
-          break;
-        }
-      case kLinks:
-        {
-          switch (selectedOptionItem) {
-            case 1: //Rate App TODO Not relevant for web!
-              {
-                final InAppReview inAppReview = InAppReview.instance;
-
-                if (await inAppReview.isAvailable()) {
-                  inAppReview.requestReview();
-                }
-
-                // This package also has in app review, but it should not be used on a direct button tab.
-                // inAppReview.openStoreListing(appStoreId: kAppleId
-
-                break;
-              }
-
-            case 2: //AusPhoneTowers.com.au
-              {
-                Utils.launchURL('https://ausphonetowers.com.au/');
-                break;
-              }
-            case 3: //iOS App Store
-              {
-                Utils.launchURL(
-                    'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
-                break;
-              }
-            case 4: //Source Code
-              {
-                Utils.launchURL(
-                    'https://github.com/bradrushworth/aus_phone_towers_iphone');
                 break;
               }
           }
@@ -445,43 +632,21 @@ class _OptionsMenuState extends State<OptionsMenu> {
 }
 
 //********************** All options ***************************//
-class OptionItem {
-  OptionItem({required this.title, this.trailing = false});
-
-  String title;
-  final bool trailing;
-}
-
-List<OptionItem> listOptionItem = <OptionItem>[
-  OptionItem(
-      title: PolygonHelper.showPolygonBorders
-          ? Strings.hide_border
-          : Strings.show_border),
-  OptionItem(title: Strings.search_sites),
-  OptionItem(title: Strings.reload_everything),
-  OptionItem(title: Strings.map_mode, trailing: true),
-  OptionItem(title: Strings.hiding_menu, trailing: true),
-  OptionItem(title: Strings.remove_ads, trailing: true),
-  OptionItem(title: Strings.donate, trailing: true),
-  OptionItem(
-      title: MapHelper().developerMode
-          ? Strings.regularMode
-          : Strings.developerMode),
-  OptionItem(title: Strings.reportProblem),
-  OptionItem(title: Strings.userGuide),
-  OptionItem(title: Strings.links, trailing: true),
-  OptionItem(title: Strings.exportPolygons),
-];
 
 //********************** Clear map ***************************//
 class SingleRowItem {
   SingleRowItem(
-      {this.isTitle = false, required this.title, this.prefix, this.isEnabled = true});
+      {this.isTitle = false,
+      required this.title,
+      this.prefix,
+      this.isEnabled = true,
+      this.isChecked = false});
 
   bool isTitle;
   String title;
   final Widget? prefix;
   bool isEnabled;
+  bool isChecked;
 }
 
 // List<SingleRowItem> listClearMapItem = <SingleRowItem>[
@@ -490,14 +655,6 @@ class SingleRowItem {
 //   SingleRowItem(
 //       title: Strings.reload_everything, prefix: Icon(Icons.delete_forever))
 // ];
-
-List<SingleRowItem> listHidingMenuItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.hiding_menu, isEnabled: false),
-  SingleRowItem(
-      title: PolygonHelper.drawPolygonsOnClick
-          ? Strings.hiding_menu_hide_radiation
-          : Strings.hiding_menu_draw_radiation),
-];
 
 List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
   SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: true),
@@ -532,14 +689,6 @@ List<SingleRowItem> listDonateItem = <SingleRowItem>[
   SingleRowItem(
       title: Strings.donateLarge,
       isEnabled: !PurchaseHelper().isDonateLargePurchased),
-];
-
-List<SingleRowItem> listLinksItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.links),
-  SingleRowItem(title: Strings.rateApp),
-  SingleRowItem(title: Strings.ausphonetowers),
-  SingleRowItem(title: Strings.iosAppStore),
-  SingleRowItem(title: Strings.sourceCode),
 ];
 
 //********************** Radio options ***************************//

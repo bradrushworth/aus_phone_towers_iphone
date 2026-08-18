@@ -32,6 +32,9 @@ const int kHidingMenu = 2;
 const int kRemoveAds = 3;
 const int kDonate = 4;
 const int kLinks = 5;
+const int kExportMenu = 6;
+const int kPolygonPrecision = 7;
+const int kProblemsMenu = 8;
 
 const String kAppleId = '1488594332';
 

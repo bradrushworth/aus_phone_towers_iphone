@@ -41,6 +41,17 @@ class PolygonHelper with ChangeNotifier {
   static final double BEARING_START = 1.25;
   static final double BEARING_INCREMENT = 2.50;
 
+  /// Polygon rendering precision — the bearing step (in degrees) used when tracing each
+  /// signal-strength band. A smaller step draws more points and a smoother, more accurate
+  /// shape (at the cost of CPU/time); a larger step is faster but blockier. Mirrors the
+  /// Android app's polygon-point-count control. Default 2.5° ≈ 144 points per ring.
+  static double polygonBearingIncrement = BEARING_INCREMENT;
+
+  /// Named precision presets for the Polygon Precision menu.
+  static const double kPolygonPrecisionLow = 5.0; // ~72 points per ring
+  static const double kPolygonPrecisionMedium = 2.5; // ~144 points per ring (default)
+  static const double kPolygonPrecisionHigh = 1.0; // ~360 points per ring
+
   /// Default signal-strength ring drawn on first launch (or before any stored
   /// preference is applied). Indexes into NetworkTypeHelper.getNetworkBars():
   /// 0 = Maximum, 1 = Strong, 2 = Good, 3 = Weak. We default to Strong.
@@ -500,7 +511,7 @@ class PolygonHelper with ChangeNotifier {
     }
     //Log.d("PolygonHelper", "power_dBm="+power_dBm+" freeSpaceLoss_dBi="+freeSpaceLoss_dBi+" towerHeight="+towerHeight);
 
-    for (double bearing = BEARING_START; bearing < 360; bearing += BEARING_INCREMENT) {
+    for (double bearing = BEARING_START; bearing < 360; bearing += polygonBearingIncrement) {
       //TODO calculare Terrain
       Set<HeightDistancePair> heightToDistance = {};
       int hillHeight = 0;
