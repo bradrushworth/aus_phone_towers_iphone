@@ -32,6 +32,7 @@ enum OptionMenuItem {
   reloadEverything,
   followGPS,
   lockMap,
+  rotatingMap,
   hideBorders,
   searchSites,
   mapMode,
@@ -168,6 +169,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 setState(() {});
                 break;
               }
+            case OptionMenuItem.rotatingMap:
+              {
+                showRotatingMapMenu();
+                break;
+              }
             case OptionMenuItem.hideBorders:
               {
                 PolygonHelper.showPolygonBorders = !PolygonHelper.showPolygonBorders;
@@ -280,6 +286,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
         return MapHelper.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
       case OptionMenuItem.lockMap:
         return MapBodyState.lockMap ? Strings.unlock_map : Strings.lock_map;
+      case OptionMenuItem.rotatingMap:
+        return Strings.rotating_map;
       case OptionMenuItem.hideBorders:
         return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
       case OptionMenuItem.searchSites:
@@ -306,11 +314,45 @@ class _OptionsMenuState extends State<OptionsMenu> {
   }
 
   bool _hasSubmenu(OptionMenuItem item) =>
+      item == OptionMenuItem.rotatingMap ||
       item == OptionMenuItem.mapMode ||
       item == OptionMenuItem.hidingMenu ||
       item == OptionMenuItem.exportData ||
       item == OptionMenuItem.polygonPrecision ||
       item == OptionMenuItem.problemsMenu;
+
+  // ----- Rotating Map (mirrors Android: Travel Direction / Phone Orientation / Disable
+  //       Rotation, mutually-exclusive rotatingMapGroup radio group) -----
+  Future showRotatingMapMenu() async {
+    final SingleRowItem travelDirection = SingleRowItem(
+        title: Strings.rotating_map_travel_direction,
+        isEnabled: true,
+        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.travelDirection);
+    final SingleRowItem phoneOrientation = SingleRowItem(
+        title: Strings.rotating_map_phone_orientation,
+        isEnabled: true,
+        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.phoneOrientation);
+    final SingleRowItem disableRotation = SingleRowItem(
+        title: Strings.rotating_map_disable,
+        isEnabled: true,
+        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.disableRotation);
+    final List<SingleRowItem> items = <SingleRowItem>[
+      SingleRowItem(isTitle: true, title: Strings.rotating_map, isEnabled: false),
+      travelDirection,
+      phoneOrientation,
+      disableRotation,
+    ];
+    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kRotatingMapMenu);
+    if (chosen == null) return;
+    if (chosen == travelDirection) {
+      await MapBodyState.setRotatingMapMode(RotatingMapMode.travelDirection);
+    } else if (chosen == phoneOrientation) {
+      await MapBodyState.setRotatingMapMode(RotatingMapMode.phoneOrientation);
+    } else if (chosen == disableRotation) {
+      await MapBodyState.setRotatingMapMode(RotatingMapMode.disableRotation);
+    }
+    setState(() {});
+  }
 
   // ----- Hiding Menu (mirrors Android: Hide Radiation on Click + Disable frequency refarming) -----
   Future showHidingMenu() async {

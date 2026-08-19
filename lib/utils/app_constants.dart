@@ -35,6 +35,7 @@ const int kLinks = 5;
 const int kExportMenu = 6;
 const int kPolygonPrecision = 7;
 const int kProblemsMenu = 8;
+const int kRotatingMapMenu = 9;
 
 const String kAppleId = '1488594332';
 

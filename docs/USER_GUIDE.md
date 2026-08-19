@@ -56,6 +56,16 @@ The menu is grouped the same way as the Android app:
   gestures, the built‑in "my location" button, Follow GPS's auto‑recentring, and Search's
   jump‑to‑result. Useful when you want to screenshot or study a fixed area of coverage without
   anything nudging the camera.
+- **Rotating Map** — choose how the map's bearing follows you while **Follow GPS** is on
+  (rotation is only ever applied on a Follow‑GPS location update, so it has no effect while
+  Follow GPS is off):
+  - **Travel Direction** (default) — the map rotates to face the direction you're travelling,
+    based on your GPS course‑over‑ground.
+  - **Phone Orientation** — the map rotates to face the direction you point the phone, based on
+    the device's compass/magnetometer. Useful when stationary and lining up with a tower you can
+    see. If the device has no compass, a message is shown and the map falls back to not rotating
+    for this reading.
+  - **Disable Rotation** — the map's bearing is never changed automatically.
 - **Show / Hide Borders** — toggle the radiation polygon outlines.
 - **Search Sites** — find a specific tower / site.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.
@@ -128,6 +138,7 @@ Open the drawer (top‑left) to control what is shown:
 | Timing‑advance ring | Yes | Not yet |
 | Observation markers (yellow / orange) | Yes | Not yet |
 | Follow‑GPS drive mode | Yes | Yes |
+| Rotating Map (Travel Direction / Phone Orientation / Disable Rotation) | Yes | Yes |
 | Frequency refarming toggle (literal vs reuse) | Yes | Yes |
 | Polygon precision (point count) control | Yes | Yes |
 | Export Towers (GeoJSON/CSV) | Yes | Yes |

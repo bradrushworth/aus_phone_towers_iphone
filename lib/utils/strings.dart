@@ -59,6 +59,10 @@ class Strings {
   static String follow_gps = 'Follow GPS';
   static String follow_gps_on = 'Disable Follow GPS';
   static String follow_gps_off = 'Follow GPS';
+  static String rotating_map = 'Rotating Map';
+  static String rotating_map_travel_direction = 'Travel Direction';
+  static String rotating_map_phone_orientation = 'Phone Orientation';
+  static String rotating_map_disable = 'Disable Rotation';
   static String hide_border = 'Hide Borders';
   static String show_border = 'Show Borders';
   static String lock_map = 'Lock Map';
