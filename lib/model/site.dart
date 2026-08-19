@@ -282,9 +282,12 @@ class Site {
   // How populated is the containing geohash with sites?
   // Geohash length of SiteHelper.GEOHASH_LENGTH is currently 5.
   static CityDensity getCityDensityStatic(int numSitesInGeohash) {
-    if (numSitesInGeohash >= 50) return CityDensity.METRO;
-    if (numSitesInGeohash >= 30) return CityDensity.URBAN;
-    if (numSitesInGeohash >=  5) return CityDensity.SUBURBAN;
+    // Calibrated against real Australian CBD site counts (per-telco per geohash-5 cell):
+    // Sydney/Melbourne CBDs reach 150+; Perth/Adelaide/Brisbane/Canberra 25-149;
+    // residential/outer-suburban 4-24; rural 0-3. Matches the Android app's thresholds.
+    if (numSitesInGeohash >= 150) return CityDensity.METRO;
+    if (numSitesInGeohash >= 25) return CityDensity.URBAN;
+    if (numSitesInGeohash >=  4) return CityDensity.SUBURBAN;
     return CityDensity.OPEN;
   }
 
