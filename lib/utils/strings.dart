@@ -61,6 +61,8 @@ class Strings {
   static String follow_gps_off = 'Follow GPS';
   static String hide_border = 'Hide Borders';
   static String show_border = 'Show Borders';
+  static String lock_map = 'Lock Map';
+  static String unlock_map = 'Unlock Map';
   static String search_sites = 'Search Sites';
   static String clear_map = 'Clear Map';
   static String clear_polygons = 'Clear Polygons';
@@ -75,6 +77,7 @@ class Strings {
   static String hiding_menu = 'Hiding Menu';
   static String hiding_menu_hide_radiation = 'Hide Radiation on Click';
   static String hiding_menu_draw_radiation = 'Draw Radiation on Click';
+  static String hiding_menu_multi_tower = 'Multi-Tower Coverage';
   static String disable_refarming = 'Disable frequency refarming';
   static String disable_refarming_summary =
       'When on, legacy 3G (UMTS) licences in bands now run as 4G/5G are shown at their current reuse (4G LTE).';

@@ -254,6 +254,8 @@ class MapBodyState extends AbstractMapBodyState {
   // Follow GPS (drive mode): keeps the map centred on the device's location. Mirrors the
   // Android app's "Follow GPS" toolbar action.
   static bool followGPS = false;
+  // Lock Map: freezes pan/zoom/rotate/tilt so the map can be screenshotted. Requested in #27.
+  static bool lockMap = false;
   static StreamSubscription<LocationData>? _followGpsSubscription;
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
@@ -306,13 +308,14 @@ class MapBodyState extends AbstractMapBodyState {
                 buildingsEnabled: false,
                 compassEnabled: !kIsWeb,
                 myLocationButtonEnabled: true,
+                scrollGesturesEnabled: !MapBodyState.lockMap,
                 trafficEnabled: false,
-                rotateGesturesEnabled: true,
-                tiltGesturesEnabled: true,
+                rotateGesturesEnabled: !MapBodyState.lockMap,
+                tiltGesturesEnabled: !MapBodyState.lockMap,
                 indoorViewEnabled: false,
                 mapToolbarEnabled: true,
                 zoomControlsEnabled: true,
-                zoomGesturesEnabled: true,
+                zoomGesturesEnabled: !MapBodyState.lockMap,
                 initialCameraPosition: CameraPosition(target: kLagLongBathurst, zoom: kDefaultZoom),
                 markers: _buildMarkerSet(),
                 polygons: PolygonHelper.globalListPolygons.isNotEmpty
@@ -1208,8 +1211,10 @@ class MapBodyState extends AbstractMapBodyState {
     // Get site details
     //String name = site.getNameFormatted();
 
-    // Clear existing polygons on clicking the next one
-    PolygonHelper().clearSitePatterns(false);
+    // Clear existing polygons on clicking the next one (unless multi-tower coverage is on)
+    if (!PolygonHelper.multiTowerCoverage) {
+      PolygonHelper().clearSitePatterns(false);
+    }
 
     _settingModalBottomSheet(context, site);
 

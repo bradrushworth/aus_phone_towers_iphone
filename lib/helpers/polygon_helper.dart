@@ -71,6 +71,9 @@ class PolygonHelper with ChangeNotifier {
       new Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>();
   static late Map<Site, Map<DeviceDetails, Set<PolygonContainer>>> sitesPolygonsOppositeTerrain;
   static bool drawPolygonsOnClick = true;
+  // When true, tapping a tower does NOT clear existing polygons, so multiple
+  // towers' coverage can be shown together. Requested in issue #27.
+  static bool multiTowerCoverage = false;
   static Logger logger = Logger();
 
   //static Set<Polygon> globalPolygons = Set<Polygon>();
