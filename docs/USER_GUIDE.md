@@ -52,6 +52,10 @@ The menu is grouped the same way as the Android app:
 - **Reload Everything** — clear the map and re‑download all towers for the current area.
 - **Follow GPS** — toggle "drive mode". When on, the map stays centred on your location as you
   move (uses more battery). When off, the map stops recentring.
+- **Lock / Unlock Map** — freeze (or unfreeze) *all* camera movement: pan, zoom, rotate and tilt
+  gestures, the built‑in "my location" button, Follow GPS's auto‑recentring, and Search's
+  jump‑to‑result. Useful when you want to screenshot or study a fixed area of coverage without
+  anything nudging the camera.
 - **Show / Hide Borders** — toggle the radiation polygon outlines.
 - **Search Sites** — find a specific tower / site.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.
@@ -61,6 +65,9 @@ The menu is grouped the same way as the Android app:
   - **Disable frequency refarming** — when ticked, legacy 3G (UMTS) licences that now run as 4G/5G
     (e.g. band‑refarmed 900/2100 MHz) are shown at their *literal* licence type (3G UMTS) instead
     of being re‑classified to their current reuse (4G LTE). Changing this reloads the towers.
+  - **Multi‑Tower Coverage** — when ticked, tapping additional towers *adds* their coverage
+    polygons to the map instead of replacing the previous tower's coverage. Turn it off (and tap
+    any tower) to clear all accumulated coverage.
 - **Export Data** — a sub‑menu:
   - **Export Towers (GeoJSON)** — one point per tower (carrier, generation, frequency, azimuth,
     height, EIRP, …) for every tower currently on the map.

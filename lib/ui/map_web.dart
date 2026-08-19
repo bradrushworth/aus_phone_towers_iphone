@@ -53,16 +53,18 @@ abstract class AbstractMapBodyState extends State<MapBody> {
   }
 
   void handleSearchQuery(dynamic mapController, String query) {
-    // Centre the map on Australia
-    mapController.moveCamera(
-      CameraUpdate.newLatLngBounds(
-        LatLngBounds(
-          southwest: LatLng(-44, 113),
-          northeast: LatLng(-10, 154),
+    if (!MapBodyState.lockMap) {
+      // Centre the map on Australia
+      mapController.moveCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(-44, 113),
+            northeast: LatLng(-10, 154),
+          ),
+          10.0,
         ),
-        10.0,
-      ),
-    );
+      );
+    }
 
     //Clear the map
     SiteHelper()

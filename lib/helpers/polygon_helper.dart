@@ -71,6 +71,9 @@ class PolygonHelper with ChangeNotifier {
       new Map<Site, Map<DeviceDetails, Set<PolygonContainer>>>();
   static late Map<Site, Map<DeviceDetails, Set<PolygonContainer>>> sitesPolygonsOppositeTerrain;
   static bool drawPolygonsOnClick = true;
+  // When true, tapping a tower does NOT clear existing polygons, so multiple
+  // towers' coverage can be shown together. Requested in issue #27.
+  static bool multiTowerCoverage = false;
   static Logger logger = Logger();
 
   //static Set<Polygon> globalPolygons = Set<Polygon>();
@@ -112,10 +115,13 @@ class PolygonHelper with ChangeNotifier {
         Map<DeviceDetails, Set<PolygonContainer>>();
 
     if (sitesPolygons.containsKey(site)) {
-      //Remove any existing polygons first
-      globalListPolygons.removeWhere((mapOverlay) {
-        return !mapOverlay.polygon!.polygonId.value.contains('developer');
-      });
+      //Remove any existing polygons first (unless multi-tower coverage is on, in which case
+      //other previously-shown towers' polygons should be left alone - see #27)
+      if (!multiTowerCoverage) {
+        globalListPolygons.removeWhere((mapOverlay) {
+          return !mapOverlay.polygon!.polygonId.value.contains('developer');
+        });
+      }
       // Remove this site's labels too, so they don't linger once the polygon is gone.
       labelOverlays.removeWhere((mapOverlay) => mapOverlay.site == site);
 

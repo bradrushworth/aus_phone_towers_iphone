@@ -253,8 +253,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   Location _locationService = new Location();
 
   // Follow GPS (drive mode): keeps the map centred on the device's location. Mirrors the
-  // Android app's "Follow GPS" toolbar action.
-
+  // Android app's "Follow GPS" toolbar action. The bool itself lives on MapHelper (see #23).
+  // Lock Map: freezes pan/zoom/rotate/tilt/my-location/search camera moves so the map can be
+  // screenshotted. Requested in #27.
+  static bool lockMap = false;
   static StreamSubscription<LocationData>? _followGpsSubscription;
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
@@ -307,14 +309,15 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                 mapType: mapHelper.getMapType(),
                 buildingsEnabled: false,
                 compassEnabled: !kIsWeb,
-                myLocationButtonEnabled: true,
+                myLocationButtonEnabled: !MapBodyState.lockMap,
+                scrollGesturesEnabled: !MapBodyState.lockMap,
                 trafficEnabled: false,
-                rotateGesturesEnabled: true,
-                tiltGesturesEnabled: true,
+                rotateGesturesEnabled: !MapBodyState.lockMap,
+                tiltGesturesEnabled: !MapBodyState.lockMap,
                 indoorViewEnabled: false,
                 mapToolbarEnabled: true,
                 zoomControlsEnabled: true,
-                zoomGesturesEnabled: true,
+                zoomGesturesEnabled: !MapBodyState.lockMap,
                 initialCameraPosition: CameraPosition(target: kLagLongBathurst, zoom: kDefaultZoom),
                 markers: _buildMarkerSet(),
                 polygons: PolygonHelper.globalListPolygons.isNotEmpty
@@ -869,6 +872,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       }
       _followGpsSubscription = state._locationService.onLocationChanged.listen((LocationData location) {
         if (!MapHelper.followGPS) return;
+        if (lockMap) return;
         state.mapController.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -1258,11 +1262,14 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   void showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {
     setState(() {
-      //Remove any existing polygons first
+      //Remove any existing polygons first (unless multi-tower coverage is on, in which
+      //case previously-shown polygons should remain rendered alongside the new one)
       //PolygonHelper().globalListPolygons.clear();
-      PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
-        return !mapOverlay.polygon!.polygonId.value.contains('developer');
-      });
+      if (!PolygonHelper.multiTowerCoverage) {
+        PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
+          return !mapOverlay.polygon!.polygonId.value.contains('developer');
+        });
+      }
       // Drop this site's labels as well so they don't remain after the polygons are cleared.
       PolygonHelper.labelOverlays.removeWhere((mapOverlay) => mapOverlay.site == site);
     });
@@ -1278,8 +1285,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     // Get site details
     //String name = site.getNameFormatted();
 
-    // Clear existing polygons on clicking the next one
-    PolygonHelper().clearSitePatterns(false);
+    // Clear existing polygons on clicking the next one (unless multi-tower coverage is on)
+    if (!PolygonHelper.multiTowerCoverage) {
+      PolygonHelper().clearSitePatterns(false);
+    }
 
     _settingModalBottomSheet(context, site);
 

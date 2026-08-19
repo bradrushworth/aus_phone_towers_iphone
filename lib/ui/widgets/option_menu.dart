@@ -31,6 +31,7 @@ typedef void ShowSnackBar({
 enum OptionMenuItem {
   reloadEverything,
   followGPS,
+  lockMap,
   hideBorders,
   searchSites,
   mapMode,
@@ -77,6 +78,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
     final int precisionIndex = SharedPreferencesHelper.getInt(
         key: SharedPreferencesHelper.kpolygonPrecision, prefs: prefs);
     PolygonHelper.polygonBearingIncrement = _precisionIncrement(precisionIndex);
+    PolygonHelper.multiTowerCoverage =
+        prefs.getBool(SharedPreferencesHelper.kmultiTowerCoverage) ?? false;
   }
 
   static double _precisionIncrement(int index) {
@@ -118,15 +121,20 @@ class _OptionsMenuState extends State<OptionsMenu> {
                   if (_hasSubmenu(item)) ...[
                     Icon(Icons.play_arrow, color: Colors.black54, size: 12)
                   ] else if (item == OptionMenuItem.hideBorders ||
-                      item == OptionMenuItem.followGPS) ...[
+                      item == OptionMenuItem.followGPS ||
+                      item == OptionMenuItem.lockMap) ...[
                     Icon(
                       item == OptionMenuItem.hideBorders
                           ? (PolygonHelper.showPolygonBorders
                               ? Icons.check_box_outline_blank
                               : Icons.check_box)
-                          : (MapHelper.followGPS
-                              ? Icons.check_box
-                              : Icons.check_box_outline_blank),
+                          : (item == OptionMenuItem.followGPS
+                              ? (MapHelper.followGPS
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank)
+                              : (MapBodyState.lockMap
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank)),
                       color: Colors.black54,
                       size: 14,
                     )
@@ -148,6 +156,16 @@ class _OptionsMenuState extends State<OptionsMenu> {
             case OptionMenuItem.followGPS:
               {
                 await MapBodyState.toggleFollowGPS();
+                break;
+              }
+            case OptionMenuItem.lockMap:
+              {
+                MapBodyState.lockMap = !MapBodyState.lockMap;
+                widget.showSnackBar(
+                    message: MapBodyState.lockMap
+                        ? 'Map locked — all camera movement (gestures, my location, Follow GPS, search) disabled for screenshots.'
+                        : 'Map unlocked — camera movement enabled again.');
+                setState(() {});
                 break;
               }
             case OptionMenuItem.hideBorders:
@@ -260,6 +278,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
         return Strings.reload_everything;
       case OptionMenuItem.followGPS:
         return MapHelper.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
+      case OptionMenuItem.lockMap:
+        return MapBodyState.lockMap ? Strings.unlock_map : Strings.lock_map;
       case OptionMenuItem.hideBorders:
         return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
       case OptionMenuItem.searchSites:
@@ -309,6 +329,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
       SingleRowItem(isTitle: true, title: Strings.hiding_menu, isEnabled: false),
       hideRadiation,
       disableRefarm,
+      SingleRowItem(
+        title: Strings.hiding_menu_multi_tower,
+        isEnabled: true,
+        isChecked: PolygonHelper.multiTowerCoverage,
+      ),
     ];
     final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kHidingMenu);
     if (chosen == null) return;
@@ -336,6 +361,20 @@ class _OptionsMenuState extends State<OptionsMenu> {
           message: DeviceDetails.refarmEnabled
               ? 'Refarming on: legacy 3G licences in 4G/5G bands shown at their current reuse (4G LTE).'
               : 'Refarming off: showing the literal licence type (e.g. 3G UMTS).');
+    } else if (chosen.title == Strings.hiding_menu_multi_tower) {
+      PolygonHelper.multiTowerCoverage = !PolygonHelper.multiTowerCoverage;
+      SharedPreferencesHelper.saveBoolean(
+          key: SharedPreferencesHelper.kmultiTowerCoverage,
+          value: PolygonHelper.multiTowerCoverage,
+          prefs: prefs);
+      if (!PolygonHelper.multiTowerCoverage) {
+        PolygonHelper().clearSitePatterns(false);
+      }
+      setState(() {});
+      widget.showSnackBar(
+          message: PolygonHelper.multiTowerCoverage
+              ? 'Multi-Tower Coverage on: tapping towers adds their coverage to the map.'
+              : 'Multi-Tower Coverage off: tapping a tower replaces the previous coverage.');
     }
   }
 

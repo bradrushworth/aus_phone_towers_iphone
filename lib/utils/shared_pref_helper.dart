@@ -43,6 +43,7 @@ class SharedPreferencesHelper {
   static final String kshowPolygonBorders = 'showPolygonBorders';
   static final String kMapMode = 'mapMode';
   static final String kdrawPolygonsOnClick = 'drawPolygonsOnClick';
+  static final String kmultiTowerCoverage = 'multiTowerCoverage';
   static final String kcalculateTerrain = 'calculateTerrain';
   static final String krefarmEnabled = 'refarmEnabled';
   static final String kpolygonPrecision = 'polygonPrecision';
