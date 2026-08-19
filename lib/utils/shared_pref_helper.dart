@@ -48,6 +48,12 @@ class SharedPreferencesHelper {
   static final String kpolygonPrecision = 'polygonPrecision';
   static final String kfollowGPS = 'followGPS';
 
+  // Camera position persistence (for surviving backgrounding / memory reclaim).
+  // Stored as a single JSON-encoded string (see camera_restore_helper.dart) so
+  // the save is one atomic write instead of three independent keys that could
+  // end up inconsistent if the process is killed mid-flush.
+  static final String kCameraPosition = 'cameraPosition';
+
   static final String betaLaunchPopup = 'betaLaunchPopup';
 
   ///-------------------------

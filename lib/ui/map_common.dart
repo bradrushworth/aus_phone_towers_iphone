@@ -16,6 +16,7 @@ import 'package:logger/logger.dart';
 import 'package:path/path.dart' as onlyPath;
 import 'package:phonetowers/helpers/ads_helper.dart';
 import 'package:phonetowers/helpers/analytics_helper.dart';
+import 'package:phonetowers/helpers/camera_restore_helper.dart';
 import 'package:phonetowers/helpers/frequency_range_helper.dart';
 import 'package:phonetowers/restful/get_devices.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
@@ -246,7 +247,7 @@ class MapBody extends StatefulWidget {
   MapBodyState createState() => MapBodyState();
 }
 
-class MapBodyState extends AbstractMapBodyState {
+class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   /// ******************** State variables ************************************
   late GoogleMapController mapController;
   Location _locationService = new Location();
@@ -272,6 +273,7 @@ class MapBodyState extends AbstractMapBodyState {
   void initState() {
     super.initState();
     currentInstance = this;
+    WidgetsBinding.instance.addObserver(this);
 
     if (!kIsWeb) {
       PurchaseHelper().initStoreInfo(showSnackBar: showSnackbar);
@@ -464,10 +466,57 @@ class MapBodyState extends AbstractMapBodyState {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     //Free some memory
     //PurchaseHelper().subscription.cancel();
     if (!kIsWeb) AdsHelper().hideBannerAd();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // Persist camera position as a single JSON blob (one atomic write) so we
+      // can restore it if the OS reclaims memory and cold-restarts the app
+      // while backgrounded.
+      if (lastCameraPosition != null) {
+        SharedPreferencesHelper.setString(
+          SharedPreferencesHelper.kCameraPosition,
+          encodeCameraPosition(lastCameraPosition!),
+          prefs,
+        );
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      // AppLifecycleState.resumed fires on every return to the foreground,
+      // warm or cold restart alike -- it is not restricted to cold restarts.
+      // Restoring here is safe to call unconditionally because
+      // _restoreCameraIfAvailable() is a no-op unless there's a saved
+      // position and Follow GPS isn't active.
+      _restoreCameraIfAvailable();
+    }
+  }
+
+  /// Restores the last-saved camera position (persisted above when the app is
+  /// paused), used both for a cold OS restart (via [onMapCreated]) and for a
+  /// plain foreground resume. Skips restoring when Follow GPS is active, since
+  /// live GPS tracking should win over a stale pre-background position.
+  ///
+  /// Returns the restored position (or null if nothing was restored) so
+  /// callers -- notably [askForLocationPermission] -- can tell whether they
+  /// need to avoid clobbering it with their own GPS-centering camera move.
+  CameraPosition? _restoreCameraIfAvailable() {
+    final String storedJson = SharedPreferencesHelper.getString(
+        SharedPreferencesHelper.kCameraPosition, prefs);
+    final CameraPosition? restored = resolveRestoredCameraPosition(
+      storedJson: storedJson.isEmpty ? null : storedJson,
+      followGPSActive: followGPS,
+    );
+    if (restored == null) return null;
+
+    lastCameraPosition = restored;
+    mapController.animateCamera(
+        CameraUpdate.newLatLngZoom(restored.target, restored.zoom));
+    return restored;
   }
 
   ///********************** Helper methods *************************************
@@ -785,7 +834,15 @@ class MapBodyState extends AbstractMapBodyState {
       mapController = controllerParam;
     });
 
-    askForLocationPermission();
+    // If the app was cold-restarted by the OS while backgrounded, restore the
+    // last saved camera position once the map is ready -- BEFORE requesting
+    // location permission, so askForLocationPermission() (below) knows to
+    // skip its own GPS-centering camera move rather than silently clobbering
+    // the just-restored position once its async permission/location lookup
+    // resolves.
+    final CameraPosition? restored = _restoreCameraIfAvailable();
+
+    askForLocationPermission(skipCameraRecenter: restored != null);
     //    Future.delayed(Duration(seconds: 2),(){
     //      logger.d('after 2 second delay');
     //      askForLocationPermission();
@@ -833,7 +890,12 @@ class MapBodyState extends AbstractMapBodyState {
     state.setState(() {});
   }
 
-  Future askForLocationPermission() async {
+  /// [skipCameraRecenter] is set when a saved camera position was just
+  /// restored from SharedPreferences (see [_restoreCameraIfAvailable]) --
+  /// in that case we must NOT move the camera to the device's live GPS
+  /// location (or the hardcoded default) here, or we'd silently overwrite
+  /// the just-restored position.
+  Future askForLocationPermission({bool skipCameraRecenter = false}) async {
     //create default Geohash for bathurst
     double lat = kLagLongBathurst.latitude;
     double long = kLagLongBathurst.longitude;
@@ -858,7 +920,7 @@ class MapBodyState extends AbstractMapBodyState {
           bool serviceStatusResult = await _locationService.requestService();
           //print("Service status activated after request: $serviceStatusResult");
           if (serviceStatusResult) {
-            askForLocationPermission();
+            askForLocationPermission(skipCameraRecenter: skipCameraRecenter);
           }
         }
       } else {
@@ -893,23 +955,31 @@ class MapBodyState extends AbstractMapBodyState {
         // add map overlay to list
         SiteHelper.globalListMapOverlay.add(mapOverlay);
 
-        // move camera to location
-        logger.i('moveCamera: $lat, $long');
-        mapController.moveCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: LatLng(lat, long), zoom: kDefaultZoom),
-          ),
-        );
+        if (!skipCameraRecenter) {
+          // move camera to location
+          logger.i('moveCamera: $lat, $long');
+          mapController.moveCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(target: LatLng(lat, long), zoom: kDefaultZoom),
+            ),
+          );
+        }
       });
     }
 
     downloadTowers(geoHash, true);
 
-    // Saving first camera position as last so that reload everything option menu works.
-    lastCameraPosition = CameraPosition(target: LatLng(lat, long), zoom: kDefaultZoom);
+    if (!skipCameraRecenter) {
+      // Saving first camera position as last so that reload everything option menu works.
+      lastCameraPosition = CameraPosition(target: LatLng(lat, long), zoom: kDefaultZoom);
 
-    // Start loading the first markers
-    onCameraMove(lastCameraPosition!);
+      // Start loading the first markers
+      onCameraMove(lastCameraPosition!);
+    }
+    // When skipCameraRecenter is true, _restoreCameraIfAvailable() already set
+    // lastCameraPosition and kicked off marker loading for the restored
+    // position via mapController.animateCamera()'s onCameraMove callback, so
+    // there's nothing further to do here.
   }
 
   ///Download towers information for either bathurst or user's location
