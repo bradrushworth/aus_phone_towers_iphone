@@ -51,9 +51,16 @@ The menu is grouped the same way as the Android app:
 - **Reload Everything** — clear the map and re‑download all towers for the current area.
 - **Follow GPS** — toggle "drive mode". When on, the map stays centred on your location as you
   move (uses more battery). When off, the map stops recentring.
-- **Compass Mode** — toggle heading‑based map rotation. When on, the map rotates so it faces the
-  direction you point the phone, making it easy to line up with a tower you can see. When off, the
-  map is fixed to north‑up.
+- **Rotating Map** — choose how the map's bearing follows you while **Follow GPS** is on
+  (rotation is only ever applied on a Follow‑GPS location update, so it has no effect while
+  Follow GPS is off):
+  - **Travel Direction** (default) — the map rotates to face the direction you're travelling,
+    based on your GPS course‑over‑ground.
+  - **Phone Orientation** — the map rotates to face the direction you point the phone, based on
+    the device's compass/magnetometer. Useful when stationary and lining up with a tower you can
+    see. If the device has no compass, a message is shown and the map falls back to not rotating
+    for this reading.
+  - **Disable Rotation** — the map's bearing is never changed automatically.
 - **Show / Hide Borders** — toggle the radiation polygon outlines.
 - **Search Sites** — find a specific tower / site.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.
@@ -123,7 +130,7 @@ Open the drawer (top‑left) to control what is shown:
 | Timing‑advance ring | Yes | Not yet |
 | Observation markers (yellow / orange) | Yes | Not yet |
 | Follow‑GPS drive mode | Yes | Yes |
-| Compass Mode (rotate map to device heading) | Yes | Yes |
+| Rotating Map (Travel Direction / Phone Orientation / Disable Rotation) | Yes | Yes |
 | Frequency refarming toggle (literal vs reuse) | Yes | Yes |
 | Polygon precision (point count) control | Yes | Yes |
 | Export Towers (GeoJSON/CSV) | Yes | Yes |

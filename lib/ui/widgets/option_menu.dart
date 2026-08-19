@@ -31,7 +31,7 @@ typedef void ShowSnackBar({
 enum OptionMenuItem {
   reloadEverything,
   followGPS,
-  compassMode,
+  rotatingMap,
   hideBorders,
   searchSites,
   mapMode,
@@ -119,20 +119,15 @@ class _OptionsMenuState extends State<OptionsMenu> {
                   if (_hasSubmenu(item)) ...[
                     Icon(Icons.play_arrow, color: Colors.black54, size: 12)
                   ] else if (item == OptionMenuItem.hideBorders ||
-                      item == OptionMenuItem.followGPS ||
-                      item == OptionMenuItem.compassMode) ...[
+                      item == OptionMenuItem.followGPS) ...[
                     Icon(
                       item == OptionMenuItem.hideBorders
                           ? (PolygonHelper.showPolygonBorders
                               ? Icons.check_box_outline_blank
                               : Icons.check_box)
-                          : (item == OptionMenuItem.followGPS
-                              ? (MapBodyState.followGPS
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank)
-                              : (MapBodyState.compassMode
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank)),
+                          : (MapBodyState.followGPS
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank),
                       color: Colors.black54,
                       size: 14,
                     )
@@ -156,9 +151,9 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 await MapBodyState.toggleFollowGPS();
                 break;
               }
-            case OptionMenuItem.compassMode:
+            case OptionMenuItem.rotatingMap:
               {
-                await MapBodyState.toggleCompassMode();
+                showRotatingMapMenu();
                 break;
               }
             case OptionMenuItem.hideBorders:
@@ -271,8 +266,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
         return Strings.reload_everything;
       case OptionMenuItem.followGPS:
         return MapBodyState.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
-      case OptionMenuItem.compassMode:
-        return MapBodyState.compassMode ? Strings.compass_mode_on : Strings.compass_mode_off;
+      case OptionMenuItem.rotatingMap:
+        return Strings.rotating_map;
       case OptionMenuItem.hideBorders:
         return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
       case OptionMenuItem.searchSites:
@@ -299,11 +294,45 @@ class _OptionsMenuState extends State<OptionsMenu> {
   }
 
   bool _hasSubmenu(OptionMenuItem item) =>
+      item == OptionMenuItem.rotatingMap ||
       item == OptionMenuItem.mapMode ||
       item == OptionMenuItem.hidingMenu ||
       item == OptionMenuItem.exportData ||
       item == OptionMenuItem.polygonPrecision ||
       item == OptionMenuItem.problemsMenu;
+
+  // ----- Rotating Map (mirrors Android: Travel Direction / Phone Orientation / Disable
+  //       Rotation, mutually-exclusive rotatingMapGroup radio group) -----
+  Future showRotatingMapMenu() async {
+    final SingleRowItem travelDirection = SingleRowItem(
+        title: Strings.rotating_map_travel_direction,
+        isEnabled: true,
+        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.travelDirection);
+    final SingleRowItem phoneOrientation = SingleRowItem(
+        title: Strings.rotating_map_phone_orientation,
+        isEnabled: true,
+        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.phoneOrientation);
+    final SingleRowItem disableRotation = SingleRowItem(
+        title: Strings.rotating_map_disable,
+        isEnabled: true,
+        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.disableRotation);
+    final List<SingleRowItem> items = <SingleRowItem>[
+      SingleRowItem(isTitle: true, title: Strings.rotating_map, isEnabled: false),
+      travelDirection,
+      phoneOrientation,
+      disableRotation,
+    ];
+    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kRotatingMapMenu);
+    if (chosen == null) return;
+    if (chosen == travelDirection) {
+      await MapBodyState.setRotatingMapMode(RotatingMapMode.travelDirection);
+    } else if (chosen == phoneOrientation) {
+      await MapBodyState.setRotatingMapMode(RotatingMapMode.phoneOrientation);
+    } else if (chosen == disableRotation) {
+      await MapBodyState.setRotatingMapMode(RotatingMapMode.disableRotation);
+    }
+    setState(() {});
+  }
 
   // ----- Hiding Menu (mirrors Android: Hide Radiation on Click + Disable frequency refarming) -----
   Future showHidingMenu() async {

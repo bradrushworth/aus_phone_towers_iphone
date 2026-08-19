@@ -49,6 +49,22 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/app_constants.dart';
 
+/// The three Rotating Map modes, mirroring Android's mutually-exclusive `rotatingMapGroup`
+/// radio group (res/menu/popup_menu.xml) and
+/// `RotationVectorSensorEventListener.ROTATING_MAP_TYPE`. Requested in #28.
+enum RotatingMapMode {
+  /// Bearing = GPS course-over-ground (Android's "Travel Direction", the default-checked item).
+  travelDirection,
+
+  /// Bearing = device magnetometer/fused-orientation heading (Android's "Phone Orientation"),
+  /// works while the phone is stationary.
+  phoneOrientation,
+
+  /// No forced bearing changes; the camera keeps whatever bearing it currently has
+  /// (Android's "Disable Rotation").
+  disableRotation,
+}
+
 class MapScreen extends StatefulWidget {
   @override
   MapScreenState createState() => MapScreenState();
@@ -256,9 +272,32 @@ class MapBodyState extends AbstractMapBodyState {
   // Android app's "Follow GPS" toolbar action.
   static bool followGPS = false;
   static StreamSubscription<LocationData>? _followGpsSubscription;
-  // Compass Mode: rotates the map to face the direction the device is pointing. Requested in #28.
-  static bool compassMode = false;
+
+  // Rotating Map: 3-way mutually-exclusive mode selection matching Android's "Rotating Map"
+  // submenu. Default is Travel Direction, matching Android's default-checked "Travel Direction"
+  // item (RotationVectorSensorEventListener.rotatingMapType = ROTATING_MAP_TYPE.TRAVEL).
+  // Requested in #28.
+  static RotatingMapMode rotatingMapMode = RotatingMapMode.travelDirection;
+
+  // Cached bearing sources. Like Android's CameraHelper.animateFollowGpsCamera(), which is only
+  // ever invoked from CustomLocationListener on a Follow-GPS location update, the camera's
+  // bearing here is only ever applied on a Follow-GPS location tick (see toggleFollowGPS below) -
+  // these fields just cache the latest reading so it's ready at the next tick.
+
+  // Travel Direction: GPS course-over-ground, gated on speed like Android's
+  // CustomLocationListener (only updates the "direction of travel" while actually moving, so the
+  // bearing doesn't jitter to 0/garbage while stationary or from GPS noise).
+  static double? _lastTravelBearing;
+
+  // Phone Orientation: latest device heading from the magnetometer/fused-orientation sensor,
+  // kept continuously updated by _compassSubscription (mirrors Android's
+  // RotationVectorSensorEventListener, which updates a field on every sensor event that's only
+  // read back at the next location tick - i.e. it does NOT rotate a stationary phone outside of
+  // a Follow-GPS tick).
+  static double? _lastCompassHeading;
   static StreamSubscription<CompassEvent>? _compassSubscription;
+  static Timer? _compassAvailabilityTimer;
+
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
   final TextEditingController _searchTextFilter = new TextEditingController();
@@ -470,11 +509,13 @@ class MapBodyState extends AbstractMapBodyState {
   void dispose() {
     //Free some memory
     //PurchaseHelper().subscription.cancel();
-    // Compass Mode's heading subscription is only cancelled when the user toggles it off; if the
-    // widget is torn down while it's still on, cancel it here too so it doesn't leak and call
-    // animateCamera on a disposed controller.
+    // Phone Orientation's heading subscription is only cancelled when the user switches to a
+    // different Rotating Map mode; if the widget is torn down while it's still active, cancel it
+    // here too so it doesn't leak.
     _compassSubscription?.cancel();
     _compassSubscription = null;
+    _compassAvailabilityTimer?.cancel();
+    _compassAvailabilityTimer = null;
     if (!kIsWeb) AdsHelper().hideBannerAd();
     super.dispose();
   }
@@ -803,6 +844,13 @@ class MapBodyState extends AbstractMapBodyState {
 
   /// Toggle Follow GPS (drive mode). When enabled, the camera is recentred on the device's
   /// location as it moves. Mirrors the Android app's "Follow GPS" toolbar action.
+  ///
+  /// Each location tick also supplies the map's bearing, folded into the same camera-position
+  /// update (target + zoom + bearing together, one call) - this exactly mirrors Android's
+  /// CameraHelper.animateFollowGpsCamera(), which is only ever invoked from
+  /// CustomLocationListener on a Follow-GPS location update. This means Rotating Map only
+  /// actually moves the camera on a Follow-GPS tick; it never rotates the map on its own while
+  /// Follow GPS is off.
   static Future<void> toggleFollowGPS() async {
     final MapBodyState? state = currentInstance;
     if (state == null) return;
@@ -821,11 +869,24 @@ class MapBodyState extends AbstractMapBodyState {
       }
       _followGpsSubscription = state._locationService.onLocationChanged.listen((LocationData location) {
         if (!followGPS) return;
-        state.mapController.moveCamera(
+
+        // Cache the GPS course-over-ground for Travel Direction mode. Mirrors Android's
+        // CustomLocationListener, which only updates the "direction of travel" bearing while the
+        // device is actually moving (speed >= 2 m/s), so it doesn't jitter to 0/garbage while
+        // stationary or from GPS noise; otherwise the previous cached bearing is kept.
+        if (location.heading != null && (location.speed ?? 0) >= 2) {
+          _lastTravelBearing = location.heading;
+        }
+
+        final CameraPosition? last = state.lastCameraPosition;
+        state.mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-                target: LatLng(location.latitude!, location.longitude!),
-                zoom: (state.lastCameraPosition?.zoom ?? kDefaultZoom)),
+              target: LatLng(location.latitude!, location.longitude!),
+              zoom: last?.zoom ?? kDefaultZoom,
+              tilt: last?.tilt ?? 0,
+              bearing: _rotatingMapBearing(fallback: last?.bearing ?? 0),
+            ),
           ),
         );
       });
@@ -842,57 +903,101 @@ class MapBodyState extends AbstractMapBodyState {
     state.setState(() {});
   }
 
-  /// Toggle Compass Mode. When enabled, the map rotates to face the direction the device is
-  /// pointing (north-up off), driven by the device's magnetometer/heading sensor (via
-  /// flutter_compass) so it updates even when the device isn't moving — e.g. standing still and
-  /// pointing the phone at a tower you can see. Mirrors the Android app's compass/heading
-  /// behaviour. Requested in #28.
-  static Future<void> toggleCompassMode() async {
+  /// The bearing to apply on the next Follow-GPS camera update, chosen per the current Rotating
+  /// Map mode. Mirrors Android's RotationVectorSensorEventListener.getRotation():
+  /// Travel Direction -> cached GPS course, Phone Orientation -> cached compass heading,
+  /// Disable Rotation -> [fallback] (i.e. leave the bearing as it currently is).
+  static double _rotatingMapBearing({required double fallback}) {
+    switch (rotatingMapMode) {
+      case RotatingMapMode.travelDirection:
+        return _lastTravelBearing ?? fallback;
+      case RotatingMapMode.phoneOrientation:
+        return _lastCompassHeading ?? fallback;
+      case RotatingMapMode.disableRotation:
+        return fallback;
+    }
+  }
+
+  /// Select a Rotating Map mode (Travel Direction / Phone Orientation / Disable Rotation).
+  /// Mirrors Android's mutually-exclusive "Rotating Map" submenu
+  /// (MapsActivity#onOptionsItemSelected, R.id.travelRotatingMapMenu /
+  /// orientationRotatingMapMenu / disableRotatingMapMenu). Requested in #28.
+  ///
+  /// Selecting a mode does not by itself move the camera - the new bearing is only applied at the
+  /// next Follow-GPS location tick (see toggleFollowGPS above), exactly like Android.
+  static Future<void> setRotatingMapMode(RotatingMapMode mode) async {
     final MapBodyState? state = currentInstance;
     if (state == null) return;
-    compassMode = !compassMode;
-    if (compassMode) {
-      // flutter_compass relies on CoreLocation on iOS (for true-heading/declination
-      // correction), so it still needs location permission even though it isn't reading GPS
-      // fixes for the heading itself.
-      PermissionStatus permission =
-          await state._locationService.requestPermission();
-      if (permission != PermissionStatus.granted) {
-        compassMode = false;
-        state.showSnackbar(
-            message:
-                'Cannot activate Compass Mode because location permission was not granted!',
-            isDismissible: true);
-        return;
-      }
-      if (!await state._locationService.serviceEnabled()) {
-        await state._locationService.requestService();
-      }
-      _compassSubscription = FlutterCompass.events?.listen((CompassEvent event) {
-        if (!compassMode) return;
-        final double? heading = event.heading;
-        if (heading == null) return;
-        // google_maps_flutter has no bearing-only CameraUpdate (there's no
-        // CameraUpdate.newCameraBearing), so rebuild the CameraPosition from the map's own last
-        // reported position, only overriding bearing. Crucially, unlike the previous
-        // implementation, we do NOT fall back to a hardcoded target/zoom (kLagLongBathurst /
-        // kDefaultZoom) - if we haven't received a real camera position yet, skip this update
-        // rather than snapping the map away from wherever the user/Follow GPS has it.
-        final CameraPosition? last = state.lastCameraPosition;
-        if (last == null) return;
-        state.mapController.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(target: last.target, zoom: last.zoom, tilt: last.tilt, bearing: heading),
-          ),
-        );
-      });
-      state.showSnackbar(
-          message: 'Compass Mode ON: the map now faces where you point the phone.');
-    } else {
+
+    // Leaving Phone Orientation: stop listening to the compass, nothing left to cache.
+    if (rotatingMapMode == RotatingMapMode.phoneOrientation &&
+        mode != RotatingMapMode.phoneOrientation) {
       await _compassSubscription?.cancel();
       _compassSubscription = null;
-      state.showSnackbar(
-          message: 'Compass Mode OFF: the map is fixed to north-up.');
+      _compassAvailabilityTimer?.cancel();
+      _compassAvailabilityTimer = null;
+      _lastCompassHeading = null;
+    }
+
+    rotatingMapMode = mode;
+
+    switch (mode) {
+      case RotatingMapMode.travelDirection:
+        state.showSnackbar(
+            message:
+                'Rotating Map: Travel Direction. While Follow GPS is on, the map will face the '
+                'direction you are travelling.');
+        break;
+      case RotatingMapMode.disableRotation:
+        state.showSnackbar(
+            message: 'Rotating Map: Disabled. The map bearing will no longer be changed '
+                'automatically.');
+        break;
+      case RotatingMapMode.phoneOrientation:
+        // flutter_compass relies on CoreLocation on iOS (for true-heading/declination
+        // correction), so it still needs location permission even though it isn't reading GPS
+        // fixes for the heading itself.
+        PermissionStatus permission = await state._locationService.requestPermission();
+        if (permission != PermissionStatus.granted) {
+          rotatingMapMode = RotatingMapMode.travelDirection;
+          state.showSnackbar(
+              message:
+                  'Cannot use Phone Orientation because location permission was not granted!',
+              isDismissible: true);
+          state.setState(() {});
+          return;
+        }
+        if (!await state._locationService.serviceEnabled()) {
+          await state._locationService.requestService();
+        }
+
+        final Stream<CompassEvent>? events = FlutterCompass.events;
+        if (events == null) {
+          // Mirrors Android's RotationVectorSensorEventListener check for
+          // Sensor.TYPE_ROTATION_VECTOR / "Unfortunately, your device has no compass!".
+          state.showSnackbar(
+              message: 'Unfortunately, your device has no compass!', isDismissible: true);
+        } else {
+          _lastCompassHeading = null;
+          _compassSubscription = events.listen((CompassEvent event) {
+            if (rotatingMapMode != RotatingMapMode.phoneOrientation) return;
+            if (event.heading != null) _lastCompassHeading = event.heading;
+          });
+          // flutter_compass has no synchronous "has compass" check (unlike Android's
+          // SensorManager.getDefaultSensor() == null), so detect it the way Android's message is
+          // surfaced to the user: if no heading has arrived shortly after subscribing, assume
+          // there's no usable compass sensor on this device.
+          _compassAvailabilityTimer = Timer(const Duration(seconds: 3), () {
+            if (rotatingMapMode == RotatingMapMode.phoneOrientation && _lastCompassHeading == null) {
+              state.showSnackbar(
+                  message: 'Unfortunately, your device has no compass!', isDismissible: true);
+            }
+          });
+          state.showSnackbar(
+              message: 'Rotating Map: Phone Orientation. While Follow GPS is on, the map will '
+                  'face where you point the phone.');
+        }
+        break;
     }
     state.setState(() {});
   }
