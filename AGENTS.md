@@ -1,12 +1,16 @@
 # AGENTS.md — Australian Phone Towers (aus_phone_towers_iphone)
 
 Guidance for any AI agent or developer working in this repository. These rules apply ONLY to this
-iPhone/Flutter repository. The Android project (`aus_phone_towers_java`) has its own `AGENTS.md`
-and should not share these.
+iPhone/Flutter repository. The Android project (`aus_phone_towers_java`) has its own separate
+`AGENTS.md` and should not share these.
 
 ## Project basics
 - Flutter app (Dart), targeting iOS (primary) and Android (secondary). Package: `phonetowers`.
-- State management: raw `StatefulWidget` / `setState` (no Riverpod/Bloc/etc.).
+- State management: `provider` (`ChangeNotifier` singletons — `SiteHelper`, `PurchaseHelper`,
+  `SearchHelper`, `MapHelper`, `PolygonHelper` — wired up via `ChangeNotifierProvider` in
+  `lib/main.dart` and read via `Provider.of<T>(context, ...)`), plus plain `StatefulWidget`/
+  `setState` for local widget-only state. No Riverpod/Bloc — don't introduce a second
+  state-management approach without discussing it first.
 - Networking: `dio` for HTTP, REST API at `https://api.bitbot.com.au/api`.
 - Maps: `google_maps_flutter`.
 - Logging: `logger` package.
@@ -111,11 +115,43 @@ The iOS app version lives in `pubspec.yaml` (`version:` — `x.y.z+build`). Bump
 a release. Pure doc-only or non-release commits do not require a version bump and may be
 pushed from a non-main branch normally.
 
+## Agentic tooling / context & token discipline
+
+### Context exclusions (do not read or scan — token bloat, never source of truth)
+- `.dart_tool/**`
+- `.pub-cache/**`
+- `build/**` (Flutter build output)
+- `ios/.symlinks/**`
+- `ios/Pods/**`
+- `android/.gradle/**`
+- `android/app/build/**`
+
+### Platform channels are real here, not hypothetical
+`lib/ui/map_common.dart` (Dart side) talks to
+`android/app/src/main/java/au/com/bitbot/phonetowers/flutter/MainActivity.kt` (Kotlin side) via
+`MethodChannel`. When changing either side, check the other for a breaking API contract change
+(method names, argument shapes, return types). `android/` and `ios/` here are thin embedding/
+platform-channel glue for this Flutter app — they are not the native Android Java app in the
+`aus_phone_towers_java` sibling repo, and its architecture rules don't apply to this folder.
+
+### Native build/config changes
+Never modify `android/app/build.gradle`, `ios/Runner.xcodeproj`, `ios/Podfile`, `pubspec.yaml`
+dependency versions, or `codemagic.yaml` without first outputting a precise explanation of the
+intended change (what, why, and blast radius).
+
+### Token conservation
+- Don't run continuous test/build-fix-retest loops automatically. After a single test or build
+  failure, stop and ask before attempting a self-correcting retry loop.
+- Use incremental edits — refactor one module or feature at a time rather than broad sweeps.
+
 ## Conventions
 - Dart style: follow `flutter_lints` (enforced by `flutter analyze`). Fix all warnings before
   committing.
 - File naming: `lowercase_with_underscores.dart` for source files.
 - Test files: `test/` directory mirroring `lib/` structure, `_test.dart` suffix.
 - Prefer targeted edits to existing files over creating new files with different suffixes.
+- Business logic lives under `lib/helpers/`, `lib/model/`, `lib/networking/`, `lib/restful/`,
+  `lib/utils/`, `lib/billing/`; UI lives under `lib/ui/`. Keep new logic in those layers rather
+  than inline in widgets.
 - The `log10` function is a top-level function in `lib/helpers/translate_frequencies.dart`, NOT
   `dart:math`. Import it where needed (the path loss module and tests use it extensively).
