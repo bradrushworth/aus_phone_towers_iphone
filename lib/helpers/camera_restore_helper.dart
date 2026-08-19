@@ -27,7 +27,7 @@ String encodeCameraPosition(CameraPosition position) {
 ///
 /// [storedJson] is the raw string previously written by [encodeCameraPosition]
 /// (or null/empty if nothing has been saved yet). [followGPSActive] should
-/// mirror `MapBodyState.followGPS`: when Follow GPS is on, the live GPS-driven
+/// mirror `MapHelper.followGPS`: when Follow GPS is on, the live GPS-driven
 /// camera should win, so restoring a stale pre-background position would just
 /// fight it.
 ///

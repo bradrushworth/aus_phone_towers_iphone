@@ -509,7 +509,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         SharedPreferencesHelper.kCameraPosition, prefs);
     final CameraPosition? restored = resolveRestoredCameraPosition(
       storedJson: storedJson.isEmpty ? null : storedJson,
-      followGPSActive: followGPS,
+      followGPSActive: MapHelper.followGPS,
     );
     if (restored == null) return null;
 
