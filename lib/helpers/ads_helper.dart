@@ -11,6 +11,14 @@ class AdsHelper {
   AdsHelper._internal();
 
   BannerAd? bannerAd;
+
+  // Inline adaptive banner sizes (used for [showBannerAd]) always report
+  // height 0 on [BannerAd.size] — the real height is only known once the ad
+  // has loaded, via [BannerAd.getPlatformAdSize]. Widgets must size
+  // themselves from this field instead of `bannerAd!.size`, or the loaded ad
+  // renders into a zero-height container and never appears on screen.
+  AdSize? loadedAdSize;
+
   static String androidAdmobAppId = 'ca-app-pub-6156750794650893~5795736618';
   static String androidPortraitAdUnitId = 'ca-app-pub-6156750794650893/7272469813';
   static String androidLandscapeAdUnitId = 'ca-app-pub-6156750794650893/2424837889';
@@ -75,10 +83,14 @@ class AdsHelper {
       request: adRequestBuilder,
       size: bannerAdSize,
       listener: BannerAdListener(
-        onAdLoaded: (ad) {
+        onAdLoaded: (ad) async {
           // Called when an ad is successfully received.
           debugPrint("Ads was loaded.");
           bannerAd = ad as BannerAd;
+          // For inline adaptive sizes, `ad.size` is always the requested
+          // placeholder (height 0) — fetch the real rendered size so the
+          // widget knows how tall to draw itself.
+          loadedAdSize = await bannerAd!.getPlatformAdSize() ?? bannerAd!.size;
           onAdLoaded?.call();
         },
         onAdFailedToLoad: (ad, err) {
@@ -93,6 +105,7 @@ class AdsHelper {
   void hideBannerAd() async {
     await bannerAd?.dispose();
     bannerAd = null;
+    loadedAdSize = null;
     debugPrint("Ads: hideBannerAd()");
   }
 }

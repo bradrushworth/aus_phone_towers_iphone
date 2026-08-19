@@ -79,8 +79,7 @@ Future<PurchaseEntitlement> evaluateEntitlements(
   String timeToExpire = '';
   int yearlyExpiryEpoch = 0;
   if (oneYear != null) {
-    final int purchaseTime =
-        int.tryParse(oneYear.transactionDate ?? '') ?? 0;
+    final int purchaseTime = _parseTransactionDateMillis(oneYear.transactionDate) ?? 0;
     if (purchaseTime > 0) {
       if (purchaseTime < nowMillis - expiryPeriod) {
         // The one year of ad-free is over.
@@ -116,4 +115,24 @@ Future<PurchaseEntitlement> evaluateEntitlements(
     yearlyPurchaseExpired: yearlyExpired,
     yearlyExpiryEpoch: yearlyExpiryEpoch,
   );
+}
+
+/// Parses [PurchaseDetails.transactionDate] into epoch milliseconds.
+///
+/// The format varies by platform/plugin path:
+///   * Android and iOS StoreKit1 report epoch milliseconds as a string.
+///   * iOS StoreKit2 (the `in_app_purchase_storekit` default since 0.4.x) reports epoch
+///     milliseconds too as of 0.4.11+1 — but 0.4.10.x reported a `"yyyy-MM-dd HH:mm:ss"`
+///     local-time string instead, which silently fails `int.tryParse` and left yearly
+///     purchases on iOS permanently unrecognised (ads never removed). Both formats are
+///     handled here so this keeps working regardless of platform or plugin version.
+int? _parseTransactionDateMillis(String? transactionDate) {
+  if (transactionDate == null || transactionDate.isEmpty) return null;
+  final int? epochMillis = int.tryParse(transactionDate);
+  if (epochMillis != null) return epochMillis;
+  try {
+    return DateTime.parse(transactionDate).millisecondsSinceEpoch;
+  } on FormatException {
+    return null;
+  }
 }

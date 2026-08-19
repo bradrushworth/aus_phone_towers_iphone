@@ -38,6 +38,7 @@ import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/ui/map_platform.dart'
     if (dart.library.js) 'package:phonetowers/ui/map_web.dart';
+import 'package:phonetowers/ui/widgets/ad_banner_container.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
 import 'package:phonetowers/utils/geo_hash.dart';
@@ -476,32 +477,16 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           child: Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
-              child: Container(
-                height: AdsHelper().bannerAd == null ? 0 : 100,
-                color: Colors.white,
-                alignment: AlignmentGeometry.center,
-                child: Column(
-                  children: [
-                    if (AdsHelper().bannerAd != null)
-                      Text(
-                        "Advertisement",
-                        maxLines: 1,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
+              child: AdBannerContainer(
+                adSize: AdsHelper().loadedAdSize == null
+                    ? null
+                    : Size(
+                        AdsHelper().loadedAdSize!.width.toDouble(),
+                        AdsHelper().loadedAdSize!.height.toDouble(),
                       ),
-                    SizedBox(
-                      width: AdsHelper().bannerAd == null
-                          ? 0
-                          : AdsHelper().bannerAd!.size.width.toDouble(),
-                      height: AdsHelper().bannerAd == null
-                          ? 0
-                          : AdsHelper().bannerAd!.size.height.toDouble(),
-                      child: AdsHelper().bannerAd == null
-                          ? Container()
-                          : AdWidget(ad: AdsHelper().bannerAd!),
-                    ),
-                  ],
-                ),
+                adChild: AdsHelper().bannerAd == null
+                    ? null
+                    : AdWidget(ad: AdsHelper().bannerAd!),
               ),
             ),
           ),
