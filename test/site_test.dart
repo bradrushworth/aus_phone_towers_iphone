@@ -181,6 +181,27 @@ void main() {
       expect(site.getIconName(), 'telstra.png');
     });
 
+    // City-density bands calibrated 2026-08-13 against the four Okumura-Hata / COST-231-Hata
+    // environment classes that AnalyticPathLossModel implements (each a distinct real-world building
+    // environment: METRO=large-city/urban canyons, URBAN=city fabric, SUBURBAN=residential,
+    // OPEN=rural). Mirrors SiteTest#getCityDensityThresholds in the Android sibling app.
+    test('getCityDensityThresholds', () {
+      // OPEN: sparse / rural (0-3 sites per telco per geohash-5 cell)
+      expect(Site.getCityDensityStatic(0), CityDensity.OPEN);
+      expect(Site.getCityDensityStatic(1), CityDensity.OPEN);
+      expect(Site.getCityDensityStatic(3), CityDensity.OPEN);
+      // SUBURBAN: 4-24 sites (residential suburban homes)
+      expect(Site.getCityDensityStatic(4), CityDensity.SUBURBAN);
+      expect(Site.getCityDensityStatic(24), CityDensity.SUBURBAN);
+      // URBAN: 25-149 sites (Okumura-Hata urban; inner-city ring, major hubs, smaller capitals)
+      expect(Site.getCityDensityStatic(25), CityDensity.URBAN);
+      expect(Site.getCityDensityStatic(149), CityDensity.URBAN);
+      // METRO: 150+ sites (COST-231-Hata large city, Tokyo-density cores)
+      expect(Site.getCityDensityStatic(150), CityDensity.METRO);
+      expect(Site.getCityDensityStatic(250), CityDensity.METRO);
+      expect(Site.getCityDensityStatic(1000), CityDensity.METRO);
+    });
+
     //   test('getActiveDevicesForArfcnLTE', () {
     //     int CONNECTED_NETWORK_TYPE = 13;
     //     NetworkType networkType = CellIdentity.getNetworkGeneration(
