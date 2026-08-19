@@ -163,8 +163,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 MapBodyState.lockMap = !MapBodyState.lockMap;
                 widget.showSnackBar(
                     message: MapBodyState.lockMap
-                        ? 'Map locked — pan/zoom/rotate disabled for screenshots.'
-                        : 'Map unlocked — pan/zoom/rotate enabled.');
+                        ? 'Map locked — all camera movement (gestures, my location, Follow GPS, search) disabled for screenshots.'
+                        : 'Map unlocked — camera movement enabled again.');
                 setState(() {});
                 break;
               }

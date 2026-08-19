@@ -7,6 +7,7 @@ import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
+import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 
 typedef void ShowSnackBar({
@@ -105,12 +106,14 @@ class SearchHelper with ChangeNotifier {
           GetLicenceHRP.travel(latLngBoundsBuilder.southwest, 225, minSizeKm));
       latLngBoundsBuilder = boundsFromLatLngList(listLatLongBounds);
 
-      mapController.moveCamera(
-        CameraUpdate.newLatLngBounds(
-          latLngBoundsBuilder,
-          10.0,
-        ),
-      );
+      if (!MapBodyState.lockMap) {
+        mapController.moveCamera(
+          CameraUpdate.newLatLngBounds(
+            latLngBoundsBuilder,
+            10.0,
+          ),
+        );
+      }
 
       showSnackBar!(message: 'Searching is finished!');
     });

@@ -51,8 +51,10 @@ The menu is grouped the same way as the Android app:
 - **Reload Everything** — clear the map and re‑download all towers for the current area.
 - **Follow GPS** — toggle "drive mode". When on, the map stays centred on your location as you
   move (uses more battery). When off, the map stops recentring.
-- **Lock / Unlock Map** — freeze (or unfreeze) pan, zoom, rotate and tilt gestures. Useful when
-  you want to screenshot or study a fixed area of coverage.
+- **Lock / Unlock Map** — freeze (or unfreeze) *all* camera movement: pan, zoom, rotate and tilt
+  gestures, the built‑in "my location" button, Follow GPS's auto‑recentring, and Search's
+  jump‑to‑result. Useful when you want to screenshot or study a fixed area of coverage without
+  anything nudging the camera.
 - **Show / Hide Borders** — toggle the radiation polygon outlines.
 - **Search Sites** — find a specific tower / site.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.

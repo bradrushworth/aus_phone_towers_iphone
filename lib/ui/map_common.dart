@@ -307,7 +307,7 @@ class MapBodyState extends AbstractMapBodyState {
                 mapType: mapHelper.getMapType(),
                 buildingsEnabled: false,
                 compassEnabled: !kIsWeb,
-                myLocationButtonEnabled: true,
+                myLocationButtonEnabled: !MapBodyState.lockMap,
                 scrollGesturesEnabled: !MapBodyState.lockMap,
                 trafficEnabled: false,
                 rotateGesturesEnabled: !MapBodyState.lockMap,
@@ -815,6 +815,7 @@ class MapBodyState extends AbstractMapBodyState {
       }
       _followGpsSubscription = state._locationService.onLocationChanged.listen((LocationData location) {
         if (!followGPS) return;
+        if (lockMap) return;
         state.mapController.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -1191,11 +1192,14 @@ class MapBodyState extends AbstractMapBodyState {
 
   void showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {
     setState(() {
-      //Remove any existing polygons first
+      //Remove any existing polygons first (unless multi-tower coverage is on, in which
+      //case previously-shown polygons should remain rendered alongside the new one)
       //PolygonHelper().globalListPolygons.clear();
-      PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
-        return !mapOverlay.polygon!.polygonId.value.contains('developer');
-      });
+      if (!PolygonHelper.multiTowerCoverage) {
+        PolygonHelper.globalListPolygons.removeWhere((mapOverlay) {
+          return !mapOverlay.polygon!.polygonId.value.contains('developer');
+        });
+      }
       // Drop this site's labels as well so they don't remain after the polygons are cleared.
       PolygonHelper.labelOverlays.removeWhere((mapOverlay) => mapOverlay.site == site);
     });
