@@ -253,7 +253,7 @@ class MapBodyState extends AbstractMapBodyState {
 
   // Follow GPS (drive mode): keeps the map centred on the device's location. Mirrors the
   // Android app's "Follow GPS" toolbar action.
-  static bool followGPS = false;
+
   static StreamSubscription<LocationData>? _followGpsSubscription;
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
@@ -797,11 +797,11 @@ class MapBodyState extends AbstractMapBodyState {
   static Future<void> toggleFollowGPS() async {
     final MapBodyState? state = currentInstance;
     if (state == null) return;
-    followGPS = !followGPS;
-    if (followGPS) {
+    MapHelper.followGPS = !MapHelper.followGPS;
+    if (MapHelper.followGPS) {
       PermissionStatus permission = await state._locationService.requestPermission();
       if (permission != PermissionStatus.granted) {
-        followGPS = false;
+        MapHelper.followGPS = false;
         state.showSnackbar(
             message: 'Cannot activate Follow GPS because location permission was not granted!',
             isDismissible: true);
@@ -811,7 +811,7 @@ class MapBodyState extends AbstractMapBodyState {
         await state._locationService.requestService();
       }
       _followGpsSubscription = state._locationService.onLocationChanged.listen((LocationData location) {
-        if (!followGPS) return;
+        if (!MapHelper.followGPS) return;
         state.mapController.moveCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(

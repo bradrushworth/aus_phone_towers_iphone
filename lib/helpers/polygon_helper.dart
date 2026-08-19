@@ -280,10 +280,10 @@ class PolygonHelper with ChangeNotifier {
       Telco telco = site.getTelco();
       int alpha = 50;
       if (TelcoHelper.isTelecommunications(telco)) {
-        alpha = 10;
-//                if (CustomLocationListener.followGPS) {
-//                  alpha += 10;//TODO custom location listener
-//                }
+        alpha = 20;
+        if (MapHelper.followGPS) {
+          alpha += 20;
+        }
         alpha += (math.log(1 + (capacity / (1000 * 1000))) * 2).toInt();
       }
 
@@ -291,7 +291,7 @@ class PolygonHelper with ChangeNotifier {
         case 2:
         case 3:
           {
-            alpha += 25;
+            alpha += 40;
           }
           break;
       }

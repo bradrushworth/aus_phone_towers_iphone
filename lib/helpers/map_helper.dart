@@ -24,6 +24,10 @@ class MapHelper with ChangeNotifier {
   bool developerMode = false;
   Logger logger = new Logger();
 
+  /// Whether follow-GPS (drive mode) is active. Static so polygon_helper can
+  /// boost polygon opacity when the user is driving, matching the Android app.
+  static bool followGPS = false;
+
   void setMapMode(int mode, SharedPreferences prefs) {
     mapMode = mode;
     SharedPreferencesHelper.setInt(
