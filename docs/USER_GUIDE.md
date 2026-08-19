@@ -92,6 +92,10 @@ The menu is grouped the same way as the Android app:
   bought again; the permanent option never expires.
 - **Donate** — support development with a one‑off in‑app purchase (small / medium / large).
   Donations are repeatable and do **not** remove ads (not shown on the Web build).
+  - **Support the App** — the last item in the Donate menu; opens a full‑screen "Support Aus
+    Phone Towers" prompt with the same donation options plus the ad‑free purchases (hidden if
+    you're already ad‑free), and a **Maybe later** button to dismiss. The same screen is also
+    shown automatically about once a week.
 - **Problems Menu** — a sub‑menu:
   - **Developer / Regular Mode** — show extra diagnostic overlays.
   - **User Guide** — opens this page (the top‑right menu item that previously opened the wrong

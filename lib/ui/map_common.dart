@@ -29,6 +29,7 @@ import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/screenshot_controller.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
+import 'package:phonetowers/helpers/support_prompt_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/device_detail.dart';
@@ -41,6 +42,7 @@ import 'package:phonetowers/ui/map_platform.dart'
 import 'package:phonetowers/ui/widgets/ad_banner_container.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
+import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
 import 'package:phonetowers/utils/geo_hash.dart';
 import 'package:phonetowers/utils/hex_color.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
@@ -323,6 +325,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
     if (!kIsWeb) {
       PurchaseHelper().initStoreInfo(showSnackBar: showSnackbar);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSupportPrompt());
     }
 
     _loadNavigationSavedState();
@@ -558,6 +561,32 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   }
 
   ///********************** Helper methods *************************************
+
+  // Weekly "Support the App" prompt, ported from the Java app's
+  // MapsActivity.maybeShowSupportPrompt(). Decision logic lives in SupportPromptHelper
+  // (pure, unit-tested); this just wires it to SharedPreferences + navigation.
+  Future<void> _maybeShowSupportPrompt() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final int? lastShown = prefs.containsKey(SharedPreferencesHelper.kSupportPromptLastShown)
+        ? SharedPreferencesHelper.getInt(
+            key: SharedPreferencesHelper.kSupportPromptLastShown, prefs: prefs)
+        : null;
+    final SupportPromptDecision decision = SupportPromptHelper.decide(
+      lastShownMillis: lastShown,
+      nowMillis: DateTime.now().millisecondsSinceEpoch,
+    );
+    if (decision.newLastShownMillis != null) {
+      await SharedPreferencesHelper.setInt(
+        key: SharedPreferencesHelper.kSupportPromptLastShown,
+        value: decision.newLastShownMillis!,
+        prefs: prefs,
+      );
+    }
+    if (decision.shouldShow && mounted) {
+      Navigator.of(context)
+          .push(MaterialPageRoute(builder: (_) => const SupportPromptScreen()));
+    }
+  }
 
   void _loadNavigationSavedState() async {
     prefs = await SharedPreferences.getInstance();

@@ -9,6 +9,7 @@ import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
+import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
 import 'package:phonetowers/utils/strings.dart';
@@ -23,19 +24,21 @@ typedef void ShowSnackBar({
   bool isDismissible,
 });
 
-/// Top-level option-menu items, ordered to mirror the Android app's popup menu
-/// (Reload Everything, Follow GPS, Hide Borders, Search, Map Mode, Hiding Menu,
-/// Export Data, Polygon Precision, Remove Ads, Donate, Problems Menu, Rate App, Close App).
+/// Top-level option-menu items, ordered to mirror the Android app's popup menu (Reload
+/// Everything, Follow GPS, Hide Borders, Search, Map Mode, Hiding Menu, Export Data, Remove
+/// Ads, Donate, Problems Menu, Rate App, Close App). `lockMap` and `polygonPrecision` have no
+/// Android equivalent (iOS-only features) and are placed next to their closest thematic
+/// neighbour (rotatingMap, exportData) rather than breaking the shared ordering.
 /// Using an enum (rather than an index into a list) guarantees the label shown always
 /// maps to the correct behaviour — fixing the old "labels don't match the action" bug.
 enum OptionMenuItem {
   reloadEverything,
   followGPS,
-  lockMap,
-  rotatingMap,
   hideBorders,
   searchSites,
   mapMode,
+  rotatingMap,
+  lockMap,
   hidingMenu,
   exportData,
   polygonPrecision,
@@ -663,6 +666,12 @@ class _OptionsMenuState extends State<OptionsMenu> {
                     .initiatePurchase(sku: PurchaseHelper.SKU_DONATION_LARGE);
                 break;
               }
+            case 5: //Support the App
+              {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SupportPromptScreen()));
+                break;
+              }
           }
           break;
         }
@@ -770,6 +779,7 @@ List<SingleRowItem> listDonateItem = <SingleRowItem>[
   SingleRowItem(
       title: Strings.donateLarge,
       isEnabled: !PurchaseHelper().isDonateLargePurchased),
+  SingleRowItem(title: Strings.donateSupportPrompt, isEnabled: true),
 ];
 
 //********************** Radio options ***************************//

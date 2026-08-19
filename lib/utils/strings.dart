@@ -111,6 +111,18 @@ class Strings {
   static String donateSmall = 'Morning Coffee (\$5.99)';
   static String donateMedium = 'Coffee and Cake (\$14.99)';
   static String donateLarge = 'Thanks For Lunch (\$29.99)';
+  static String donateSupportPrompt = 'Support the App';
+
+  // Support the App screen (see lib/ui/widgets/support_prompt_screen.dart), ported from the
+  // Java app's SupportPromptActivity.
+  static String supportPromptTitle = 'Support Aus Phone Towers';
+  static String supportPromptMessage =
+      'This app is a hobby project and costs me about \$150 per month to keep it running. '
+      'Thank you for your continued support!';
+  static String supportPromptDonateHeader = 'Make a donation';
+  static String supportPromptAdfreeHeader = 'Or remove the ads';
+  static String supportPromptThanks = 'Thank you for your continued support!';
+  static String supportPromptMaybeLater = 'Maybe later';
 
   static String developerMode = 'Developer Mode';
   static String regularMode = 'Regular Mode';
