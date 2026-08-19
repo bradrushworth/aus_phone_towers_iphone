@@ -124,7 +124,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
                           ? (PolygonHelper.showPolygonBorders
                               ? Icons.check_box_outline_blank
                               : Icons.check_box)
-                          : (MapBodyState.followGPS
+                          : (MapHelper.followGPS
                               ? Icons.check_box
                               : Icons.check_box_outline_blank),
                       color: Colors.black54,
@@ -259,7 +259,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
       case OptionMenuItem.reloadEverything:
         return Strings.reload_everything;
       case OptionMenuItem.followGPS:
-        return MapBodyState.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
+        return MapHelper.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
       case OptionMenuItem.hideBorders:
         return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
       case OptionMenuItem.searchSites:

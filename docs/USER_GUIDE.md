@@ -17,7 +17,8 @@ datasets and draws each transmitter on a Google Map together with its estimated 
   generic non‑telco icon). Tap a marker for details.
 - **Coverage polygons** — coloured shaded areas showing the estimated coverage of each antenna.
   The colour matches the carrier (see the legend below). Toggle the outline with **Show/Hide
-  Borders**.
+  Borders**. Polygon opacity is boosted on satellite/hybrid map types and when **Follow GPS**
+  (drive mode) is active, so coverage remains visible over dark imagery.
 - **Coverage labels** — each tower's coverage carries a small text label showing its
   **frequency and technology** (e.g. `850 MHz 4G LTE`). The label is placed *outside* the shaded
   polygon — anchored on the point of the outermost ring that is furthest from the tower, then pushed
