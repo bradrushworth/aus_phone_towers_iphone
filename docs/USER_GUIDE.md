@@ -51,6 +51,9 @@ The menu is grouped the same way as the Android app:
 - **Reload Everything** — clear the map and re‑download all towers for the current area.
 - **Follow GPS** — toggle "drive mode". When on, the map stays centred on your location as you
   move (uses more battery). When off, the map stops recentring.
+- **Compass Mode** — toggle heading‑based map rotation. When on, the map rotates so it faces the
+  direction you point the phone, making it easy to line up with a tower you can see. When off, the
+  map is fixed to north‑up.
 - **Show / Hide Borders** — toggle the radiation polygon outlines.
 - **Search Sites** — find a specific tower / site.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.

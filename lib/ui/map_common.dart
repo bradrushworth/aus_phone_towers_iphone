@@ -246,7 +246,7 @@ class MapBody extends StatefulWidget {
   MapBodyState createState() => MapBodyState();
 }
 
-class MapBodyState extends AbstractMapBodyState {
+class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   /// ******************** State variables ************************************
   late GoogleMapController mapController;
   Location _locationService = new Location();
@@ -255,6 +255,9 @@ class MapBodyState extends AbstractMapBodyState {
   // Android app's "Follow GPS" toolbar action.
   static bool followGPS = false;
   static StreamSubscription<LocationData>? _followGpsSubscription;
+  // Compass Mode: rotates the map to face the direction the device is pointing. Requested in #28.
+  static bool compassMode = false;
+  static StreamSubscription<LocationData>? _compassSubscription;
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
   final TextEditingController _searchTextFilter = new TextEditingController();
@@ -464,6 +467,7 @@ class MapBodyState extends AbstractMapBodyState {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     //Free some memory
     //PurchaseHelper().subscription.cancel();
     if (!kIsWeb) AdsHelper().hideBannerAd();
@@ -829,6 +833,54 @@ class MapBodyState extends AbstractMapBodyState {
       state.showSnackbar(
           message:
               'GPS is now OFF. This will save battery and stop the screen from recentring on your location!');
+    }
+    state.setState(() {});
+  }
+
+  /// Toggle Compass Mode. When enabled, the map rotates to face the direction the device is
+  /// pointing (north-up off), driven by the magnetometer/heading from the location stream.
+  /// Mirrors the Android app's compass/heading behaviour.
+  static Future<void> toggleCompassMode() async {
+    final MapBodyState? state = currentInstance;
+    if (state == null) return;
+    compassMode = !compassMode;
+    if (compassMode) {
+      PermissionStatus permission =
+          await state._locationService.requestPermission();
+      if (permission != PermissionStatus.granted) {
+        compassMode = false;
+        state.showSnackbar(
+            message:
+                'Cannot activate Compass Mode because location permission was not granted!',
+            isDismissible: true);
+        return;
+      }
+      if (!await state._locationService.serviceEnabled()) {
+        await state._locationService.requestService();
+      }
+      _compassSubscription =
+          state._locationService.onLocationChanged.listen((LocationData location) {
+        if (!compassMode) return;
+        final double? heading = location.heading;
+        if (heading == null) return;
+        final CameraPosition? last = state.lastCameraPosition;
+        state.mapController.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: last?.target ?? kLagLongBathurst,
+              zoom: last?.zoom ?? kDefaultZoom,
+              bearing: heading,
+            ),
+          ),
+        );
+      });
+      state.showSnackbar(
+          message: 'Compass Mode ON: the map now faces where you point the phone.');
+    } else {
+      await _compassSubscription?.cancel();
+      _compassSubscription = null;
+      state.showSnackbar(
+          message: 'Compass Mode OFF: the map is fixed to north-up.');
     }
     state.setState(() {});
   }

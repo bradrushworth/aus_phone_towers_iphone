@@ -31,6 +31,7 @@ typedef void ShowSnackBar({
 enum OptionMenuItem {
   reloadEverything,
   followGPS,
+  compassMode,
   hideBorders,
   searchSites,
   mapMode,
@@ -118,15 +119,20 @@ class _OptionsMenuState extends State<OptionsMenu> {
                   if (_hasSubmenu(item)) ...[
                     Icon(Icons.play_arrow, color: Colors.black54, size: 12)
                   ] else if (item == OptionMenuItem.hideBorders ||
-                      item == OptionMenuItem.followGPS) ...[
+                      item == OptionMenuItem.followGPS ||
+                      item == OptionMenuItem.compassMode) ...[
                     Icon(
                       item == OptionMenuItem.hideBorders
                           ? (PolygonHelper.showPolygonBorders
                               ? Icons.check_box_outline_blank
                               : Icons.check_box)
-                          : (MapBodyState.followGPS
-                              ? Icons.check_box
-                              : Icons.check_box_outline_blank),
+                          : (item == OptionMenuItem.followGPS
+                              ? (MapBodyState.followGPS
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank)
+                              : (MapBodyState.compassMode
+                                  ? Icons.check_box
+                                  : Icons.check_box_outline_blank)),
                       color: Colors.black54,
                       size: 14,
                     )
@@ -148,6 +154,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
             case OptionMenuItem.followGPS:
               {
                 await MapBodyState.toggleFollowGPS();
+                break;
+              }
+            case OptionMenuItem.compassMode:
+              {
+                await MapBodyState.toggleCompassMode();
                 break;
               }
             case OptionMenuItem.hideBorders:
@@ -260,6 +271,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
         return Strings.reload_everything;
       case OptionMenuItem.followGPS:
         return MapBodyState.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
+      case OptionMenuItem.compassMode:
+        return MapBodyState.compassMode ? Strings.compass_mode_off : Strings.compass_mode_on;
       case OptionMenuItem.hideBorders:
         return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
       case OptionMenuItem.searchSites:
