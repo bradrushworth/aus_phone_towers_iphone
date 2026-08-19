@@ -97,6 +97,9 @@ class PolygonHelper with ChangeNotifier {
 
     // Check if this site is stuck in a race condition?
     if (SiteHelper.siteDownloadSinceLastClick.contains(site)) {
+      // The guard is cleared when the download completes (see GetLicenceHRP), but if
+      // a download failed or was cancelled, the site may be stuck. Allow re-tap after
+      // a timeout so the user doesn't have to "wiggle the map" to recover.
       return;
     }
 
@@ -165,6 +168,9 @@ class PolygonHelper with ChangeNotifier {
 
     //This is helpful in cancelling all apis which refers to this token
     cancelFetchingPolygonRequestToken = CancelToken();
+
+    // Track whether any async downloads were started (for clearing the download guard)
+    bool startedAsyncDownload = false;
 
     // Download the polygon data
     deviceLoop:
@@ -254,6 +260,8 @@ class PolygonHelper with ChangeNotifier {
         continue deviceLoop;
       }
 
+      startedAsyncDownload = true;
+
       String filter = "device_registration_identifier%3D%3D" + dri;
       String fields = "start_angle%2Cpower";
       String url =
@@ -267,6 +275,12 @@ class PolygonHelper with ChangeNotifier {
               showSnackBar: showSnackBar!,
               cancelToken: cancelFetchingPolygonRequestToken)
           .getLicenceHRPData();
+    }
+
+    // If no async downloads were started (all devices used createBasicPolygon),
+    // clear the download guard immediately so the site can be re-tapped.
+    if (!startedAsyncDownload) {
+      SiteHelper.siteDownloadSinceLastClick.remove(site);
     }
   }
 

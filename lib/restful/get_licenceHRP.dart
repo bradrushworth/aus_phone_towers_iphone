@@ -7,6 +7,7 @@ import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
 import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
+import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/height_distance_pair.dart';
 import 'package:phonetowers/model/site.dart';
@@ -53,10 +54,13 @@ class GetLicenceHRP {
       //showSnackBar(message: "Downloading tower radiation patterns...");
     }
 
-    SiteResponse? rawResponse =
-        await api.getLicenceHRPData(url, cancelToken: cancelToken);
+    SiteResponse? rawResponse;
 
-    int totalRows = rawResponse?.restify?.rows?.length ?? 0;
+    try {
+      rawResponse =
+          await api.getLicenceHRPData(url, cancelToken: cancelToken);
+
+      int totalRows = rawResponse?.restify?.rows?.length ?? 0;
 
     //If no data found for this telco then don't do anything
     if (totalRows == 0) {
@@ -163,6 +167,14 @@ class GetLicenceHRP {
       } else {
         // If we can't do any better, lets create a simple circular polygon
         PolygonHelper().createBasicPolygon(device, site, list!);
+      }
+    }
+    } finally {
+      // Clear the download guard so the site can be re-tapped. Only clear on the
+      // final page (when there's no nextPage) — intermediate pages leave the guard
+      // in place so the paginated download isn't interrupted.
+      if (rawResponse?.restify?.nextPage == null) {
+        SiteHelper.siteDownloadSinceLastClick.remove(site);
       }
     }
   }
