@@ -64,8 +64,14 @@ class SiteHelper with ChangeNotifier {
       if (SiteHelper.globalListMapOverlay[i].site != null) {
         if (SiteHelper.globalListMapOverlay[i].site!.getTelco() == telco) {
           final Marker? marker = SiteHelper.globalListMapOverlay[i].marker;
+          // When enabling, re-evaluate shouldBeVisible() so network-type /
+          // density / multiplex filters are applied — not every marker of this
+          // telco should be shown (e.g. if 5G-only is selected).
+          final bool visible = enable
+              ? SiteHelper.globalListMapOverlay[i].site!.shouldBeVisible()
+              : false;
           SiteHelper.globalListMapOverlay[i].marker = marker!.copyWith(
-            visibleParam: enable,
+            visibleParam: visible,
           );
         }
       }
