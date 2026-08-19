@@ -29,7 +29,40 @@ class SiteHelper with ChangeNotifier {
   static int GEOHASH_LENGTH = 5;
 
   //static ConcurrentHashMap<Marker, Site> markersHashMap = new ConcurrentHashMap<>();
-  static Set<Site> siteDownloadSinceLastClick = Set<Site>();
+  /// Number of polygon-download chains currently in flight for each site, one per device
+  /// whose GetLicenceHRP pagination chain has started (see [startSiteDownload]) but not yet
+  /// terminated — successfully, with an error, or via cancellation (see [finishSiteDownload]).
+  /// A site is considered "locked" (PolygonHelper.queryForSignalPolygon will refuse to start a
+  /// new download for it) while it has an entry here; entries are removed entirely once their
+  /// count reaches zero, so `containsKey` / `isEmpty` style checks reflect "nothing in flight".
+  ///
+  /// This used to be a plain `Set<Site>` (added on tap, removed on the first device's download
+  /// to finish). That under-counted multi-device sites — the guard could reopen while sibling
+  /// devices were still downloading — so it is now a per-site in-flight counter instead.
+  static Map<Site, int> siteDownloadSinceLastClick = Map<Site, int>();
+
+  /// True if [site] currently has at least one polygon-download chain in flight.
+  static bool isSiteDownloadInFlight(Site site) =>
+      (siteDownloadSinceLastClick[site] ?? 0) > 0;
+
+  /// Record that another device's download chain has started for [site]. Call once per
+  /// device, right before kicking off its (fire-and-forget) GetLicenceHRP chain.
+  static void startSiteDownload(Site site) {
+    siteDownloadSinceLastClick[site] = (siteDownloadSinceLastClick[site] ?? 0) + 1;
+  }
+
+  /// Record that one of [site]'s device download chains has terminated — successfully (last
+  /// page processed), with an error, or via cancellation. Only clears the site-level guard once
+  /// every chain started for this site has terminated (count reaches zero).
+  static void finishSiteDownload(Site site) {
+    final int remaining = (siteDownloadSinceLastClick[site] ?? 1) - 1;
+    if (remaining <= 0) {
+      siteDownloadSinceLastClick.remove(site);
+    } else {
+      siteDownloadSinceLastClick[site] = remaining;
+    }
+  }
+
   static Set<List<int>> hideFrequency = Set<List<int>>();
   static Set<CityDensity> hideDensity = Set<CityDensity>();
 

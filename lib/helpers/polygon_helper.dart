@@ -95,12 +95,17 @@ class PolygonHelper with ChangeNotifier {
       return;
     }
 
-    // Check if this site is stuck in a race condition?
-    if (SiteHelper.siteDownloadSinceLastClick.contains(site)) {
+    // Bail out if a download is already in flight for this site. The guard is only set
+    // below, once we actually start a device's download (see SiteHelper.startSiteDownload) —
+    // NOT here — so a call that turns out to just unregister the site's existing polygons
+    // (e.g. from clearSitePatterns with refreshingPolygons == false, below) never leaves a
+    // stale entry behind for the very next "real" queryForSignalPolygon call to get stuck on.
+    // Each in-flight device chain decrements this counter when it terminates — successfully,
+    // with an error, or via cancellation (see GetLicenceHRP.getLicenceHRPData's finally block)
+    // — so the site can only get properly "stuck" here if that finally block never runs.
+    if (SiteHelper.isSiteDownloadInFlight(site)) {
       return;
     }
-
-    SiteHelper.siteDownloadSinceLastClick.add(site);
 
     // Save bandwidth by caching polygons when cachingPolygons==true
     Map<DeviceDetails, Set<PolygonContainer>> polygonCache =
@@ -134,9 +139,13 @@ class PolygonHelper with ChangeNotifier {
         sitesPolygons.remove(site);
       }
 
-      // Exit unless we are refreshing the polygons
+      // Exit unless we are refreshing the polygons. This call is only unregistering the
+      // site's existing polygons (no download guard was taken above), so a subsequent
+      // "real" queryForSignalPolygon call for this site — e.g. the one map_common.dart
+      // fires right after clearSitePatterns() on every tap — will find the site no
+      // longer in sitesPolygons and fall through to actually (re)download it below,
+      // exactly like a first-time tap on a site that's never been shown before.
       if (!refreshingPolygons) {
-        //Commenting this to fix clicking on same tower won't download.
         return;
       }
     }
@@ -258,6 +267,11 @@ class PolygonHelper with ChangeNotifier {
       String fields = "start_angle%2Cpower";
       String url =
           '/towers/licence_hrp/?_view=json&_expand=no&_count=360&_filter=$filter&_fields=$fields&_sort=start_angle ASC';
+
+      // Claim the guard for this device's chain before firing it off — GetLicenceHRP
+      // releases its contribution (SiteHelper.finishSiteDownload) in a finally block
+      // regardless of how the chain terminates, so this always balances out.
+      SiteHelper.startSiteDownload(site);
 
       GetLicenceHRP(
               site: site,

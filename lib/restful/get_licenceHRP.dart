@@ -7,6 +7,7 @@ import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
 import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
+import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/height_distance_pair.dart';
 import 'package:phonetowers/model/site.dart';
@@ -53,116 +54,141 @@ class GetLicenceHRP {
       //showSnackBar(message: "Downloading tower radiation patterns...");
     }
 
-    SiteResponse? rawResponse =
-        await api.getLicenceHRPData(url, cancelToken: cancelToken);
+    SiteResponse? rawResponse;
+    // Set right before (and only immediately before) this page hands off to a
+    // continuation for the next page. If that never happens — because this was the last
+    // page, or because something threw before we got there (network failure, a
+    // cancelled request, or one of the force-unwraps below choking on an unexpected
+    // row) — this device's chain has genuinely ended here, and the finally block below
+    // must release its contribution to the per-site in-flight guard so the site can
+    // never get stuck the way it could before this fix.
+    bool spawnedNextPageChain = false;
 
-    int totalRows = rawResponse?.restify?.rows?.length ?? 0;
+    try {
+      rawResponse =
+          await api.getLicenceHRPData(url, cancelToken: cancelToken);
 
-    //If no data found for this telco then don't do anything
-    if (totalRows == 0) {
-      return;
-    }
+      int totalRows = rawResponse?.restify?.rows?.length ?? 0;
 
-    dataFound = true;
-
-    double freqInMHz = 1.0 * device.frequency! / 1000 / 1000;
-
-    int towerHeight = device.getTowerHeight();
-
-    if (PolygonHelper.calculateTerrain) {
-      // Wait for the site elevation data to be downloaded
-      while (!site.finishedDownloadingElevations) {
-        await Future.delayed(Duration(milliseconds: 500));
-      }
-    }
-
-    // Draw appropriate signal strength
-    List<int> polygons =
-        NetworkTypeHelper.getNetworkBars(device.getNetworkType());
-
-    // Record the power output in each direction
-    Map<double, double> bearingToPower = Map<double, double>();
-
-    for (int i = 0; i < totalRows; i += 2) {
-      //Get the row
-      Values? values = rawResponse!.restify!.rows![i].values;
-      double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
-      //double stop_angle = row.getJSONObject("stop_angle").getDouble("value");
-      double power_dBm = double.tryParse(values.power!.value) ?? 0;
-
-      // Convert RSRP to RSSI to get more accurate results
-      if (NetworkTypeHelper.isRsrp(device.getNetworkType())) {
-        //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+      //If no data found for this telco then don't do anything
+      if (totalRows == 0) {
+        return;
       }
 
-      // 1.25 is half of 2.5, which is the measurement resolution with ACMA
-      double bearing = start_angle + 1.25;
-      bearingToPower[bearing] = power_dBm;
+      dataFound = true;
 
-      Set<HeightDistancePair> heightToDistance = {};
-      int hillHeight = 0;
+      double freqInMHz = 1.0 * device.frequency! / 1000 / 1000;
+
+      int towerHeight = device.getTowerHeight();
+
       if (PolygonHelper.calculateTerrain) {
-        // Is the tower on top of a hill?
-        heightToDistance = site.getHeightsAlongBearing(bearing);
-        hillHeight = site.getSiteHillElevation(heightToDistance);
-        if (hillHeight < 0) {
-          hillHeight = 0;
+        // Wait for the site elevation data to be downloaded
+        while (!site.finishedDownloadingElevations) {
+          await Future.delayed(Duration(milliseconds: 500));
         }
       }
 
-      int pos = 0;
-      for (int p = 0;
-          p <= PolygonHelper.getPolygonSignalStrengthPosition();
-          p++) {
-        int receiver_dBm = polygons[p];
-        double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
+      // Draw appropriate signal strength
+      List<int> polygons =
+          NetworkTypeHelper.getNetworkBars(device.getNetworkType());
 
-        // Calculate the distance the signal will travel
-        CityDensity model =
-            device.getRadiationModel() ?? defaultRadiationModel;
-        double distanceKm = calculateDistance(
-            model,
-            freeSpaceLoss_dBi,
-            freqInMHz,
-            towerHeight.toDouble());
+      // Record the power output in each direction
+      Map<double, double> bearingToPower = Map<double, double>();
+
+      for (int i = 0; i < totalRows; i += 2) {
+        //Get the row
+        Values? values = rawResponse!.restify!.rows![i].values;
+        double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
+        //double stop_angle = row.getJSONObject("stop_angle").getDouble("value");
+        double power_dBm = double.tryParse(values.power!.value) ?? 0;
+
+        // Convert RSRP to RSSI to get more accurate results
+        if (NetworkTypeHelper.isRsrp(device.getNetworkType())) {
+          //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+        }
+
+        // 1.25 is half of 2.5, which is the measurement resolution with ACMA
+        double bearing = start_angle + 1.25;
+        bearingToPower[bearing] = power_dBm;
+
+        Set<HeightDistancePair> heightToDistance = {};
+        int hillHeight = 0;
         if (PolygonHelper.calculateTerrain) {
-          distanceKm = calculateTerrainLosses(site, heightToDistance,
-              distanceKm, bearing, freqInMHz.toDouble(), towerHeight);
+          // Is the tower on top of a hill?
+          heightToDistance = site.getHeightsAlongBearing(bearing);
+          hillHeight = site.getSiteHillElevation(heightToDistance);
+          if (hillHeight < 0) {
+            hillHeight = 0;
+          }
         }
 
-        if (distanceKm > 100) {
-          distanceKm = 100;
+        int pos = 0;
+        for (int p = 0;
+            p <= PolygonHelper.getPolygonSignalStrengthPosition();
+            p++) {
+          int receiver_dBm = polygons[p];
+          double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
+
+          // Calculate the distance the signal will travel
+          CityDensity model =
+              device.getRadiationModel() ?? defaultRadiationModel;
+          double distanceKm = calculateDistance(
+              model,
+              freeSpaceLoss_dBi,
+              freqInMHz,
+              towerHeight.toDouble());
+          if (PolygonHelper.calculateTerrain) {
+            distanceKm = calculateTerrainLosses(site, heightToDistance,
+                distanceKm, bearing, freqInMHz.toDouble(), towerHeight);
+          }
+
+          if (distanceKm > 100) {
+            distanceKm = 100;
+          }
+
+          LatLng latlng = travel(site.getLatLng(), bearing, distanceKm);
+          //Log.i("GetLicenceHRP", "2: algorithm=" + radiationModel + " power_dBm="+ power_dBm + " freeSpaceLoss_dBi+dBReduction=" + (freeSpaceLoss_dBi + dBReduction) + " distanceKm=" + distanceKm);
+
+          list![pos].add(latlng);
+          pos++;
         }
-
-        LatLng latlng = travel(site.getLatLng(), bearing, distanceKm);
-        //Log.i("GetLicenceHRP", "2: algorithm=" + radiationModel + " power_dBm="+ power_dBm + " freeSpaceLoss_dBi+dBReduction=" + (freeSpaceLoss_dBi + dBReduction) + " distanceKm=" + distanceKm);
-
-        list![pos].add(latlng);
-        pos++;
       }
-    }
 
-    device.setBearingToPowerMap(bearingToPower);
+      device.setBearingToPowerMap(bearingToPower);
 
-    //onPostexecute
-    NextPage? nextPage = rawResponse!.restify!.nextPage;
-    if (nextPage != null) {
-      // Calling new async task to get json for next page
-      GetLicenceHRP(
-              site: site,
-              device: device,
-              list: list,
-              url: nextPage.href,
-              showSnackBar: showSnackBar,
-              cancelToken: cancelToken)
-          .getLicenceHRPData();
-    } else {
-      if (dataFound) {
-        // Draw the polygon once the whole shape is downloaded
-        PolygonHelper().createPolygon(list!, site, device);
+      //onPostexecute
+      NextPage? nextPage = rawResponse!.restify!.nextPage;
+      if (nextPage != null) {
+        // Calling new async task to get json for next page. This continuation carries
+        // forward this device's contribution to the in-flight guard, so mark that we
+        // handed off before firing it — see the finally block below.
+        spawnedNextPageChain = true;
+        GetLicenceHRP(
+                site: site,
+                device: device,
+                list: list,
+                url: nextPage.href,
+                showSnackBar: showSnackBar,
+                cancelToken: cancelToken)
+            .getLicenceHRPData();
       } else {
-        // If we can't do any better, lets create a simple circular polygon
-        PolygonHelper().createBasicPolygon(device, site, list!);
+        if (dataFound) {
+          // Draw the polygon once the whole shape is downloaded
+          PolygonHelper().createPolygon(list!, site, device);
+        } else {
+          // If we can't do any better, lets create a simple circular polygon
+          PolygonHelper().createBasicPolygon(device, site, list!);
+        }
+      }
+    } finally {
+      // Release this device's contribution to the per-site in-flight guard on ANY
+      // termination of this page's processing — success (no more pages) or a thrown
+      // exception (network failure, cancellation, bad row data) — as long as we didn't
+      // just hand off to a next-page continuation, which carries the contribution
+      // forward instead. SiteHelper.finishSiteDownload only actually clears the
+      // site-level guard once every device chain started for this site has terminated.
+      if (!spawnedNextPageChain) {
+        SiteHelper.finishSiteDownload(site);
       }
     }
   }
