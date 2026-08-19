@@ -48,6 +48,11 @@ class SharedPreferencesHelper {
   static final String kpolygonPrecision = 'polygonPrecision';
   static final String kfollowGPS = 'followGPS';
 
+  // Camera position persistence (for surviving backgrounding / memory reclaim)
+  static final String kCameraLat = 'cameraLat';
+  static final String kCameraLng = 'cameraLng';
+  static final String kCameraZoom = 'cameraZoom';
+
   static final String betaLaunchPopup = 'betaLaunchPopup';
 
   ///-------------------------

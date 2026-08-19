@@ -246,7 +246,7 @@ class MapBody extends StatefulWidget {
   MapBodyState createState() => MapBodyState();
 }
 
-class MapBodyState extends AbstractMapBodyState {
+class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   /// ******************** State variables ************************************
   late GoogleMapController mapController;
   Location _locationService = new Location();
@@ -272,6 +272,7 @@ class MapBodyState extends AbstractMapBodyState {
   void initState() {
     super.initState();
     currentInstance = this;
+    WidgetsBinding.instance.addObserver(this);
 
     if (!kIsWeb) {
       PurchaseHelper().initStoreInfo(showSnackBar: showSnackbar);
@@ -464,10 +465,45 @@ class MapBodyState extends AbstractMapBodyState {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     //Free some memory
     //PurchaseHelper().subscription.cancel();
     if (!kIsWeb) AdsHelper().hideBannerAd();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // Persist camera position so we can restore it if the OS reclaims memory
+      // and cold-restarts the app while backgrounded.
+      if (lastCameraPosition != null) {
+        prefs.setDouble(SharedPreferencesHelper.kCameraLat,
+            lastCameraPosition!.target.latitude);
+        prefs.setDouble(SharedPreferencesHelper.kCameraLng,
+            lastCameraPosition!.target.longitude);
+        prefs.setDouble(SharedPreferencesHelper.kCameraZoom,
+            lastCameraPosition!.zoom);
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      // If the app was cold-restarted by the OS, re-centre the map on the last
+      // saved camera position. This won't fire for a normal warm resume (the map
+      // is still in memory), so it's safe to call unconditionally.
+      _restoreCameraIfAvailable();
+    }
+  }
+
+  void _restoreCameraIfAvailable() {
+    if (!prefs.containsKey(SharedPreferencesHelper.kCameraLat)) return;
+    final double lat =
+        prefs.getDouble(SharedPreferencesHelper.kCameraLat) ?? 0;
+    final double lng =
+        prefs.getDouble(SharedPreferencesHelper.kCameraLng) ?? 0;
+    final double zoom =
+        prefs.getDouble(SharedPreferencesHelper.kCameraZoom) ?? 14;
+    if (lat == 0 && lng == 0) return;
+    mapController
+        .animateCamera(CameraUpdate.newLatLngZoom(LatLng(lat, lng), zoom));
   }
 
   ///********************** Helper methods *************************************
@@ -786,6 +822,21 @@ class MapBodyState extends AbstractMapBodyState {
     });
 
     askForLocationPermission();
+
+    // If the app was cold-restarted by the OS while backgrounded, restore the
+    // last saved camera position once the map is ready.
+    if (prefs.containsKey(SharedPreferencesHelper.kCameraLat)) {
+      final double lat =
+          prefs.getDouble(SharedPreferencesHelper.kCameraLat) ?? 0;
+      final double lng =
+          prefs.getDouble(SharedPreferencesHelper.kCameraLng) ?? 0;
+      final double zoom =
+          prefs.getDouble(SharedPreferencesHelper.kCameraZoom) ?? kDefaultZoom;
+      if (lat != 0 || lng != 0) {
+        mapController.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(lat, lng), zoom));
+      }
+    }
     //    Future.delayed(Duration(seconds: 2),(){
     //      logger.d('after 2 second delay');
     //      askForLocationPermission();
