@@ -86,6 +86,30 @@ Tests are in `test/pathloss/` and are ported from the Java app's test suite:
 
 Run with: `flutter test test/pathloss/`
 
+## Polygon Precision (lib/helpers/polygon_helper.dart, lib/restful/get_licenceHRP.dart)
+`PolygonHelper.polygonBearingIncrement` (set from the "Polygon Precision" menu — Low/Medium/High,
+`PolygonHelper.kPolygonPrecisionLow/Medium/High`) controls the bearing step used when tracing a
+coverage ring, i.e. how many points it has.
+
+- **Two separate ring-drawing paths exist**, and both must honour this setting:
+  - `PolygonHelper.createBasicPolygon` — the circular fallback estimate, used only when a device
+    has no `deviceRegistrationIdentifier` or developer mode is on. Loops `bearing +=
+    polygonBearingIncrement` directly.
+  - `GetLicenceHRP.getLicenceHRPData` — the **primary path**, used for every real tower with
+    licence data (the vast majority of sites). This iterates over rows returned by the server
+    rather than looping over bearing directly, so it needs `GetLicenceHRP.rowStepForBearingIncrement`
+    to translate the precision setting into a row-sampling step. This function was previously
+    hardcoded to `i += 2`, silently ignoring the Polygon Precision setting entirely for real towers
+    — a real bug (the setting appeared to do nothing, since almost every tower goes through this
+    path, not the fallback). Covered by `test/restful/get_licenceHRP_test.dart`.
+- **Caching caveat**: `PolygonHelper.queryForSignalPolygon(site, refreshingPolygons,
+  cachingPolygons, ...)` — when called with `cachingPolygons == true` (e.g. the terrain-awareness
+  toggle in `option_menu.dart`) and the site/device is already cached, it reuses the previously
+  computed `PolygonContainer` points verbatim rather than recomputing geometry, so a precision
+  change won't retroactively apply until that cache entry is invalidated. The primary marker-tap
+  path (`map_common.dart` → `queryForSignalPolygon(site, false, false, ...)`) does **not** use this
+  cache, so tapping a tower after changing precision always reflects the new setting.
+
 ## Ads and billing (lib/helpers/ads_helper.dart, lib/helpers/purchase_helper.dart)
 Non-subscribed users see an inline adaptive AdMob banner at the bottom of the map; purchasing
 `yearly_adfree` or `permanent_adfree` (via `in_app_purchase`/`in_app_purchase_storekit`) removes it.

@@ -95,7 +95,14 @@ class GetLicenceHRP {
       // Record the power output in each direction
       Map<double, double> bearingToPower = Map<double, double>();
 
-      for (int i = 0; i < totalRows; i += 2) {
+      // Server rows arrive at a fixed base resolution (2 rows sampled per point at the
+      // default/medium polygon precision). Scale the row-sampling step from the user's
+      // Polygon Precision setting relative to that default, so Low/High actually change
+      // the point density of real (non-estimated) coverage — not just the circular
+      // fallback estimate in PolygonHelper.createBasicPolygon.
+      final int rowStep = rowStepForBearingIncrement(PolygonHelper.polygonBearingIncrement);
+
+      for (int i = 0; i < totalRows; i += rowStep) {
         //Get the row
         Values? values = rawResponse!.restify!.rows![i].values;
         double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
@@ -191,6 +198,17 @@ class GetLicenceHRP {
         SiteHelper.finishSiteDownload(site);
       }
     }
+  }
+
+  /// Converts the Polygon Precision setting (a bearing step in degrees, see
+  /// [PolygonHelper.polygonBearingIncrement]) into a row-sampling step for the server's
+  /// licence HRP rows, which arrive at a fixed base resolution — 2 rows sampled per point
+  /// at the default/medium precision ([PolygonHelper.BEARING_INCREMENT]). Pure and static
+  /// so it's unit-testable without a server response.
+  static int rowStepForBearingIncrement(double bearingIncrement) {
+    final int step =
+        (2 * bearingIncrement / PolygonHelper.BEARING_INCREMENT).round();
+    return step < 1 ? 1 : step;
   }
 
   // Distance in km.
