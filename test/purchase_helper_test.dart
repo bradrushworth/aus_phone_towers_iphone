@@ -91,6 +91,27 @@ void main() {
       expect(e.timeToExpireYearlySubscription, isEmpty);
     });
 
+    test('yearly active with StoreKit2 "yyyy-MM-dd HH:mm:ss" date -> subscribed', () async {
+      // iOS StoreKit2 (in_app_purchase_storekit's default transaction path)
+      // reports transactionDate as a local-time "yyyy-MM-dd HH:mm:ss" string
+      // rather than epoch milliseconds. This must not be treated as expired/absent.
+      final DateTime purchasedAt = DateTime.now().subtract(const Duration(days: 30));
+      final String formatted =
+          '${purchasedAt.year.toString().padLeft(4, '0')}-'
+          '${purchasedAt.month.toString().padLeft(2, '0')}-'
+          '${purchasedAt.day.toString().padLeft(2, '0')} '
+          '${purchasedAt.hour.toString().padLeft(2, '0')}:'
+          '${purchasedAt.minute.toString().padLeft(2, '0')}:'
+          '${purchasedAt.second.toString().padLeft(2, '0')}';
+      final PurchaseEntitlement e = await evaluateEntitlements(
+        [_purchase(skuSubscribeOneYear, formatted)],
+        nowMillis: DateTime.now().millisecondsSinceEpoch,
+        expiryPeriod: _expiryPeriod,
+      );
+      expect(e.isSubscribed, isTrue);
+      expect(e.yearlyPurchaseExpired, isFalse);
+    });
+
     test('permanent -> subscribed and permanent forever', () async {
       final PurchaseEntitlement e = await evaluateEntitlements(
         [_purchase(skuSubscribePermanently, '0')],

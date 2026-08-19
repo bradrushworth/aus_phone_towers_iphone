@@ -71,7 +71,10 @@ Both apps use the platform store for entitlements:
   They are repeatable and do **not** remove ads.
 
 A banner advertisement is shown to non-subscribed users only after an ad has actually loaded; the
-"Advertisement" label is hidden until then (and whenever ads are not shown).
+"Advertisement" label is hidden until then (and whenever ads are not shown). The banner is sized
+from the ad's actual rendered dimensions (`AdsHelper.loadedAdSize`), not the placeholder `AdSize`
+used to request an inline adaptive banner (which always reports `height == 0`) — see the "Ads and
+billing" section of `AGENTS.md` and `test/ui/widgets/ad_banner_container_test.dart`.
 
 ### Signal-propagation math consistency
 

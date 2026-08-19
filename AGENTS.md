@@ -86,6 +86,39 @@ Tests are in `test/pathloss/` and are ported from the Java app's test suite:
 
 Run with: `flutter test test/pathloss/`
 
+## Ads and billing (lib/helpers/ads_helper.dart, lib/helpers/purchase_helper.dart)
+Non-subscribed users see an inline adaptive AdMob banner at the bottom of the map; purchasing
+`yearly_adfree` or `permanent_adfree` (via `in_app_purchase`/`in_app_purchase_storekit`) removes it.
+
+### Ads
+- **`AdsHelper`** (singleton): loads the banner via `AdSize.getInlineAdaptiveBannerAdSize`, whose
+  `AdSize` **always reports `height == 0`** — that's a placeholder size, not the rendered size. The
+  real size is only known after load, via `BannerAd.getPlatformAdSize()`, which `AdsHelper` fetches
+  in `onAdLoaded` and caches on `loadedAdSize`. Any UI sizing a banner container **must** use
+  `loadedAdSize`, never `bannerAd.size` — using the latter silently collapses the ad to zero height
+  even though it loaded successfully (this was a real bug, fixed in `AdsHelper`/`AdBannerContainer`).
+- **`AdBannerContainer`** (`lib/ui/widgets/ad_banner_container.dart`): the widget that reserves
+  space for the banner and shows the "Advertisement" label, decoupled from `google_mobile_ads`
+  types (`Size`/plain `Widget` instead of `AdSize`/`AdWidget`) so its sizing logic can be exercised
+  in a plain widget test without a platform channel. Covered by
+  `test/ui/widgets/ad_banner_container_test.dart`.
+
+### Billing
+- **`PurchaseHelper`** (singleton, `ChangeNotifier`): wraps `in_app_purchase` /
+  `in_app_purchase_storekit`. The pure decision logic (donation vs. yearly vs. permanent, yearly
+  expiry) lives in `lib/helpers/entitlement_evaluator.dart#evaluateEntitlements`, kept
+  side-effect-free so it's unit-testable without StoreKit.
+- **iOS StoreKit2 gotcha**: `in_app_purchase_storekit` defaults to StoreKit2
+  (`InAppPurchaseStoreKitPlatform._useStoreKit2 = true`). In plugin versions up to 0.4.10.x it
+  reported `PurchaseDetails.transactionDate` as a local-time `"yyyy-MM-dd HH:mm:ss"` string —
+  Android and StoreKit1 report epoch milliseconds instead, and naive `int.tryParse`-only parsing
+  silently failed on iOS, so yearly purchases were never recognised as active. This was fixed
+  upstream in 0.4.11+1 (StoreKit2 now reports epoch milliseconds too), which this app picked up via
+  `flutter pub upgrade`. `evaluateEntitlements` still parses both formats via
+  `_parseTransactionDateMillis` (tries `int.tryParse` first, falls back to `DateTime.parse`) as
+  defense-in-depth against older/downgraded plugin versions. Covered by
+  `test/purchase_helper_test.dart`.
+
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
 project, you MUST also update the relevant documentation before considering the task complete:
