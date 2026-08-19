@@ -123,6 +123,7 @@ Open the drawer (top‑left) to control what is shown:
 | Timing‑advance ring | Yes | Not yet |
 | Observation markers (yellow / orange) | Yes | Not yet |
 | Follow‑GPS drive mode | Yes | Yes |
+| Compass Mode (rotate map to device heading) | Yes | Yes |
 | Frequency refarming toggle (literal vs reuse) | Yes | Yes |
 | Polygon precision (point count) control | Yes | Yes |
 | Export Towers (GeoJSON/CSV) | Yes | Yes |

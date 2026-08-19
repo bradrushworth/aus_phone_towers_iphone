@@ -272,7 +272,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
       case OptionMenuItem.followGPS:
         return MapBodyState.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
       case OptionMenuItem.compassMode:
-        return MapBodyState.compassMode ? Strings.compass_mode_off : Strings.compass_mode_on;
+        return MapBodyState.compassMode ? Strings.compass_mode_on : Strings.compass_mode_off;
       case OptionMenuItem.hideBorders:
         return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
       case OptionMenuItem.searchSites:

@@ -59,8 +59,8 @@ class Strings {
   static String follow_gps = 'Follow GPS';
   static String follow_gps_on = 'Disable Follow GPS';
   static String follow_gps_off = 'Follow GPS';
-  static String compass_mode_on = 'Compass Mode';
-  static String compass_mode_off = 'Disable Compass Mode';
+  static String compass_mode_on = 'Disable Compass Mode';
+  static String compass_mode_off = 'Compass Mode';
   static String hide_border = 'Hide Borders';
   static String show_border = 'Show Borders';
   static String search_sites = 'Search Sites';

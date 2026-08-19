@@ -8,6 +8,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -246,7 +247,7 @@ class MapBody extends StatefulWidget {
   MapBodyState createState() => MapBodyState();
 }
 
-class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
+class MapBodyState extends AbstractMapBodyState {
   /// ******************** State variables ************************************
   late GoogleMapController mapController;
   Location _locationService = new Location();
@@ -257,7 +258,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   static StreamSubscription<LocationData>? _followGpsSubscription;
   // Compass Mode: rotates the map to face the direction the device is pointing. Requested in #28.
   static bool compassMode = false;
-  static StreamSubscription<LocationData>? _compassSubscription;
+  static StreamSubscription<CompassEvent>? _compassSubscription;
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
   final TextEditingController _searchTextFilter = new TextEditingController();
@@ -467,9 +468,13 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     //Free some memory
     //PurchaseHelper().subscription.cancel();
+    // Compass Mode's heading subscription is only cancelled when the user toggles it off; if the
+    // widget is torn down while it's still on, cancel it here too so it doesn't leak and call
+    // animateCamera on a disposed controller.
+    _compassSubscription?.cancel();
+    _compassSubscription = null;
     if (!kIsWeb) AdsHelper().hideBannerAd();
     super.dispose();
   }
@@ -838,13 +843,18 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   }
 
   /// Toggle Compass Mode. When enabled, the map rotates to face the direction the device is
-  /// pointing (north-up off), driven by the magnetometer/heading from the location stream.
-  /// Mirrors the Android app's compass/heading behaviour.
+  /// pointing (north-up off), driven by the device's magnetometer/heading sensor (via
+  /// flutter_compass) so it updates even when the device isn't moving — e.g. standing still and
+  /// pointing the phone at a tower you can see. Mirrors the Android app's compass/heading
+  /// behaviour. Requested in #28.
   static Future<void> toggleCompassMode() async {
     final MapBodyState? state = currentInstance;
     if (state == null) return;
     compassMode = !compassMode;
     if (compassMode) {
+      // flutter_compass relies on CoreLocation on iOS (for true-heading/declination
+      // correction), so it still needs location permission even though it isn't reading GPS
+      // fixes for the heading itself.
       PermissionStatus permission =
           await state._locationService.requestPermission();
       if (permission != PermissionStatus.granted) {
@@ -858,19 +868,21 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       if (!await state._locationService.serviceEnabled()) {
         await state._locationService.requestService();
       }
-      _compassSubscription =
-          state._locationService.onLocationChanged.listen((LocationData location) {
+      _compassSubscription = FlutterCompass.events?.listen((CompassEvent event) {
         if (!compassMode) return;
-        final double? heading = location.heading;
+        final double? heading = event.heading;
         if (heading == null) return;
+        // google_maps_flutter has no bearing-only CameraUpdate (there's no
+        // CameraUpdate.newCameraBearing), so rebuild the CameraPosition from the map's own last
+        // reported position, only overriding bearing. Crucially, unlike the previous
+        // implementation, we do NOT fall back to a hardcoded target/zoom (kLagLongBathurst /
+        // kDefaultZoom) - if we haven't received a real camera position yet, skip this update
+        // rather than snapping the map away from wherever the user/Follow GPS has it.
         final CameraPosition? last = state.lastCameraPosition;
+        if (last == null) return;
         state.mapController.animateCamera(
           CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: last?.target ?? kLagLongBathurst,
-              zoom: last?.zoom ?? kDefaultZoom,
-              bearing: heading,
-            ),
+            CameraPosition(target: last.target, zoom: last.zoom, tilt: last.tilt, bearing: heading),
           ),
         );
       });
