@@ -14,6 +14,13 @@ import 'package:phonetowers/utils/app_constants.dart';
 import 'client.dart';
 
 class DeviceDetails {
+  // Frequency refarming (accuracy-preserving re-expression of legacy 2G/3G licences as their
+  // current 4G/5G reuse). Mirrors the Android app's SiteHelper.refarmEnabled: true by default,
+  // "Disable frequency refarming" in the Hiding Menu sets it to false to show the literal licence
+  // type. This only changes how 2G/3G-era licences are labelled — genuine 4G/5G carriers are
+  // unaffected either way.
+  static bool refarmEnabled = true;
+
   // Details from the database
 
   String? sddId,
@@ -233,6 +240,85 @@ class DeviceDetails {
       default:
         return [NetworkType.UNKNOWN];
     }
+  }
+
+  /// Rank of a network generation, used to pick the newest genuine capability when a licence row
+  /// authorises more than one technology (keeps the map to one transmitter per licence).
+  static int generationRank(NetworkType nt) {
+    switch (nt) {
+      case NetworkType.NR:
+        return 5;
+      case NetworkType.LTE:
+      case NetworkType.NB_IOT:
+        return 4;
+      case NetworkType.UMTS:
+        return 3;
+      case NetworkType.GSM:
+        return 2;
+      case NetworkType.OTHER:
+        return 1;
+      default:
+        return 0; // UNKNOWN
+    }
+  }
+
+  /// Bands historically licensed for 2G/3G that Australia now operates as 4G/5G (3G fully
+  /// decommissioned: Optus Apr-2024, Telstra Oct-2024, Vodafone/TPG Jan-2025). A carrier in one of
+  /// these bands is, in real-world utilisation, 4G/5G — not the legacy 2G/3G the emission implies.
+  static bool isRefarmedLteBand(int frequency) {
+    return (frequency >= 700000000 && frequency < 800000000) // B28 700 MHz
+        ||
+        (frequency >= 820000000 && frequency < 1000000000) // B5/B8 850/900 MHz
+        ||
+        (frequency >= 1700000000 && frequency < 2200000000) // B3/B1 1800/2100 MHz
+        ||
+        (frequency >= 2300000000 && frequency < 2700000000); // B40/B7 2300/2600 MHz
+  }
+
+  /// Frequency-refarming rule (accuracy-preserving, not hiding): a licence whose only classification
+  /// is legacy 3G (UMTS), sitting in a band Australia now runs as 4G/5G, is re-expressed with its
+  /// current reuse (LTE). This reflects what is actually broadcasting rather than the decommissioned
+  /// original. Genuine 2G (GSM) emissions and any licence already carrying an explicit LTE/NR/NB_IOT
+  /// classification are left untouched.
+  static List<NetworkType> applyRefarm(List<NetworkType> types, int frequency) {
+    if (!isRefarmedLteBand(frequency)) {
+      return types;
+    }
+    bool hasModern = false;
+    bool hasUmts = false;
+    for (final NetworkType nt in types) {
+      if (nt == NetworkType.LTE || nt == NetworkType.NR || nt == NetworkType.NB_IOT) {
+        hasModern = true;
+      }
+      if (nt == NetworkType.UMTS) {
+        hasUmts = true;
+      }
+    }
+    if (hasModern || !hasUmts) {
+      // Already modern, or not an exclusively-3G licence in a refarmed band — leave as-is.
+      return types;
+    }
+    // Exclusively 3G UMTS in a refarmed band: re-express at its current 4G reuse.
+    return <NetworkType>[NetworkType.LTE];
+  }
+
+  /// Returns the single network type for one ACMA licence row, derived from the row's own emission
+  /// designator + frequency band. Frequency refarming is applied on top when [refarmEnabled] is
+  /// true (the default). When refarming is off the literal licence type (e.g. 3G UMTS) is shown.
+  static NetworkType getNetworkTypeForLicence(
+      String? emission, int frequency, int bandwidth, Telco telco, int antennaId) {
+    List<NetworkType> types =
+        getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId);
+    if (refarmEnabled) {
+      types = applyRefarm(types, frequency);
+    }
+    NetworkType best = NetworkType.UNKNOWN;
+    for (final NetworkType nt in types) {
+      if (generationRank(nt) > generationRank(best)) {
+        best = nt;
+      }
+    }
+    return best;
   }
 
   LteType getLteType() {

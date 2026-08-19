@@ -18,8 +18,15 @@ datasets and draws each transmitter on a Google Map together with its estimated 
 - **Coverage polygons** — coloured shaded areas showing the estimated coverage of each antenna.
   The colour matches the carrier (see the legend below). Toggle the outline with **Show/Hide
   Borders**.
-- **Your location** — a semi‑transparent azure dot (requires Location permission). The app can
-  centre the map on you; there is no automatic "follow while driving" mode yet.
+- **Coverage labels** — each tower's coverage carries a small text label showing its
+  **frequency and technology** (e.g. `850 MHz 4G LTE`). The label is placed *outside* the shaded
+  polygon — anchored on the point of the outermost ring that is furthest from the tower, then pushed
+  a little further out — so it sits in clear space instead of on top of the coverage fill or the
+  site marker. Because HRP coverage rings are irregular (terrain, hills, sector directions), the
+  label may appear at a different angle for each tower — that is expected. Tapping a tower redraws
+  its coverage and refreshes the label position.
+- **Your location** — a semi‑transparent azure dot (requires Location permission). Use the
+  **Follow GPS** menu item to keep the map centred on you as you move ("drive mode").
 
 ## 2. Colour & symbol legend
 
@@ -39,25 +46,43 @@ Tower markers use carrier logo icons. The colours below are used for the **cover
 
 ## 3. Toolbar menu (top‑right `⋯`)
 
+The menu is grouped the same way as the Android app:
+
+- **Reload Everything** — clear the map and re‑download all towers for the current area.
+- **Follow GPS** — toggle "drive mode". When on, the map stays centred on your location as you
+  move (uses more battery). When off, the map stops recentring.
 - **Show / Hide Borders** — toggle the radiation polygon outlines.
 - **Search Sites** — find a specific tower / site.
-- **Reload Everything** — clear the map and re‑download all towers for the current area.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.
-- **Hiding Menu** — Hide / Show Radiation on Click (draw a tower's coverage polygon when you tap it).
+- **Hiding Menu** — a sub‑menu:
+  - **Hide / Show Radiation on Click** — when on (default), tapping a tower draws its coverage
+    polygon; when off, tapping does nothing.
+  - **Disable frequency refarming** — when ticked, legacy 3G (UMTS) licences that now run as 4G/5G
+    (e.g. band‑refarmed 900/2100 MHz) are shown at their *literal* licence type (3G UMTS) instead
+    of being re‑classified to their current reuse (4G LTE). Changing this reloads the towers.
+- **Export Data** — a sub‑menu:
+  - **Export Towers (GeoJSON)** — one point per tower (carrier, generation, frequency, azimuth,
+    height, EIRP, …) for every tower currently on the map.
+  - **Export Towers (CSV)** — the same data as a CSV.
+  - **Export Coverage (GeoJSON)** — the coverage polygons currently drawn on the map (with their
+    tower/device details) to GeoJSON, CSV and KML, timestamped, for use in QGIS / Google Earth.
+- **Polygon Precision** — how many points make up each coverage ring: **Low** (faster, blockier),
+  **Medium** (default) or **High** (smoother, more points). Applies to newly drawn coverage.
 - **Remove Ads** — buy *1 Year Ad‑Free* or *Permanent Ad‑Free* to remove the banner
   advertisement. The purchase is restored automatically on future launches (tap **Restore
   Purchases** if needed). The yearly option reverts to showing ads after 12 months and can be
   bought again; the permanent option never expires.
 - **Donate** — support development with a one‑off in‑app purchase (small / medium / large).
   Donations are repeatable and do **not** remove ads (not shown on the Web build).
-- **Developer / Regular Mode** — show extra diagnostic overlays.
-- **Report Problem** — take a screenshot to send feedback.
-- **Export** — save the coverage polygons currently drawn on the map (with their tower and device
-  details) to **GeoJSON**, **CSV** and **KML** files in the app's documents folder. The three files
-  are timestamped and can be opened in GIS tools such as QGIS or Google Earth. If no polygons are
-  drawn, nothing is exported.
-- **Links** — Rate App, AusPhoneTowers.com.au, iOS App Store, Source Code.
-- **User Guide** — opens this page.
+- **Problems Menu** — a sub‑menu:
+  - **Developer / Regular Mode** — show extra diagnostic overlays.
+  - **User Guide** — opens this page (the top‑right menu item that previously opened the wrong
+    page has been fixed).
+  - **Report Problem** — take a screenshot to send feedback.
+  - **Links** — Rate App, AusPhoneTowers.com.au, iOS App Store, Source Code.
+- **Rate App** — open the App Store review prompt.
+- **Close App** — on Android this exits the app; on iPhone/Web it isn't permitted by the OS, so a
+  hint is shown instead.
 
 ## 4. Navigation‑drawer filters
 
@@ -94,11 +119,15 @@ Open the drawer (top‑left) to control what is shown:
 | Connected‑tower / Cell Info bar | Yes | Not yet |
 | Timing‑advance ring | Yes | Not yet |
 | Observation markers (yellow / orange) | Yes | Not yet |
-| Follow‑GPS drive mode | Yes | Not yet |
+| Follow‑GPS drive mode | Yes | Yes |
+| Frequency refarming toggle (literal vs reuse) | Yes | Yes |
+| Polygon precision (point count) control | Yes | Yes |
+| Export Towers (GeoJSON/CSV) | Yes | Yes |
+| Export Coverage (GeoJSON/CSV/KML) | Yes | Yes (GeoJSON/CSV/KML) |
 | Shows your location dot | Yes | Yes (azure dot) |
 
 ## 7. Feedback & support
 
-Use **Report Problem** (screenshot) or the **Links** menu (Rate App / AusPhoneTowers.com.au /
-iOS App Store / Source Code). The Web/iOS app is still under active development — feedback is
-welcome at bitbot@bitbot.com.au.
+Use **Report Problem** (in the **Problems Menu**) or the **Problems Menu → Links** (Rate App /
+AusPhoneTowers.com.au / iOS App Store / Source Code). The Web/iOS app is still under active
+development — feedback is welcome at bitbot@bitbot.com.au.

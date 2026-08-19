@@ -56,6 +56,9 @@ class Strings {
   static String transmitter_type_aviation = 'Aviation';
 
   static String calculate_terrain = 'Calculate Terrain';
+  static String follow_gps = 'Follow GPS';
+  static String follow_gps_on = 'Disable Follow GPS';
+  static String follow_gps_off = 'Follow GPS';
   static String hide_border = 'Hide Borders';
   static String show_border = 'Show Borders';
   static String search_sites = 'Search Sites';
@@ -72,6 +75,21 @@ class Strings {
   static String hiding_menu = 'Hiding Menu';
   static String hiding_menu_hide_radiation = 'Hide Radiation on Click';
   static String hiding_menu_draw_radiation = 'Draw Radiation on Click';
+  static String disable_refarming = 'Disable frequency refarming';
+  static String disable_refarming_summary =
+      'When on, legacy 3G (UMTS) licences in bands now run as 4G/5G are shown at their current reuse (4G LTE).';
+
+  static String polygon_precision = 'Polygon Precision';
+  static String polygon_precision_low = 'Low (faster)';
+  static String polygon_precision_medium = 'Medium';
+  static String polygon_precision_high = 'High (smoother)';
+
+  static String export_data = 'Export Data';
+  static String export_towers_geojson = 'Export Towers (GeoJSON)';
+  static String export_towers_csv = 'Export Towers (CSV)';
+  static String export_coverage_geojson = 'Export Coverage (GeoJSON)';
+
+  static String problems_menu = 'Problems Menu';
 
   static String remove_ads = 'Remove Ads';
   static String remove_ads_subscribe_previous =

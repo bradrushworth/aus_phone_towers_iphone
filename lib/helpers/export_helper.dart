@@ -7,11 +7,13 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../model/device_detail.dart';
+import '../model/overlay.dart';
 import '../model/site.dart';
 import '../utils/polygon_container.dart';
 import 'let_type_helper.dart';
 import 'network_type_helper.dart';
 import 'polygon_helper.dart';
+import 'site_helper.dart';
 import 'telco_helper.dart';
 
 /// Exports the currently drawn signal-coverage polygons (and their on-tower
@@ -66,6 +68,111 @@ class ExportHelper {
     final DateTime now = DateTime.now();
     return '${now.year}${_pad(now.month)}${_pad(now.day)}'
         '_${_pad(now.hour)}${_pad(now.minute)}${_pad(now.second)}';
+  }
+
+  /// Exports every tower currently on the map to a towers GeoJSON file (one point per tower
+  /// carrying its carrier, generation, frequency and device attributes) and a towers CSV file.
+  /// Mirrors the Android app's Export Towers (GeoJSON) / Export Towers (CSV) menu items.
+  /// Returns the list of written file paths (empty if there are no towers on the map).
+  static Future<List<String>> exportTowers() async {
+    // Collect every unique site currently drawn on the map, with its devices.
+    final Map<Site, List<DeviceDetails>> siteDevices = <Site, List<DeviceDetails>>{};
+    for (final MapOverlay overlay in SiteHelper.globalListMapOverlay) {
+      final Site? site = overlay.site;
+      if (site == null) continue;
+      siteDevices.putIfAbsent(site, () => site.getDeviceDetailsMobileBands().values
+          .map((MapEntry<DeviceDetails, bool> e) => e.key)
+          .toList());
+    }
+
+    if (siteDevices.isEmpty) return <String>[];
+
+    final Directory dir = await getApplicationDocumentsDirectory();
+    final String stamp = _timeStamp();
+    final List<String> paths = <String>[];
+
+    // GeoJSON
+    final File geoFile = File(p.join(dir.path, 'AusPhoneTowers_Towers_$stamp.geojson'));
+    await geoFile.writeAsString(_towersToGeoJson(siteDevices), flush: true);
+    paths.add(geoFile.path);
+
+    // CSV
+    final File csvFile = File(p.join(dir.path, 'AusPhoneTowers_Towers_$stamp.csv'));
+    await csvFile.writeAsString(_towersToCsv(siteDevices), flush: true);
+    paths.add(csvFile.path);
+
+    return paths;
+  }
+
+  static Map<String, dynamic> _towerProperties(Site site, DeviceDetails device) {
+    return <String, dynamic>{
+      'name': site.getNameFormatted(),
+      'operatorName': TelcoHelper.getName(site.getTelco()),
+      'siteId': site.siteId,
+      'networkType': NetworkTypeHelper.resolveNetworkToName(device.getNetworkType()),
+      'lteType': LteTypeHelper.getFirstTwoChars(device.getLteType()),
+      'frequency': (device.frequency ?? 0) / 1000 / 1000,
+      'bandwidth': (device.bandwidth ?? 0) / 1000 / 1000,
+      'emission': device.emission ?? '',
+      'eirp': device.eirp,
+      'azimuth': device.azimuth,
+      'towerHeight': device.getTowerHeight(),
+      'latitude': site.getLatLng().latitude,
+      'longitude': site.getLatLng().longitude,
+    };
+  }
+
+  static String _towersToGeoJson(Map<Site, List<DeviceDetails>> siteDevices) {
+    final List<Map<String, dynamic>> features = <Map<String, dynamic>>[];
+    for (final MapEntry<Site, List<DeviceDetails>> entry in siteDevices.entries) {
+      final Site site = entry.key;
+      for (final DeviceDetails device in entry.value) {
+        features.add(<String, dynamic>{
+          'type': 'Feature',
+          'geometry': <String, dynamic>{
+            'type': 'Point',
+            'coordinates': <double>[
+              site.getLatLng().longitude,
+              site.getLatLng().latitude,
+            ],
+          },
+          'properties': _towerProperties(site, device),
+        });
+      }
+    }
+    return JsonEncoder.withIndent('  ').convert(<String, dynamic>{
+      'type': 'FeatureCollection',
+      'features': features,
+    });
+  }
+
+  static String _towersToCsv(Map<Site, List<DeviceDetails>> siteDevices) {
+    final StringBuffer sb = StringBuffer();
+    sb.writeln('name,operatorName,siteId,networkType,lteType,frequency,'
+        'bandwidth,emission,eirp,azimuth,towerHeight,latitude,longitude');
+    for (final MapEntry<Site, List<DeviceDetails>> entry in siteDevices.entries) {
+      final Site site = entry.key;
+      for (final DeviceDetails device in entry.value) {
+        final Map<String, dynamic> props = _towerProperties(site, device);
+        final List<String> values = <String>[
+          '"${(props['name'] as String).replaceAll('"', '""')}"',
+          '"${props['operatorName']}"',
+          '${props['siteId']}',
+          '"${props['networkType']}"',
+          '"${props['lteType']}"',
+          '${props['frequency']}',
+          '${props['bandwidth']}',
+          '"${props['emission']}"',
+          '${props['eirp']}',
+          '${props['azimuth']}',
+          '${props['towerHeight']}',
+          '${props['latitude']}',
+          '${props['longitude']}',
+        ];
+        sb.writeln(values.join(','));
+      }
+    }
+    return sb.toString();
   }
 
   static String _pad(int value) => value.toString().padLeft(2, '0');

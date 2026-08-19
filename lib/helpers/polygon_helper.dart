@@ -41,6 +41,17 @@ class PolygonHelper with ChangeNotifier {
   static final double BEARING_START = 1.25;
   static final double BEARING_INCREMENT = 2.50;
 
+  /// Polygon rendering precision — the bearing step (in degrees) used when tracing each
+  /// signal-strength band. A smaller step draws more points and a smoother, more accurate
+  /// shape (at the cost of CPU/time); a larger step is faster but blockier. Mirrors the
+  /// Android app's polygon-point-count control. Default 2.5° ≈ 144 points per ring.
+  static double polygonBearingIncrement = BEARING_INCREMENT;
+
+  /// Named precision presets for the Polygon Precision menu.
+  static const double kPolygonPrecisionLow = 5.0; // ~72 points per ring
+  static const double kPolygonPrecisionMedium = 2.5; // ~144 points per ring (default)
+  static const double kPolygonPrecisionHigh = 1.0; // ~360 points per ring
+
   /// Default signal-strength ring drawn on first launch (or before any stored
   /// preference is applied). Indexes into NetworkTypeHelper.getNetworkBars():
   /// 0 = Maximum, 1 = Strong, 2 = Good, 3 = Weak. We default to Strong.
@@ -415,12 +426,28 @@ class PolygonHelper with ChangeNotifier {
       String text, Color color) async {
     final BitmapDescriptor icon = await _createLabelIcon(text, color);
     if (!sitesPolygons.containsKey(site)) return;
-    // Draw a single label at a randomised point on the outermost (furthest) signal
-    // ring. The outer ring is the point furthest from the tower, and the random
-    // bearing stops labels from multiple antennas / neighbouring towers piling up
-    // on top of one another.
-    final int index = (math.Random().nextDouble() * ring.length).floor() % ring.length;
-    final LatLng position = ring[index];
+    // Place the label *outside* the coverage polygon so it does not sit on top of the shaded
+    // area (or the site marker). The polygon grows outward from the tower, so the outer ring
+    // is still inside the fill — we therefore anchor on the point of that ring furthest from
+    // the tower, then push the marker a further margin *outward* (away from the tower) into
+    // clear space. HRP rings are irregular (terrain, hills, sectors), so this keeps labels
+    // clear of the centre instead of piling up on the site.
+    final LatLng sitePos = site.getLatLng();
+    int bestIndex = 0;
+    double maxDist = -1;
+    for (int k = 0; k < ring.length; k++) {
+      final double d = _distanceMetres(sitePos, ring[k]);
+      if (d > maxDist) {
+        maxDist = d;
+        bestIndex = k;
+      }
+    }
+    final LatLng furthest = ring[bestIndex];
+    // Bearing from the tower out to the furthest ring point; extend ~300 m past it.
+    final double bearing = _bearingDegrees(sitePos, furthest);
+    final LatLng position =
+        GetLicenceHRP.travel(furthest, bearing, kLabelOuterMarginKm);
+
     final Marker marker = Marker(
       markerId: MarkerId('label_${device.sddId}'),
       position: position,
@@ -434,6 +461,34 @@ class PolygonHelper with ChangeNotifier {
     // newly added label markers are rendered. Called on the singleton instance because
     // this is a static method.
     PolygonHelper().notifyListeners();
+  }
+
+  /// How far (km) outside the furthest ring point the coverage label is pushed, so it sits in
+  /// clear space rather than on the shaded polygon or the site marker.
+  static const double kLabelOuterMarginKm = 0.3;
+
+  /// Great-circle distance (metres) between two coordinates, via the haversine formula.
+  /// Used to find the ring point furthest from the tower when placing text labels.
+  static double _distanceMetres(LatLng a, LatLng b) {
+    const double earthRadius = 6371000.0;
+    final double lat1 = a.latitude * math.pi / 180;
+    final double lat2 = b.latitude * math.pi / 180;
+    final double dLat = (b.latitude - a.latitude) * math.pi / 180;
+    final double dLon = (b.longitude - a.longitude) * math.pi / 180;
+    final double h = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1) * math.cos(lat2) * math.sin(dLon / 2) * math.sin(dLon / 2);
+    return 2 * earthRadius * math.asin(math.min(1.0, math.sqrt(h)));
+  }
+
+  /// Initial bearing (degrees, 0 = north, clockwise) from coordinate [a] to [b].
+  static double _bearingDegrees(LatLng a, LatLng b) {
+    final double lat1 = a.latitude * math.pi / 180;
+    final double lat2 = b.latitude * math.pi / 180;
+    final double dLon = (b.longitude - a.longitude) * math.pi / 180;
+    final double y = math.sin(dLon) * math.cos(lat2);
+    final double x = math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
+    return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
   }
 
   /// Render a small rounded label bitmap for use as a Marker icon.
@@ -500,7 +555,7 @@ class PolygonHelper with ChangeNotifier {
     }
     //Log.d("PolygonHelper", "power_dBm="+power_dBm+" freeSpaceLoss_dBi="+freeSpaceLoss_dBi+" towerHeight="+towerHeight);
 
-    for (double bearing = BEARING_START; bearing < 360; bearing += BEARING_INCREMENT) {
+    for (double bearing = BEARING_START; bearing < 360; bearing += polygonBearingIncrement) {
       //TODO calculare Terrain
       Set<HeightDistancePair> heightToDistance = {};
       int hillHeight = 0;

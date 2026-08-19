@@ -250,6 +250,12 @@ class MapBodyState extends AbstractMapBodyState {
   /// ******************** State variables ************************************
   late GoogleMapController mapController;
   Location _locationService = new Location();
+
+  // Follow GPS (drive mode): keeps the map centred on the device's location. Mirrors the
+  // Android app's "Follow GPS" toolbar action.
+  static bool followGPS = false;
+  static StreamSubscription<LocationData>? _followGpsSubscription;
+  static MapBodyState? currentInstance;
   late SharedPreferences prefs;
   final TextEditingController _searchTextFilter = new TextEditingController();
   bool isShowCancelSearch = false;
@@ -265,6 +271,7 @@ class MapBodyState extends AbstractMapBodyState {
   @override
   void initState() {
     super.initState();
+    currentInstance = this;
 
     if (!kIsWeb) {
       PurchaseHelper().initStoreInfo(showSnackBar: showSnackbar);
@@ -783,6 +790,47 @@ class MapBodyState extends AbstractMapBodyState {
     //      logger.d('after 2 second delay');
     //      askForLocationPermission();
     //    });
+  }
+
+  /// Toggle Follow GPS (drive mode). When enabled, the camera is recentred on the device's
+  /// location as it moves. Mirrors the Android app's "Follow GPS" toolbar action.
+  static Future<void> toggleFollowGPS() async {
+    final MapBodyState? state = currentInstance;
+    if (state == null) return;
+    followGPS = !followGPS;
+    if (followGPS) {
+      PermissionStatus permission = await state._locationService.requestPermission();
+      if (permission != PermissionStatus.granted) {
+        followGPS = false;
+        state.showSnackbar(
+            message: 'Cannot activate Follow GPS because location permission was not granted!',
+            isDismissible: true);
+        return;
+      }
+      if (!await state._locationService.serviceEnabled()) {
+        await state._locationService.requestService();
+      }
+      _followGpsSubscription = state._locationService.onLocationChanged.listen((LocationData location) {
+        if (!followGPS) return;
+        state.mapController.moveCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+                target: LatLng(location.latitude!, location.longitude!),
+                zoom: (state.lastCameraPosition?.zoom ?? kDefaultZoom)),
+          ),
+        );
+      });
+      state.showSnackbar(
+          message:
+              'GPS is now ON. This mode uses battery faster and keeps the screen centred on your location while you move!');
+    } else {
+      await _followGpsSubscription?.cancel();
+      _followGpsSubscription = null;
+      state.showSnackbar(
+          message:
+              'GPS is now OFF. This will save battery and stop the screen from recentring on your location!');
+    }
+    state.setState(() {});
   }
 
   Future askForLocationPermission() async {
