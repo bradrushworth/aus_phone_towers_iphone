@@ -110,6 +110,42 @@ coverage ring, i.e. how many points it has.
   path (`map_common.dart` → `queryForSignalPolygon(site, false, false, ...)`) does **not** use this
   cache, so tapping a tower after changing precision always reflects the new setting.
 
+## Support the App (lib/helpers/support_prompt_helper.dart, lib/ui/widgets/support_prompt_screen.dart)
+Ported from the Java app's `SupportPromptActivity` / `MapsActivity.maybeShowSupportPrompt()`.
+
+- **`SupportPromptScreen`**: a full-screen prompt (pushed via `Navigator.push`, not a dialog) with
+  the cost-transparency message, the three donation buttons (small/medium/large, same SKUs as the
+  Donate menu), and — unless `PurchaseHelper().isSubscribed` — the two ad-free purchase buttons
+  (same SKUs as Remove Ads), plus a "Maybe later" dismiss button. All purchase taps log a
+  `support_prompt_<action>` analytics event (matching Java) before calling
+  `PurchaseHelper().initiatePurchase` and popping the route.
+- **Reachable two ways**, matching Java exactly:
+  1. Manually: the *last* item in the Donate submenu (`listDonateItem` in `option_menu.dart`,
+     `Strings.donateSupportPrompt` = "Support the App") — it is a sub-item of Donate, not a
+     separate top-level menu entry.
+  2. Automatically, about once a week: `SupportPromptHelper.decide` (pure, unit-tested in
+     `test/helpers/support_prompt_helper_test.dart`) is the ported decision logic — first-ever
+     launch just seeds a SharedPreferences timestamp without showing, then it shows once ≥7 days
+     have elapsed since it was last shown/seeded. Wired into
+     `MapBodyState.initState()` → `_maybeShowSupportPrompt()` in `map_common.dart`, deferred via
+     `addPostFrameCallback` so a `Navigator` ancestor is guaranteed to exist.
+- **Deliberately not ported**: the Java screen's "Watch an ad instead" button (a rewarded ad). This
+  app has no rewarded/interstitial ad unit configured — only banner ads (see `AdsHelper`) — and a
+  real AdMob rewarded ad unit ID would need to be created first; a test-only ad unit ID was not
+  used here to avoid shipping a fake button in production.
+
+## Top-level option menu ordering (lib/ui/widgets/option_menu.dart)
+`OptionMenuItem`'s declaration order drives the on-screen order (`OptionMenuItem.values` is mapped
+directly in `itemBuilder`). It's kept aligned with the Java app's `popup_menu.xml` order for every
+item that exists on both platforms: Reload Everything, Follow GPS, Hide Borders, Search Sites, Map
+Mode, Rotating Map, Hiding Menu, Export Data, Remove Ads, Donate, Problems Menu, Rate App, Close
+App. Two items have no Android equivalent (`lockMap`, `polygonPrecision`) and are inserted next to
+their closest thematic neighbour (`rotatingMap`, `exportData` respectively) rather than breaking
+that shared sequence. `Calculate Terrain` and `Timing Advance` are Android menu items with no iOS
+menu equivalent (Calculate Terrain is a persistent toolbar icon button in `map_common.dart`; Timing
+Advance isn't implemented on iOS at all) and are intentionally absent here — don't add them to this
+enum without also building the underlying feature.
+
 ## Ads and billing (lib/helpers/ads_helper.dart, lib/helpers/purchase_helper.dart)
 Non-subscribed users see an inline adaptive AdMob banner at the bottom of the map; purchasing
 `yearly_adfree` or `permanent_adfree` (via `in_app_purchase`/`in_app_purchase_storekit`) removes it.

@@ -57,6 +57,7 @@ iOS. The table below lists each one and whether it can be brought to iOS.
 | Background tower service + notifications (`TowerService`) | Not available | No (iOS background limits) |
 | Coverage polygons (`PolygonHelper`, `GetLicenceHRP`) | Available | Yes (see note below) |
 | In-app purchases — Remove Ads (1 year / permanent) & Donations | Available (Google Play) | Yes (App Store) |
+| "Support the App" prompt (`SupportPromptActivity`) — donate/ad-free screen, last item of the Donate menu, also shown weekly | Available | Yes (see note below), minus the "Watch an ad instead" rewarded-ad button |
 
 ### In-app purchases
 
@@ -69,6 +70,17 @@ Both apps use the platform store for entitlements:
   on every launch.
 - **Donations** (small / medium / large): one-off consumable purchases that support development.
   They are repeatable and do **not** remove ads.
+
+**"Support the App"** (`lib/ui/widgets/support_prompt_screen.dart`) is ported from the Android
+app's `SupportPromptActivity`: a full-screen prompt with a cost-transparency message, the same
+three donation buttons, and (unless already ad-free) the two ad-free purchase buttons, plus a
+"Maybe later" dismiss button. It's reachable as the last item of the Donate menu
+(`donateSupportPrompt`) and is also shown automatically about once a week — see
+`SupportPromptHelper` (pure decision logic, unit-tested in
+`test/helpers/support_prompt_helper_test.dart`) for the exact cadence, ported from
+`MapsActivity.maybeShowSupportPrompt()`. The Android screen's "Watch an ad instead" button (a
+rewarded ad) was **not** ported — this app has no rewarded/interstitial ad unit configured (only
+banner ads), and a real AdMob rewarded ad unit would need to be created first.
 
 A banner advertisement is shown to non-subscribed users only after an ad has actually loaded; the
 "Advertisement" label is hidden until then (and whenever ads are not shown). The banner is sized
