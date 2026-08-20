@@ -169,6 +169,9 @@ class _OptionsMenuState extends State<OptionsMenu> {
                     message: MapBodyState.lockMap
                         ? 'Map locked — all camera movement (gestures, my location, Follow GPS, search) disabled for screenshots.'
                         : 'Map unlocked — camera movement enabled again.');
+                // MapBodyState (not this widget) owns the GoogleMap and reads lockMap to
+                // configure its gesture flags, so it must be the one to rebuild.
+                MapBodyState.currentInstance?.setState(() {});
                 setState(() {});
                 break;
               }
