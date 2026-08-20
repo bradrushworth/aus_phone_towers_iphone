@@ -8,6 +8,18 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.13.7+122] — 2026-08-20
+
+### Changed
+- **Default Signal Strength changed from Strong to Good** — the ring drawn on first launch (and
+  whenever no stored preference exists) now defaults to the "Good" signal-strength band instead of
+  "Strong". Fixed in the one place that actually governs this at runtime
+  (`SharedPreferencesHelper.getSignalStrength`'s fallback), plus the two dead-but-misleading static
+  field initializers that get overwritten by it on startup (`PolygonHelper.polygonSignalStrengthPos`
+  previously defaulted to Strong, `NavigationMenu.signalStrengthSelection` previously defaulted to
+  Weak — the two disagreed with each other and with the real runtime default). `docs/USER_GUIDE.md`
+  updated to match.
+
 ## [1.13.6+121] — 2026-08-20
 
 ### Fixed
