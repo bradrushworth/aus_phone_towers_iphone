@@ -52,19 +52,28 @@ class SupportPromptScreen extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () => _logAndPurchase(
                       context, 'donate_small', PurchaseHelper.SKU_DONATION_SMALL),
-                  child: Text(Strings.donateSmall),
+                  child: Text(purchaseHelper.priceLabel(
+                      sku: PurchaseHelper.SKU_DONATION_SMALL,
+                      name: Strings.donateSmallName,
+                      fallback: Strings.donateSmall)),
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () => _logAndPurchase(
                       context, 'donate_medium', PurchaseHelper.SKU_DONATION_MEDIUM),
-                  child: Text(Strings.donateMedium),
+                  child: Text(purchaseHelper.priceLabel(
+                      sku: PurchaseHelper.SKU_DONATION_MEDIUM,
+                      name: Strings.donateMediumName,
+                      fallback: Strings.donateMedium)),
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () => _logAndPurchase(
                       context, 'donate_large', PurchaseHelper.SKU_DONATION_LARGE),
-                  child: Text(Strings.donateLarge),
+                  child: Text(purchaseHelper.priceLabel(
+                      sku: PurchaseHelper.SKU_DONATION_LARGE,
+                      name: Strings.donateLargeName,
+                      fallback: Strings.donateLarge)),
                 ),
                 if (!purchaseHelper.isSubscribed) ...[
                   const SizedBox(height: 24),
@@ -74,13 +83,19 @@ class SupportPromptScreen extends StatelessWidget {
                   OutlinedButton(
                     onPressed: () => _logAndPurchase(context, 'subscribe_yearly',
                         PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR),
-                    child: Text(Strings.remove_ads_year),
+                    child: Text(purchaseHelper.priceLabel(
+                        sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
+                        name: Strings.remove_ads_year_name,
+                        fallback: Strings.remove_ads_year)),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton(
                     onPressed: () => _logAndPurchase(context, 'subscribe_permanent',
                         PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY),
-                    child: Text(Strings.remove_ads_permanent),
+                    child: Text(purchaseHelper.priceLabel(
+                        sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY,
+                        name: Strings.remove_ads_permanent_name,
+                        fallback: Strings.remove_ads_permanent)),
                   ),
                 ],
                 const SizedBox(height: 24),

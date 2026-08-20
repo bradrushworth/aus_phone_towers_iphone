@@ -224,14 +224,20 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 listRemoveAdsItem.elementAt(2)
                   ..title =
                       PurchaseHelper().timeToExpireYearlySubscription.isEmpty
-                          ? Strings.remove_ads_year
+                          ? PurchaseHelper().priceLabel(
+                              sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
+                              name: Strings.remove_ads_year_name,
+                              fallback: Strings.remove_ads_year)
                           : PurchaseHelper().timeToExpireYearlySubscription
                   ..isEnabled =
                       PurchaseHelper().timeToExpireYearlySubscription.isEmpty;
                 listRemoveAdsItem.elementAt(3)
                   ..title = PurchaseHelper().isSubscribedPermanently
                       ? Strings.subscribed_permanently
-                      : Strings.remove_ads_permanent
+                      : PurchaseHelper().priceLabel(
+                          sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY,
+                          name: Strings.remove_ads_permanent_name,
+                          fallback: Strings.remove_ads_permanent)
                   ..isEnabled = !PurchaseHelper().isSubscribedPermanently;
                 listRemoveAdsItem.elementAt(4)
                   ..isEnabled = !PurchaseHelper().isSubscribed;
@@ -241,10 +247,22 @@ class _OptionsMenuState extends State<OptionsMenu> {
             case OptionMenuItem.donate:
               {
                 listDonateItem.elementAt(2)
+                  ..title = PurchaseHelper().priceLabel(
+                      sku: PurchaseHelper.SKU_DONATION_SMALL,
+                      name: Strings.donateSmallName,
+                      fallback: Strings.donateSmall)
                   ..isEnabled = !purchaseHelper.isDonateSmallPurchased;
                 listDonateItem.elementAt(3)
+                  ..title = PurchaseHelper().priceLabel(
+                      sku: PurchaseHelper.SKU_DONATION_MEDIUM,
+                      name: Strings.donateMediumName,
+                      fallback: Strings.donateMedium)
                   ..isEnabled = !purchaseHelper.isDonateMediumPurchased;
                 listDonateItem.elementAt(4)
+                  ..title = PurchaseHelper().priceLabel(
+                      sku: PurchaseHelper.SKU_DONATION_LARGE,
+                      name: Strings.donateLargeName,
+                      fallback: Strings.donateLarge)
                   ..isEnabled = !purchaseHelper.isDonateLargePurchased;
                 showSingleRowOptionMenu(listDonateItem, kDonate);
                 break;
@@ -754,13 +772,19 @@ List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
       isEnabled: false),
   SingleRowItem(
       title: PurchaseHelper().timeToExpireYearlySubscription.isEmpty
-          ? Strings.remove_ads_year
+          ? PurchaseHelper().priceLabel(
+              sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
+              name: Strings.remove_ads_year_name,
+              fallback: Strings.remove_ads_year)
           : PurchaseHelper().timeToExpireYearlySubscription,
       isEnabled: PurchaseHelper().timeToExpireYearlySubscription.isEmpty),
   SingleRowItem(
       title: PurchaseHelper().isSubscribedPermanently
           ? Strings.subscribed_permanently
-          : Strings.remove_ads_permanent,
+          : PurchaseHelper().priceLabel(
+              sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY,
+              name: Strings.remove_ads_permanent_name,
+              fallback: Strings.remove_ads_permanent),
       isEnabled: !PurchaseHelper().isSubscribedPermanently),
   SingleRowItem(
       title: Strings.restore_purchases,
@@ -771,13 +795,22 @@ List<SingleRowItem> listDonateItem = <SingleRowItem>[
   SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: true),
   SingleRowItem(title: Strings.donatePrevious, isEnabled: false),
   SingleRowItem(
-      title: Strings.donateSmall,
+      title: PurchaseHelper().priceLabel(
+          sku: PurchaseHelper.SKU_DONATION_SMALL,
+          name: Strings.donateSmallName,
+          fallback: Strings.donateSmall),
       isEnabled: !PurchaseHelper().isDonateSmallPurchased),
   SingleRowItem(
-      title: Strings.donateMedium,
+      title: PurchaseHelper().priceLabel(
+          sku: PurchaseHelper.SKU_DONATION_MEDIUM,
+          name: Strings.donateMediumName,
+          fallback: Strings.donateMedium),
       isEnabled: !PurchaseHelper().isDonateMediumPurchased),
   SingleRowItem(
-      title: Strings.donateLarge,
+      title: PurchaseHelper().priceLabel(
+          sku: PurchaseHelper.SKU_DONATION_LARGE,
+          name: Strings.donateLargeName,
+          fallback: Strings.donateLarge),
       isEnabled: !PurchaseHelper().isDonateLargePurchased),
   SingleRowItem(title: Strings.donateSupportPrompt, isEnabled: true),
 ];

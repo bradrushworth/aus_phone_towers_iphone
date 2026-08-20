@@ -178,6 +178,17 @@ Non-subscribed users see an inline adaptive AdMob banner at the bottom of the ma
   `_parseTransactionDateMillis` (tries `int.tryParse` first, falls back to `DateTime.parse`) as
   defense-in-depth against older/downgraded plugin versions. Covered by
   `test/purchase_helper_test.dart`.
+- **Live pricing, not hardcoded**: menu/screen labels (Remove Ads, Donate, Support the App) show
+  the store's own localized price string (`ProductDetails.price`, from `_getProducts()`'s
+  `queryProductDetails` call), not a hardcoded `$X.XX` literal — prices vary by storefront/locale
+  and can change without an app update. `PriceLabelHelper` (pure, `lib/helpers/price_label_helper.dart`,
+  tested in `test/helpers/price_label_helper_test.dart`) builds `"Name ($price)"` from a product
+  list; `PurchaseHelper.priceFor` / `priceLabel` are thin instance wrappers over it. The hardcoded
+  `Strings.donateSmall` / `remove_ads_year` etc. strings are kept only as the **fallback** shown
+  before `_getProducts()` resolves (or if it fails) — don't remove them. `_getProducts()` calls
+  `notifyListeners()` once products load so already-open `Consumer<PurchaseHelper>` UI (e.g.
+  `SupportPromptScreen`) picks up live pricing without needing an unrelated purchase event to
+  trigger a rebuild first.
 
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
