@@ -157,52 +157,20 @@ class DeviceDetails {
     return networkType;
   }
 
-  static Set<int> antennas3G4G = Set.of([
-    84074, 81303, 92389 // Optus
-  ]);
-  static Set<int> antennas3G4G5G = Set.of([
-    80562, // Telstra
-    92391, 93659, 93661, 90023, 90025, 81539, 95668 // Optus
-  ]);
-  static Set<int> antennas3G5G = Set.of([
-    81170 // Telstra
-  ]);
-  static Set<int> antennas4G = Set.of([
-    80854, 81380, 80154, 80232, // Telstra
-    90025, 93910, // Optus
-    13198 // Vodafone
-  ]);
-  static Set<int> antennas4G5G = Set.of([
-    91103, 92694, // Telstra. Not: 81204
-    93658, 93789, 90022, 93664, 92388, // Optus
-    93907, 93908, 93911, 93364, 93365, 93366, 93368, 93369, 92174, 93588, 93590, 93589, 81305, 13198, 94865 // Vodafone
-  ]);
-  static Set<int> antennas5G = Set.of([
-    // Telstra
-    // Optus
-    // Vodafone
-  ]);
-
+  /// Network type is derived purely from each licence row's OWN emission designator + frequency
+  /// band (see [getNetworkTypeStatic]). This used to be overridden by hardcoded "antenna-ID sets"
+  /// (antennas3G4G, antennas3G4G5G, antennas4G5G, ...) that forced LTE/NR on certain antennas
+  /// regardless of the actual carrier — but a live probe of the production
+  /// device_details_mobile tables (2026-08, see the Java app's DeviceDetails Javadoc) showed every
+  /// row on those antennas is 2100-2160 MHz 3G/4G, and no antenna in the dataset carries both a 5G
+  /// and a sub-3 GHz carrier. The sets were injecting phantom/duplicate 5G (confirmed live: a
+  /// Vodafone antenna in both antennas4G and antennas4G5G produced a spurious "5G 873 MHz" row
+  /// duplicating the real "4G 873 MHz" one) and have been removed; the genuine 5G/4G split is
+  /// unambiguous from frequency alone (5G = n77/n78 3.3-3.8 GHz or n257/n258 24.25-29.5 GHz;
+  /// everything sub-3 GHz is 4G or (decommissioned) 3G). This mirrors the Java Android app's
+  /// networkTypesForEmission exactly, so the two apps cannot classify the same tower differently.
   static List<NetworkType> getNetworkTypeStatic(
       String? emission, int frequency, int bandwidth, Telco telco, int antennaId) {
-    if (antennas3G4G.contains(antennaId)) {
-      return [NetworkType.LTE];
-    }
-    if (antennas3G4G5G.contains(antennaId)) {
-      return [NetworkType.LTE, NetworkType.NR];
-    }
-    if (antennas3G5G.contains(antennaId)) {
-      return [NetworkType.NR];
-    }
-    if (antennas4G.contains(antennaId)) {
-      return [NetworkType.LTE];
-    }
-    if (antennas4G5G.contains(antennaId)) {
-      return [NetworkType.LTE, NetworkType.NR];
-    }
-    if (antennas5G.contains(antennaId)) {
-      return [NetworkType.NR];
-    }
     if (emission == null || emission.length <= 6) return [NetworkType.UNKNOWN];
 
     String type = emission[6];
@@ -222,13 +190,88 @@ class DeviceDetails {
           } else if (frequency >= 24250000000 && frequency < 29500000000) {
             // n257, n258 (covering 24.25 to 29.5 GHz), <=1000 MHz BW, TDD, LMDS
             return [NetworkType.NR];
+          } else if (telco == Telco.Optus && frequency >= 750000000 && frequency < 799000000) {
+            // Optus
+            return [NetworkType.LTE];
+          } else if (telco == Telco.Optus && frequency >= 850000000 && frequency < 899000000) {
+            // Optus n5 (850MHz), 10 MHz BW, FDD
+            return [NetworkType.LTE];
+          } else if (telco == Telco.Optus && frequency >= 900000000 && frequency < 999000000) {
+            // Optus
+            return [NetworkType.LTE];
+          } else if (telco == Telco.Optus && frequency >= 2100000000 && frequency < 2199000000) {
+            // Optus n1 2147500000
+            return [NetworkType.LTE, NetworkType.NR];
+          } else if (telco == Telco.Optus && frequency >= 2300000000 && frequency < 2399000000) {
+            // Optus n40, 98 MHz BW, TDD
+            return [NetworkType.LTE];
+          } else if (telco == Telco.Vodafone && frequency >= 750000000 && frequency < 799000000) {
+            // Vodafone (but not TPG) n28 (700MHz), 15 MHz BW, FDD
+            return [NetworkType.LTE, NetworkType.NR];
+          } else if (telco == Telco.Vodafone && frequency >= 850000000 && frequency < 899000000) {
+            // Vodafone
+            return [NetworkType.LTE];
+          } else if (telco == Telco.Vodafone && frequency >= 1800000000 && frequency < 1899000000) {
+            // Vodafone
+            return [NetworkType.LTE];
+          } else if (telco == Telco.Vodafone && frequency >= 2100000000 && frequency < 2199000000) {
+            // Vodafone n1
+            return [NetworkType.LTE];
+          } else if (telco == Telco.Telstra && frequency >= 2600000000 && frequency < 2699000000) {
+            // Telstra
+            return [NetworkType.LTE]; // No NR
           }
         }
         return [NetworkType.LTE];
       case 'W': // Combination
         if (emission.startsWith("8M20W7W") && telco == Telco.Vodafone) {
-          // This is just a guess
+          // This is just a guess, seems wrong
           return [NetworkType.NB_IOT, NetworkType.UMTS];
+          // "14M9G7W" is an emission designator whose OWN 7th character (index 6) is 'W' (info
+          // type "combination"), so it dispatches this switch into this case, not case 'D'. An
+          // earlier version of this port (and of the Java app it was ported from) placed the two
+          // Telstra checks below inside case 'D', where `emission == "14M9G7W"` could never be
+          // true -- the character at index 6 selects the switch arm itself, so a string ending
+          // "...7W" never reaches case 'D'. That made Telstra's genuine dual 4G/5G 700/850 MHz
+          // carrier silently fall through to plain UMTS (refarmed to LTE) instead of [LTE, NR].
+          // Fixed here and in the Java app's DeviceDetails.networkTypesForEmission (2026-08-20).
+        } else if (telco == Telco.Telstra &&
+            frequency >= 750000000 &&
+            frequency < 799000000 &&
+            emission == "14M9G7W") {
+          return [NetworkType.LTE, NetworkType.NR];
+        } else if (telco == Telco.Telstra &&
+            frequency >= 850000000 &&
+            frequency < 899000000 &&
+            emission == "14M9G7W") {
+          return [NetworkType.LTE, NetworkType.NR];
+        } else if (frequency >= 3300000000 && frequency < 3800000000) {
+          // n77/n78 (3.3-3.8 GHz) - 5G NR only in AU; never 3G
+          return [NetworkType.NR];
+        } else if (frequency >= 24250000000 && frequency < 29500000000) {
+          // n257/n258 mmWave - 5G NR only
+          return [NetworkType.NR];
+        } else if (frequency >= 2300000000 && frequency < 2400000000) {
+          // B40 (2300-2400 MHz) - TD-LTE only in AU; never 3G
+          return [NetworkType.LTE];
+        } else if (telco == Telco.Optus && frequency >= 940000000 && frequency < 999000000) {
+          // Optus has 939.2 and 947.6 MHz
+          return [NetworkType.UMTS]; // No NR
+        } else if (telco == Telco.Optus && frequency >= 2100000000 && frequency < 2199000000) {
+          // Optus 2100MHz LTE
+          return [NetworkType.UMTS];
+        } else if (telco == Telco.Vodafone && frequency >= 900000000 && frequency < 999000000) {
+          // Vodafone
+          return [NetworkType.UMTS]; // No LTE
+        } else if (telco == Telco.Vodafone && frequency >= 2100000000 && frequency < 2199000000) {
+          // Vodafone b1, n1
+          return [NetworkType.UMTS];
+        } else if (telco == Telco.Telstra && frequency >= 850000000 && frequency < 899000000) {
+          // Telstra n5 (850MHz), 10 MHz BW, FDD
+          return [NetworkType.UMTS];
+        } else if (telco == Telco.Telstra && frequency >= 2100000000 && frequency < 2199000000) {
+          // Telstra b1, n1
+          return [NetworkType.UMTS];
         }
         return [NetworkType.UMTS];
       case 'E': // Telephony, voice, sound broadcasting

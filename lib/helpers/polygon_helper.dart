@@ -54,8 +54,8 @@ class PolygonHelper with ChangeNotifier {
 
   /// Default signal-strength ring drawn on first launch (or before any stored
   /// preference is applied). Indexes into NetworkTypeHelper.getNetworkBars():
-  /// 0 = Maximum, 1 = Strong, 2 = Good, 3 = Weak. We default to Strong.
-  static int polygonSignalStrengthPos = kStrongSignalStrength;
+  /// 0 = Maximum, 1 = Strong, 2 = Good, 3 = Weak. We default to Good.
+  static int polygonSignalStrengthPos = kGoodSignalStrength;
   static bool showPolygonBorders = true;
   static bool preventPolygonRefresh = false;
 

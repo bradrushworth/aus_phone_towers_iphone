@@ -43,7 +43,7 @@ class NavigationMenu extends StatefulWidget {
   static bool isSuburbanVisible = true;
   static bool isOpenVisible = true;
 
-  static int signalStrengthSelection = kWeakSignalStrength;
+  static int signalStrengthSelection = kGoodSignalStrength;
 
   static bool isTelcoVisible = true;
   static bool isRadioVisible = false;

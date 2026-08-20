@@ -110,6 +110,32 @@ coverage ring, i.e. how many points it has.
   path (`map_common.dart` → `queryForSignalPolygon(site, false, false, ...)`) does **not** use this
   cache, so tapping a tower after changing precision always reflects the new setting.
 
+## Network type classification (lib/model/device_detail.dart)
+`DeviceDetails.getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId)` classifies
+one ACMA licence row from its own emission designator + frequency + telco — **not** stored, always
+derived. `getNetworkTypeForLicence` wraps it with frequency refarming (`applyRefarm`, on by
+default) and generation-rank tie-breaking (`generationRank`, newest genuine capability wins).
+- **This is a line-for-line port of the Java Android app's `DeviceDetails.networkTypesForEmission`
+  / `getNetworkTypeForLicence`.** The two must classify every tower identically — any change to one
+  side's frequency table, refarm bands, or generation ranking must be mirrored on the other, or the
+  same tower will silently show a different technology on Android vs iPhone. Covered by
+  `test/network_type_classification_test.dart` and `test/christmas_island_classification_test.dart`
+  (ported from the Java app's `DeviceDetailsTest` licence tests and
+  `ChristmasIslandClassificationTest`).
+- **No hardcoded antenna-ID override sets.** A prior version of this method (both apps) had
+  hardcoded `antenna_id` sets (`antennas3G4G`, `antennas3G4G5G`, `antennas4G5G`, ...) that forced
+  `LTE`/`NR` regardless of the real carrier. A live production-DB probe (2026-08) proved these were
+  injecting phantom/duplicate 5G — confirmed live on this app (debug build 1.13.6, Pixel 8 Pro): the
+  Lyneham Vodafone CMTS site showed both a "4G 873 MHz" and a spurious "5G 873 MHz" row for the same
+  carrier, because antenna 13198 was hardcoded into both `antennas4G` and `antennas4G5G`. The sets
+  are gone on both apps; classification is unambiguous from frequency alone (5G = n77/n78 3.3–3.8
+  GHz or n257/n258 24.25–29.5 GHz mmWave; everything sub-3 GHz is 4G or decommissioned 3G).
+- **The `switch` dispatches on `emission[6]` — any emission-string equality check must live in the
+  matching `case`.** E.g. Telstra's dual 4G/5G `"14M9G7W"` carrier has `'W'` as its own 7th
+  character, so the check belongs in `case 'W'`, not `case 'D'` — a 2026-08-20 bug (found while
+  porting this method, present in both apps) had it in the wrong arm, making it permanently
+  unreachable and silently downgrading those genuine dual-tech carriers to plain UMTS→LTE.
+
 ## Support the App (lib/helpers/support_prompt_helper.dart, lib/ui/widgets/support_prompt_screen.dart)
 Ported from the Java app's `SupportPromptActivity` / `MapsActivity.maybeShowSupportPrompt()`.
 

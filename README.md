@@ -10,6 +10,12 @@ behaviours.
 The app also links to this guide from the toolbar menu (**⋯ → User Guide**). Because this
 repository is public, the link opens the GitHub-rendered page directly.
 
+## Changelog
+
+Versioned release history — what changed, and why — is tracked in **[CHANGELOG.md](CHANGELOG.md)**.
+The sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_phone_towers_java) repo
+keeps its own parallel changelog for the Android app.
+
 Have you ever wondered where your nearest mobile phone tower was? What services does it support?
 How fast are the 4G Internet speeds in your area? How far does the signal reach? Which is the best phone provider for you?
 Is 5G available in your area?
