@@ -20,12 +20,12 @@ datasets and draws each transmitter on a Google Map together with its estimated 
   Borders**. Polygon opacity is boosted on satellite/hybrid map types and when **Follow GPS**
   (drive mode) is active, so coverage remains visible over dark imagery.
 - **Coverage labels** — each tower's coverage carries a small text label showing its
-  **frequency and technology** (e.g. `850 MHz 4G LTE`). The label is placed *outside* the shaded
-  polygon — anchored on the point of the outermost ring that is furthest from the tower, then pushed
-  a little further out — so it sits in clear space instead of on top of the coverage fill or the
-  site marker. Because HRP coverage rings are irregular (terrain, hills, sector directions), the
-  label may appear at a different angle for each tower — that is expected. Tapping a tower redraws
-  its coverage and refreshes the label position.
+  **frequency and technology** (e.g. `850 MHz 4G LTE`). The label sits right on the shaded
+  polygon's outer line — anchored on the point of the outermost ring that is furthest from the
+  tower, nudged just far enough out to clear the fill without floating away from it. Because HRP
+  coverage rings are irregular (terrain, hills, sector directions), the label may appear at a
+  different angle for each tower — that is expected. Tapping a tower redraws its coverage and
+  refreshes the label position.
 - **Your location** — a semi‑transparent azure dot (requires Location permission). Use the
   **Follow GPS** menu item to keep the map centred on you as you move ("drive mode").
 

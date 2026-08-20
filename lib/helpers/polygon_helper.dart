@@ -446,12 +446,12 @@ class PolygonHelper with ChangeNotifier {
       String text, Color color) async {
     final BitmapDescriptor icon = await _createLabelIcon(text, color);
     if (!sitesPolygons.containsKey(site)) return;
-    // Place the label *outside* the coverage polygon so it does not sit on top of the shaded
-    // area (or the site marker). The polygon grows outward from the tower, so the outer ring
-    // is still inside the fill — we therefore anchor on the point of that ring furthest from
-    // the tower, then push the marker a further margin *outward* (away from the tower) into
-    // clear space. HRP rings are irregular (terrain, hills, sectors), so this keeps labels
-    // clear of the centre instead of piling up on the site.
+    // Place the label right on the coverage polygon's outer line, rather than on top of the
+    // shaded fill or the site marker. We anchor on the point of the outer ring furthest from
+    // the tower, then nudge the marker a small margin further outward (away from the tower) so
+    // it sits on the line itself instead of just inside the fill. HRP rings are irregular
+    // (terrain, hills, sectors), so anchoring on the furthest point keeps labels clear of the
+    // centre instead of piling up on the site.
     final LatLng sitePos = site.getLatLng();
     int bestIndex = 0;
     double maxDist = -1;
@@ -463,7 +463,8 @@ class PolygonHelper with ChangeNotifier {
       }
     }
     final LatLng furthest = ring[bestIndex];
-    // Bearing from the tower out to the furthest ring point; extend ~300 m past it.
+    // Bearing from the tower out to the furthest ring point; nudge just past it so the label
+    // sits right on the polygon's outer line rather than inside the shaded fill.
     final double bearing = _bearingDegrees(sitePos, furthest);
     final LatLng position =
         GetLicenceHRP.travel(furthest, bearing, kLabelOuterMarginKm);
@@ -483,9 +484,9 @@ class PolygonHelper with ChangeNotifier {
     PolygonHelper().notifyListeners();
   }
 
-  /// How far (km) outside the furthest ring point the coverage label is pushed, so it sits in
-  /// clear space rather than on the shaded polygon or the site marker.
-  static const double kLabelOuterMarginKm = 0.3;
+  /// How far (km) outside the furthest ring point the coverage label is pushed -- just enough
+  /// to sit on the polygon's outer line instead of on top of the shaded fill or the site marker.
+  static const double kLabelOuterMarginKm = 0.03;
 
   /// Great-circle distance (metres) between two coordinates, via the haversine formula.
   /// Used to find the ring point furthest from the tower when placing text labels.
