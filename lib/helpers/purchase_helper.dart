@@ -10,6 +10,7 @@ import 'package:phonetowers/billing/consumable_store.dart';
 
 import 'analytics_helper.dart';
 import 'entitlement_evaluator.dart';
+import 'price_label_helper.dart';
 
 typedef void ShowSnackBar({
   required String message,
@@ -145,6 +146,22 @@ class PurchaseHelper with ChangeNotifier {
     await _inAppPurchase.restorePurchases();
   }
 
+  /// Test-only seam for injecting fake product details without a real store connection — see
+  /// test/ui/widgets/support_prompt_screen_test.dart.
+  @visibleForTesting
+  set debugProducts(List<ProductDetails?> products) => _products = products;
+
+  /// The store's localized price string for [sku] (e.g. "$5.99", "A$5.99", "€5.49" — already
+  /// formatted for the user's storefront/locale), or null if product details haven't loaded
+  /// yet (the store query is still in flight, failed, or [sku] is unknown).
+  String? priceFor(String sku) => PriceLabelHelper.findPrice(_products, sku);
+
+  /// Builds a menu/screen label combining [name] with the live store price for [sku], falling
+  /// back to [fallback] (typically a hardcoded "Name ($X.XX)" string) while pricing hasn't
+  /// loaded yet, so menus never show a broken/blank price.
+  String priceLabel({required String sku, required String name, required String fallback}) =>
+      PriceLabelHelper.buildLabel(products: _products, sku: sku, name: name, fallback: fallback);
+
   /// Get all products available for sale
   Future<void> _getProducts() async {
     if (Platform.isIOS) {
@@ -253,6 +270,10 @@ class PurchaseHelper with ChangeNotifier {
     String error = "In-App Billing is completed!";
     //showSnackBar(message: error);
     logger.i("PurchaseHelper: " + error);
+
+    // Let any already-open UI (e.g. SupportPromptScreen) pick up live store pricing —
+    // see priceFor/priceLabel — without needing an unrelated purchase event to fire.
+    notifyListeners();
   }
 
   @override

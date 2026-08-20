@@ -71,6 +71,11 @@ Both apps use the platform store for entitlements:
 - **Donations** (small / medium / large): one-off consumable purchases that support development.
   They are repeatable and do **not** remove ads.
 
+Menu/screen labels for all five products show the store's own **live, localized price** (fetched
+via `queryProductDetails`), not a hardcoded `$X.XX` — see `PriceLabelHelper` in the "Ads and
+billing" section of `AGENTS.md`. A hardcoded price is shown only as a fallback until pricing has
+loaded (or if the store query fails).
+
 **"Support the App"** (`lib/ui/widgets/support_prompt_screen.dart`) is ported from the Android
 app's `SupportPromptActivity`: a full-screen prompt with a cost-transparency message, the same
 three donation buttons, and (unless already ad-free) the two ad-free purchase buttons, plus a

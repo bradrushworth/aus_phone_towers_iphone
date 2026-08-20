@@ -101,6 +101,12 @@ class Strings {
   static String remove_ads = 'Remove Ads';
   static String remove_ads_subscribe_previous =
       'You are subscribed! Thanking you.';
+  // Product names, with no price baked in — the live price is pulled from the store via
+  // PurchaseHelper.priceLabel (see PriceLabelHelper) and appended at display time.
+  static String remove_ads_year_name = 'One Year Ad Free';
+  static String remove_ads_permanent_name = 'Permanent Ad Free';
+  // Fallback labels (with a hardcoded price) used only until the store's product details have
+  // loaded — see PurchaseHelper.priceLabel.
   static String remove_ads_year = 'One Year Ad Free (\$9.99)';
   static String remove_ads_permanent = 'Permanent Ad Free (\$24.99)';
   static String subscribed_permanently = 'Permanently subscribed.';
@@ -108,6 +114,12 @@ class Strings {
 
   static String donate = 'Donate';
   static String donatePrevious = 'Thanks for your previous donation!';
+  // Product names, with no price baked in (see remove_ads_year_name above).
+  static String donateSmallName = 'Morning Coffee';
+  static String donateMediumName = 'Coffee and Cake';
+  static String donateLargeName = 'Thanks For Lunch';
+  // Fallback labels (with a hardcoded price) used only until the store's product details have
+  // loaded — see PurchaseHelper.priceLabel.
   static String donateSmall = 'Morning Coffee (\$5.99)';
   static String donateMedium = 'Coffee and Cake (\$14.99)';
   static String donateLarge = 'Thanks For Lunch (\$29.99)';
