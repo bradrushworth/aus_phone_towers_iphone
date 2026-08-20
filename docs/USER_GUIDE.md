@@ -102,9 +102,11 @@ The menu is grouped the same way as the Android app:
     page has been fixed).
   - **Report Problem** — take a screenshot to send feedback.
   - **Links** — Rate App, AusPhoneTowers.com.au, iOS App Store, Source Code.
-- **Rate App** — open the App Store review prompt.
-- **Close App** — on Android this exits the app; on iPhone/Web it isn't permitted by the OS, so a
-  hint is shown instead.
+- **Rate App** — requests the native App Store review prompt (where the OS allows it), and always
+  also opens the App Store listing directly, since Apple silently disables the native prompt
+  outside a real App Store install (TestFlight, sandbox, debug builds).
+- **Close App** — Android only; exits the app. Not shown on iPhone/Web, since neither platform
+  permits an app to exit itself.
 
 ## 4. Navigation‑drawer filters
 
@@ -126,7 +128,7 @@ Open the drawer (top‑left) to control what is shown:
   position or get location‑based centring.
 - **Web vs iPhone** — the Web build hides the Donate buttons (App Store purchases aren't available
   in a browser) and uses web‑optimised icon assets. Rate App uses the in‑app review prompt where
-  supported.
+  supported, and always also opens the App Store listing directly as a guaranteed fallback.
 - **Coverage polygons are estimates** — generated from ACMA licence / HRP data and a radiation
   model, not official carrier coverage maps.
 - **No connected‑tower features yet** — unlike the Android app, this edition does not yet show

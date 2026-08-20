@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
@@ -113,6 +115,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
               .where((OptionMenuItem item) {
                 // Donations are not available on the Web build (no App Store purchases).
                 if (item == OptionMenuItem.donate) return !kIsWeb;
+                // Only Android permits an app to programmatically exit -- iOS and Web have no
+                // equivalent, so the menu item is irrelevant there rather than just a no-op.
+                if (item == OptionMenuItem.closeApp) {
+                  return !kIsWeb && Platform.isAndroid;
+                }
                 return true;
               })
               .map<PopupMenuItem<OptionMenuItem>>((OptionMenuItem item) {
@@ -277,13 +284,17 @@ class _OptionsMenuState extends State<OptionsMenu> {
               }
             case OptionMenuItem.rateApp:
               {
+                // Best-effort native prompt. Apple disables this entirely outside a real App
+                // Store install (TestFlight, sandbox, debug builds) -- and isAvailable() only
+                // reports whether the API exists, not whether the prompt will actually appear
+                // -- so it can't be trusted to gate the only working path. Always also open the
+                // App Store listing directly so tapping this reliably does something visible.
                 final InAppReview inAppReview = InAppReview.instance;
                 if (await inAppReview.isAvailable()) {
                   inAppReview.requestReview();
-                } else {
-                  Utils.launchURL(
-                      'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
                 }
+                Utils.launchURL(
+                    'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
                 break;
               }
             case OptionMenuItem.closeApp:
