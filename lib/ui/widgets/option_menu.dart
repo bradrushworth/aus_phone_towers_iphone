@@ -568,7 +568,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
     }
   }
 
-  Future showSingleRowOptionMenu(
+  Future<SingleRowItem?> showSingleRowOptionMenu(
       List<SingleRowItem> listSingleRowItem, int menuType) async {
     SingleRowItem? singleRowItem = await showMenu<SingleRowItem>(
       context: context,
@@ -622,7 +622,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
       }).toList(),
     );
 
-    if (singleRowItem == null) return;
+    if (singleRowItem == null) return null;
     int selectedOptionItem = listSingleRowItem.indexOf(singleRowItem);
     switch (menuType) {
       // case kClearMenu: //Clear map menu option
@@ -697,6 +697,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
           break;
         }
     }
+    return singleRowItem;
   }
 
   Future showRadioOptionMenu() async {
@@ -734,7 +735,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
       }).toList(),
     );
 
-    int selectedOptionItem = listRadioItem.indexOf(radioItem!);
+    if (radioItem == null) return;
+    int selectedOptionItem = listRadioItem.indexOf(radioItem);
     if (selectedOptionItem != -1) {
       MapHelper().setMapMode(selectedOptionItem, prefs);
       PolygonHelper().refreshPolygons(true);
