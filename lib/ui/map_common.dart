@@ -1916,7 +1916,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   launchURL(String siteId) async {
     final uri = Uri.parse(
-        'https://web.acma.gov.au/rrl/site_search.site_lookup?pSITE_ID=$siteId&pSORT_BY=frequency');
+        'https://www.acma.gov.au/register-radiocommunication-licences-rrl#/sites/$siteId');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
