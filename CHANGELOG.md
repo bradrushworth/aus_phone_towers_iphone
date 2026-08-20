@@ -8,6 +8,29 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.13.8+123] — 2026-08-20
+
+### Fixed
+- **Phantom/duplicate 5G rows on some towers** — `getNetworkTypeStatic` still had the Java app's
+  now-removed hardcoded `antenna_id` override sets (`antennas3G4G`, `antennas3G4G5G`, `antennas4G`,
+  `antennas4G5G`, `antennas5G`, `antennas3G5G`), which forced `LTE`/`NR` regardless of the real
+  carrier. Confirmed live (debug build 1.13.6, Pixel 8 Pro): the Lyneham Vodafone CMTS site showed
+  both a "4G 873 MHz" and a spurious "5G 873 MHz" row for the same carrier, with the sub-1-GHz "5G"
+  claiming 935 Mbps — because antenna 13198 was hardcoded into both `antennas4G` and
+  `antennas4G5G`. The sets are deleted; classification is now derived purely from
+  `(emission, frequency, bandwidth, telco)` via a per-telco frequency table ported line-for-line
+  from the Java Android app's `DeviceDetails.networkTypesForEmission` (dual `[LTE, NR]` for Optus
+  n1 2100 MHz `'D'`, Vodafone n28 700 MHz `'D'`, and Telstra `"14M9G7W"` 700/850 MHz `'D'`; NR-only
+  for 3.3–3.8 GHz `'W'`; TD-LTE-only for B40 2300–2400 MHz `'W'`).
+- **While porting, found and fixed the same Telstra `"14M9G7W"` dead-code bug in the Java app**
+  (its dual-tech check lived in the wrong `switch` arm and could never run — see the Java app's
+  `CHANGELOG.md` v7.7.20) and ported the fix here too.
+
+### Added
+- `test/network_type_classification_test.dart` and `test/christmas_island_classification_test.dart`,
+  mirroring the Java app's `DeviceDetailsTest` licence tests and `ChristmasIslandClassificationTest`,
+  so the two apps' classifiers can no longer silently drift apart.
+
 ## [1.13.7+122] — 2026-08-20
 
 ### Changed
