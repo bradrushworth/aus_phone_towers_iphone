@@ -1,0 +1,101 @@
+# Codemagic CI for Aus Phone Towers (iOS & Web) — Flutter app.
+#
+# Recreated 2026-08-21 from the "Default Workflow" configured in Codemagic's
+# workflow-editor UI (app 61db713b344ed87cc8f87b61), so the pipeline is
+# versioned in the repo instead of living only in the dashboard. Codemagic does
+# NOT switch to this file automatically: in the app's settings choose
+# "Switch to YAML configuration" and select this workflow. Until then the
+# workflow editor remains the active configuration.
+#
+# Secrets stay in Codemagic, never in this file:
+#   - Android keystore: upload android_flutter.jks (key alias "bitbot") to
+#     Team settings > codemagic.yaml settings > Code signing identities with
+#     reference name "android_flutter".
+#   - iOS: the "Codemagic Nuptial Flight" App Store Connect API key
+#     (75423D3XRN) already exists as a team integration; signing files are
+#     fetched automatically via the ios_signing block below.
+#   - google_play env group must define GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+#     (contents of the api-4901704154908871926-*.json service account).
+#   - aws_credentials env group must define AWS_ACCESS_KEY_ID and
+#     AWS_SECRET_ACCESS_KEY (the workflow editor's S3 publishing credentials).
+#
+# One editor feature has no YAML equivalent: "Codemagic Static Pages"
+# (ausphonetowers.codemagic.app). The production site is the S3 bucket deploy
+# below; if the codemagic.app mirror is still wanted, keep publishing one build
+# from the workflow editor or drop the mirror.
+
+workflows:
+  default-workflow:
+    name: Default Workflow
+    instance_type: mac_mini_m4
+    max_build_duration: 60
+    environment:
+      android_signing:
+        - android_flutter
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: au.com.bitbot.phonetowers
+      groups:
+        - google_play # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        - aws_credentials # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+      vars:
+        AWS_DEFAULT_REGION: ap-southeast-2
+        AWS_S3_BUCKET: ausphonetowers.com.au
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    integrations:
+      app_store_connect: Codemagic Nuptial Flight
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/.gradle/caches
+        - $FLUTTER_ROOT/.pub-cache
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+        - pattern: dev
+          include: true
+          source: true
+    scripts:
+      - name: Get Flutter packages
+        script: flutter packages pub get
+      # The workflow editor ran `flutter test` with "Stop build if tests fail"
+      # — a failing test aborts the build here the same way.
+      - name: Flutter unit and widget tests
+        script: flutter test
+      - name: Build Android App Bundle (release)
+        script: flutter build appbundle --release
+      - name: Set up iOS code signing
+        script: xcode-project use-profiles
+      - name: Build iOS IPA (release)
+        script: flutter build ipa --release --export-options-plist=/Users/builder/export_options.plist
+      - name: Build web (release)
+        script: flutter build web --release
+      # The workflow editor's "AWS S3 Bucket" publishing step: this bucket IS
+      # https://ausphonetowers.com.au, so a green build deploys the website.
+      - name: Publish web app to S3 (ausphonetowers.com.au)
+        script: aws s3 sync build/web "s3://$AWS_S3_BUCKET" --delete
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+      - build/ios/ipa/*.ipa
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - brushworth@bitbot.com.au
+        notify:
+          success: true
+          failure: true
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
