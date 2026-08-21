@@ -33,7 +33,11 @@ void main() {
 
       await pump(tester, AdBannerContainer(adSize: loadedSize, adChild: adPlaceholder));
 
-      expect(tester.getSize(outer).height, 100);
+      // The container wraps its content exactly: the "Advertisement" label
+      // plus the ad itself — no hardcoded height that could overflow or
+      // reserve dead space.
+      final double labelHeight = tester.getSize(find.text('Advertisement')).height;
+      expect(tester.getSize(outer).height, labelHeight + loadedSize.height);
       expect(find.text('Advertisement'), findsOneWidget);
 
       final SizedBox box = tester.widget<SizedBox>(find.byType(SizedBox));
@@ -51,6 +55,24 @@ void main() {
 
       final SizedBox box = tester.widget<SizedBox>(find.byType(SizedBox));
       expect(box.child, isA<Container>());
+    });
+
+    testWidgets('tall adaptive banner (90px) fits without overflow', (tester) async {
+      // Regression test for the "BOTTOM OVERFLOWED BY 20 PIXELS" stripe seen
+      // in debug builds: the old fixed height:100 could not hold the label
+      // (~19px) plus a 90px adaptive banner. Overflow in a widget test is
+      // reported as an exception, so this pump alone exercises the bug.
+      const Size tallSize = Size(320, 90);
+      final Widget adPlaceholder = Container(key: const Key('fake-ad-view'));
+
+      await pump(tester, AdBannerContainer(adSize: tallSize, adChild: adPlaceholder));
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Advertisement'), findsOneWidget);
+      expect(find.byKey(const Key('fake-ad-view')), findsOneWidget);
+
+      final double labelHeight = tester.getSize(find.text('Advertisement')).height;
+      expect(tester.getSize(outer).height, labelHeight + tallSize.height);
     });
   });
 }
