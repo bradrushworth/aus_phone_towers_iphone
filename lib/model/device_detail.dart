@@ -197,8 +197,13 @@ class DeviceDetails {
             // Optus n5 (850MHz), 10 MHz BW, FDD
             return [NetworkType.LTE];
           } else if (telco == Telco.Optus && frequency >= 900000000 && frequency < 999000000) {
-            // Optus
-            return [NetworkType.LTE];
+            // Optus B8/n8 (900 MHz), refarmed after the 2024 3G shutdown.
+            // Live-verified 2026-08-22: Optus 5G NR SA on-air at 939 MHz (Band n8,
+            // NCI 5372682315, Tuggeranong ACT) while the ACMA register carries a single
+            // 25 MHz-wide 900-band carrier (25M0W7D @ 947.5 MHz centre, spanning
+            // 935-960 MHz) - the block carries both LTE B8 and NR n8. Mirrors the Java
+            // app's DeviceDetails.networkTypesForEmission.
+            return [NetworkType.LTE, NetworkType.NR];
           } else if (telco == Telco.Optus && frequency >= 2100000000 && frequency < 2199000000) {
             // Optus n1 2147500000
             return [NetworkType.LTE, NetworkType.NR];
@@ -254,9 +259,13 @@ class DeviceDetails {
         } else if (frequency >= 2300000000 && frequency < 2400000000) {
           // B40 (2300-2400 MHz) - TD-LTE only in AU; never 3G
           return [NetworkType.LTE];
-        } else if (telco == Telco.Optus && frequency >= 940000000 && frequency < 999000000) {
-          // Optus has 939.2 and 947.6 MHz
-          return [NetworkType.UMTS]; // No NR
+        } else if (telco == Telco.Optus && frequency >= 900000000 && frequency < 999000000) {
+          // Optus has 939.2 and 947.6 MHz. Same 25 MHz 900-band block as the 'D' arm
+          // (some sites carry it as 25M0W7W): Optus 3G shut down in 2024, so the on-air
+          // technologies are LTE B8 and NR n8, not UMTS. The old lower bound of 940 MHz
+          // also missed the 939.2 MHz centre named in this arm's own comment. Mirrors
+          // the Java app's DeviceDetails.networkTypesForEmission.
+          return [NetworkType.LTE, NetworkType.NR];
         } else if (telco == Telco.Optus && frequency >= 2100000000 && frequency < 2199000000) {
           // Optus 2100MHz LTE
           return [NetworkType.UMTS];

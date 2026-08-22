@@ -58,6 +58,33 @@ void main() {
       expect(types, [NetworkType.LTE, NetworkType.NR]);
     });
 
+    test('Optus 900 D is a genuine dual 4G/5G carrier (B8 + n8)', () {
+      // Real ACMA fixture (live-probed 2026-08-22): the single 25 MHz-wide Optus 900-band
+      // carrier at Tuggeranong-area sites, 25M0W7D @ 947.5 MHz centre. A live Optus 5G SA
+      // NR cell at 939 MHz (Band n8) was measured on-air the same day. Mirrors the Java
+      // app's DeviceDetailsTest.optus900D_isGenuineDual4g5g.
+      final types = DeviceDetails.getNetworkTypeStatic(
+          "25M0W7D", 947500000, 25000000, Telco.Optus, 0);
+      expect(types, [NetworkType.LTE, NetworkType.NR]);
+    });
+
+    test('Optus 900 W is dual 4G/5G, not UMTS (3G shut down 2024)', () {
+      // Same block carried as 25M0W7W at some sites. Mirrors the Java app's
+      // DeviceDetailsTest.optus900W_isGenuineDual4g5g_notUmts.
+      final types = DeviceDetails.getNetworkTypeStatic(
+          "25M0W7W", 947500000, 25000000, Telco.Optus, 0);
+      expect(types, [NetworkType.LTE, NetworkType.NR]);
+      expect(types.contains(NetworkType.UMTS), isFalse);
+    });
+
+    test('Optus 900 W lower bound covers 939.2 MHz', () {
+      // The old 'W' arm started at 940 MHz and missed the 939.2 MHz centre named in its
+      // own comment. Mirrors the Java app's DeviceDetailsTest.optus900W_lowerBoundCovers939.
+      final types = DeviceDetails.getNetworkTypeStatic(
+          "10M0W7W", 939200000, 10000000, Telco.Optus, 0);
+      expect(types, [NetworkType.LTE, NetworkType.NR]);
+    });
+
     test('Telstra non-14M9G7W emission at 700/850 is LTE only, no NR', () {
       // The dual 4G/5G table entry is keyed on the exact "14M9G7W" emission string - any other
       // 'D' emission in the same band is plain LTE (no genuine 5G indication).
