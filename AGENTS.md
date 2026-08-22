@@ -2,7 +2,9 @@
 
 Guidance for any AI agent or developer working in this repository. These rules apply ONLY to this
 iPhone/Flutter repository. The Android project (`aus_phone_towers_java`) has its own separate
-`AGENTS.md` and should not share these.
+`AGENTS.md` and should not share these. The cross-platform UI overhaul roadmap (including this
+app's F-track and the web-adaptivity requirements) lives in that repo at
+`docs/ui-overhaul-plan.md`; the corresponding beads epic here is `aptios-uh4`.
 
 ## Project basics
 - Flutter app (Dart), targeting iOS (primary) and Android (secondary). Package: `phonetowers`.
