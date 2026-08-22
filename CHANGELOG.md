@@ -8,6 +8,31 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.13.10+125] — 2026-08-22
+
+### Fixed
+- **No 5G shown at Optus 900 MHz and Telstra 850 MHz towers** — mirrored from the Java app
+  (aus_phone_towers_java PR #33), live-verified against production the same day:
+  - Optus 900 MHz (B8 + n8): 5G NR SA measured on-air at 939 MHz (Band n8, Tuggeranong ACT)
+    inside the single 25 MHz ACMA carrier (`25M0W7D`/`25M0W7W` @ 947.5 MHz). The `'D'` arm now
+    classifies `[LTE, NR]` (was LTE-only) and the `'W'` arm `[LTE, NR]` (was UMTS — dead since
+    the 2024 3G shutdown), with the `'W'` lower bound corrected 940 → 900 MHz.
+  - Telstra 850 MHz (B5 + n5): 86,643 NR n5 observations across 787 distinct cells in the last
+    two years; the blanket `'W'` 850 arm now classifies `[LTE, NR]` instead of UMTS (Telstra
+    3G850 shut down October 2024). `14M9G7W` was already dual.
+  - Confirmed not needed: Vodafone holds no 900-band register rows (its n8 sightings are
+    network-sharing on Optus hardware), and Telstra 700 `20M0W7D` stays LTE-only.
+  New fixtures in `network_type_classification_test.dart` pin all three carriers.
+
+## [1.13.9+124] — 2026-08-22
+
+### Changed
+- Quick-wins parity with the Android app: menu renames to plain English, the RESTify
+  empty-`_filter` guard (`RestFilter`), and the ad banner container overflow fix (wrap content
+  instead of a fixed height). Codemagic dashboard workflow recreated as `codemagic.yaml` in-repo.
+  (This entry was added retrospectively with 1.13.10 — the release itself shipped earlier on
+  2026-08-22 without a changelog entry.)
+
 ## [1.13.8+123] — 2026-08-20
 
 ### Fixed
