@@ -8,11 +8,9 @@
 # workflow editor remains the active configuration.
 #
 # Secrets stay in Codemagic, never in this file:
-#   - Android keystore: the shared team keystore reference "android_bitbot.jks"
-#     (alias "phonetowers") — chosen 2026-08-22 because the workflow editor's
-#     android_flutter.jks could not be recovered. NB: if Play rejects the
-#     internal-track upload with an upload-key mismatch, request an upload-key
-#     reset for au.com.bitbot.phonetowers.flutter in Play Console.
+#   - Android keystore: team reference "android_flutter" (alias "bitbot") —
+#     the app's original Play upload key, recovered from Google Drive backup
+#     on 2026-08-22 and uploaded to Code signing identities.
 #   - iOS: the "Codemagic Nuptial Flight" App Store Connect API key
 #     (75423D3XRN) already exists as a team integration; signing files are
 #     fetched automatically via the ios_signing block below.
@@ -33,7 +31,7 @@ workflows:
     max_build_duration: 60
     environment:
       android_signing:
-        - android_bitbot.jks
+        - android_flutter
       ios_signing:
         distribution_type: app_store
         bundle_identifier: au.com.bitbot.phonetowers
