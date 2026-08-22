@@ -8,15 +8,17 @@
 # workflow editor remains the active configuration.
 #
 # Secrets stay in Codemagic, never in this file:
-#   - Android keystore: upload android_flutter.jks (key alias "bitbot") to
-#     Team settings > codemagic.yaml settings > Code signing identities with
-#     reference name "android_flutter".
+#   - Android keystore: the shared team keystore reference "android_bitbot.jks"
+#     (alias "phonetowers") — chosen 2026-08-22 because the workflow editor's
+#     android_flutter.jks could not be recovered. NB: if Play rejects the
+#     internal-track upload with an upload-key mismatch, request an upload-key
+#     reset for au.com.bitbot.phonetowers.flutter in Play Console.
 #   - iOS: the "Codemagic Nuptial Flight" App Store Connect API key
 #     (75423D3XRN) already exists as a team integration; signing files are
 #     fetched automatically via the ios_signing block below.
-#   - google_play env group must define GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-#     (contents of the api-4901704154908871926-*.json service account).
-#   - aws_credentials env group must define AWS_ACCESS_KEY_ID and
+#   - google_credentials env group defines GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+#     (same group the Java app's codemagic.yaml uses).
+#   - aws_credentials env group defines AWS_ACCESS_KEY_ID and
 #     AWS_SECRET_ACCESS_KEY (the workflow editor's S3 publishing credentials).
 #
 # One editor feature has no YAML equivalent: "Codemagic Static Pages"
@@ -31,12 +33,12 @@ workflows:
     max_build_duration: 60
     environment:
       android_signing:
-        - android_flutter
+        - android_bitbot.jks
       ios_signing:
         distribution_type: app_store
         bundle_identifier: au.com.bitbot.phonetowers
       groups:
-        - google_play # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        - google_credentials # GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
         - aws_credentials # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
       vars:
         AWS_DEFAULT_REGION: ap-southeast-2
@@ -68,6 +70,16 @@ workflows:
       # — a failing test aborts the build here the same way.
       - name: Flutter unit and widget tests
         script: flutter test
+      # android/app/build.gradle signs from android/key.properties (gitignored),
+      # so generate it from the env vars Codemagic's android_signing injects.
+      - name: Set up Android release signing
+        script: |
+          cat > android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
       - name: Build Android App Bundle (release)
         script: flutter build appbundle --release
       - name: Set up iOS code signing
@@ -92,7 +104,7 @@ workflows:
           success: true
           failure: true
       google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
         track: internal
         submit_as_draft: true
       app_store_connect:
