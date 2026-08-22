@@ -78,7 +78,7 @@ class Strings {
   static String map_mode_satellite = 'Satellite';
   static String map_mode_normal = 'Normal';
 
-  static String hiding_menu = 'Hiding Menu';
+  static String hiding_menu = 'Map Display';
   static String hiding_menu_hide_radiation = 'Hide Radiation on Click';
   static String hiding_menu_draw_radiation = 'Draw Radiation on Click';
   static String hiding_menu_multi_tower = 'Multi-Tower Coverage';
@@ -96,7 +96,7 @@ class Strings {
   static String export_towers_csv = 'Export Towers (CSV)';
   static String export_coverage_geojson = 'Export Coverage (GeoJSON)';
 
-  static String problems_menu = 'Problems Menu';
+  static String problems_menu = 'Help & Feedback';
 
   static String remove_ads = 'Remove Ads';
   static String remove_ads_subscribe_previous =

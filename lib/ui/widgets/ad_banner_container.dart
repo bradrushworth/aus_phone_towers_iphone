@@ -25,12 +25,19 @@ class AdBannerContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The container wraps its content (label + ad) rather than using a fixed
+    // height: adaptive banners vary from ~50px to 90+px with the viewport, so
+    // any hardcoded height either overflows on tall ads ("BOTTOM OVERFLOWED"
+    // stripe over the ad in debug builds) or reserves dead space above short
+    // ones. Width is forced to fill so the white backing strip always spans
+    // the screen behind the centred ad, and the label stays flush against the
+    // ad it discloses (AdMob placement policy — no gap between them).
     return Container(
       key: const Key('ad-banner-outer'),
-      height: adSize == null ? 0 : 100,
+      width: double.infinity,
       color: Colors.white,
-      alignment: AlignmentGeometry.center,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           if (adSize != null)
             Text(

@@ -19,6 +19,7 @@ import 'package:phonetowers/helpers/ads_helper.dart';
 import 'package:phonetowers/helpers/analytics_helper.dart';
 import 'package:phonetowers/helpers/camera_restore_helper.dart';
 import 'package:phonetowers/helpers/frequency_range_helper.dart';
+import 'package:phonetowers/restful/rest_filter.dart';
 import 'package:phonetowers/restful/get_devices.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
@@ -1206,6 +1207,13 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     required bool expandGeohash,
   }) async {
     List<MapOverlay> listOfTowersForSingleTeclo = [];
+
+    // RESTify faults an empty _filter VALUE (geohash==) with HTTP 412 ERROR #120,
+    // so a blank geohash must skip the request rather than send it.
+    if (nextPageURL == null && !RestFilter.isUsableValue(geoHash)) {
+      logger.w('downloadTowersForSingleTelco: skipping request — blank geohash for $telco');
+      return;
+    }
 
     // logger.d(
     //   'GetSites: ${nextPageURL != null ? nextPageURL : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash'}',

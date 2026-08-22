@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
+import 'package:phonetowers/restful/rest_filter.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/networking/api.dart';
@@ -35,6 +36,16 @@ class SearchHelper with ChangeNotifier {
 
   void executeSiteSearch(String query,
       void Function(String geoHash, bool expandGeohash) downloadTowers) {
+    // A blank query would build a wildcard-only filter (and a blank postcode an
+    // empty _filter value, which RESTify faults with HTTP 412 ERROR #120) —
+    // there is nothing sensible to search for, so skip the request entirely.
+    query = query.trim();
+    if (!RestFilter.isUsableValue(query)) {
+      showSnackBar!(
+          message: 'Type a site name or postcode to search for',
+          isDismissible: true);
+      return;
+    }
     //MapsActivity.instance().disableFollowGPS();//TODO
     PolygonHelper().clearSitePatterns(true);
     calculatingSearchResults = true;

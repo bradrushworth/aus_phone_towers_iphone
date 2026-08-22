@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "aptios",
+  "project_id": "37a7bf67-f706-48bc-ac56-ff1f33967e63"
+}

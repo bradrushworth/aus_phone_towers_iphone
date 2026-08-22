@@ -69,7 +69,7 @@ The menu is grouped the same way as the Android app:
 - **Show / Hide Borders** — toggle the radiation polygon outlines.
 - **Search Sites** — find a specific tower / site.
 - **Map Mode** — Terrain / Hybrid / Satellite / Normal base map.
-- **Hiding Menu** — a sub‑menu:
+- **Map Display** — a sub‑menu:
   - **Hide / Show Radiation on Click** — when on (default), tapping a tower draws its coverage
     polygon; when off, tapping does nothing.
   - **Disable frequency refarming** — when ticked, legacy 3G (UMTS) licences that now run as 4G/5G
@@ -96,7 +96,7 @@ The menu is grouped the same way as the Android app:
     Phone Towers" prompt with the same donation options plus the ad‑free purchases (hidden if
     you're already ad‑free), and a **Maybe later** button to dismiss. The same screen is also
     shown automatically about once a week.
-- **Problems Menu** — a sub‑menu:
+- **Help & Feedback** — a sub‑menu:
   - **Developer / Regular Mode** — show extra diagnostic overlays.
   - **User Guide** — opens this page (the top‑right menu item that previously opened the wrong
     page has been fixed).
@@ -153,6 +153,6 @@ Open the drawer (top‑left) to control what is shown:
 
 ## 7. Feedback & support
 
-Use **Report Problem** (in the **Problems Menu**) or the **Problems Menu → Links** (Rate App /
+Use **Report Problem** (in the **Help & Feedback**) or the **Help & Feedback → Links** (Rate App /
 AusPhoneTowers.com.au / iOS App Store / Source Code). The Web/iOS app is still under active
 development — feedback is welcome at bitbot@bitbot.com.au.
