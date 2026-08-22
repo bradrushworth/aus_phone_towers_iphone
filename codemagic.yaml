@@ -96,15 +96,19 @@ workflows:
           # 2) Re-upload the Flutter web "entry" files with no-cache. These are NOT
           #    content-hashed (identical filenames every build) and the service worker
           #    gates everything else, so if they are cached, returning visitors and
-          #    Cloudflare's edge keep serving the PREVIOUS build until the TTL expires
-          #    (observed 2026-08-22: main.dart.js + flutter_service_worker.js were being
-          #    served max-age=14400 = 4h). aws s3 cp preserves the auto-detected
-          #    Content-Type and only overrides Cache-Control.
+          #    Cloudflare's edge keep serving the PREVIOUS build until the TTL expires.
+          #    Observed 2026-08-22: through Cloudflare main.dart.js + flutter_service_worker.js
+          #    were served max-age=14400 (4h) — but the S3 website origin sends NO Cache-Control,
+          #    so that TTL is Cloudflare's Browser Cache TTL, not the origin. "no-cache" (revalidate,
+          #    not "no-store") keeps the 304-on-unchanged efficiency for the multi-MB main.dart.js
+          #    and only works end-to-end if the Cloudflare zone's Browser Cache TTL is
+          #    "Respect Existing Headers" (or a Cache Rule sets it for these paths). aws s3 cp
+          #    preserves the auto-detected Content-Type and only overrides Cache-Control.
           for f in index.html flutter_bootstrap.js flutter.js main.dart.js \
                    flutter_service_worker.js version.json manifest.json; do
             if [ -f "build/web/$f" ]; then
               aws s3 cp "build/web/$f" "s3://$AWS_S3_BUCKET/$f" \
-                --cache-control "no-cache, no-store, must-revalidate"
+                --cache-control "no-cache"
             fi
           done
     artifacts:
