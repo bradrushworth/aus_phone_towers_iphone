@@ -77,6 +77,17 @@ void main() {
       expect(types.contains(NetworkType.UMTS), isFalse);
     });
 
+    test('Telstra 850 W is dual 4G/5G, not UMTS (3G850 shut down October 2024)', () {
+      // Real ACMA fixture (live-probed 2026-08-22): 9M90G7W @ 882.5 MHz is the dominant
+      // Telstra 850-band register row; production holds 86,643 Telstra NR n5 observations
+      // (787 cells) in the last two years. Mirrors the Java app's
+      // DeviceDetailsTest.telstra850W_isGenuineDual4g5g_notUmts.
+      final types = DeviceDetails.getNetworkTypeStatic(
+          "9M90G7W", 882500000, 9900000, Telco.Telstra, 0);
+      expect(types, [NetworkType.LTE, NetworkType.NR]);
+      expect(types.contains(NetworkType.UMTS), isFalse);
+    });
+
     test('Optus 900 W lower bound covers 939.2 MHz', () {
       // The old 'W' arm started at 940 MHz and missed the 939.2 MHz centre named in its
       // own comment. Mirrors the Java app's DeviceDetailsTest.optus900W_lowerBoundCovers939.

@@ -276,8 +276,12 @@ class DeviceDetails {
           // Vodafone b1, n1
           return [NetworkType.UMTS];
         } else if (telco == Telco.Telstra && frequency >= 850000000 && frequency < 899000000) {
-          // Telstra n5 (850MHz), 10 MHz BW, FDD
-          return [NetworkType.UMTS];
+          // Telstra B5/n5 (850 MHz). Telstra's 3G850 network shut down in October 2024, so a
+          // 'W' 850 carrier can no longer be UMTS. Live-verified 2026-08-22 against production
+          // observed_cell: 86,643 Telstra NR n5 observations across 787 distinct cells in the
+          // last two years; the register's dominant 850-band row is 9M90G7W @ 882.5-885 MHz.
+          // Mirrors the Java app's DeviceDetails.networkTypesForEmission.
+          return [NetworkType.LTE, NetworkType.NR];
         } else if (telco == Telco.Telstra && frequency >= 2100000000 && frequency < 2199000000) {
           // Telstra b1, n1
           return [NetworkType.UMTS];
