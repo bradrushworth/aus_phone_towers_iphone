@@ -8,6 +8,17 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Tapping any pin in a fanned-out cluster always selected the Telstra one** — markers
+  hit-test on the whole icon bitmap (transparent pixels included), and the rotated icons were
+  drawn centred on identical swept-circle squares, so every co-located telco's tap target was
+  the same rectangle and the top of the stack won every tap. The rotated pin is now cropped to
+  its tight bounding box with the tip exposed as the Marker anchor: Telstra's bitmap (and tap
+  target) extends only left of the shared tip, Vodafone's only right, so each pin's head is
+  tappable in its own right. `rotated_marker_icon_test.dart` pins the anchor geometry.
+
 ## [1.13.13+128] — 2026-08-23
 
 ### Fixed

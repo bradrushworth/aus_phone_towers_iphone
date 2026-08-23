@@ -95,10 +95,11 @@ class TelcoHelper {
   // created while panning — decode/rotate/encode once per telco only.
   static final Map<Telco, Uint8List> _rotatedIconCache = {};
   static final Map<Telco, double> _rotatedIconWidthFactor = {};
+  static final Map<Telco, ui.Offset> _rotatedIconAnchor = {};
 
-  /// The telco's pin PNG pre-rotated about its TIP by [getRotation], drawn on a square
-  /// canvas with the tip at the canvas centre — so the Marker must use
-  /// `anchor: Offset(0.5, 0.5)` and `rotation: 0`.
+  /// The telco's pin PNG pre-rotated about its TIP by [getRotation], cropped to the rotated
+  /// pin's TIGHT bounding box, with the tip's position inside that box exposed via
+  /// [rotatedIconAnchor] — the Marker must use that anchor and `rotation: 0`.
   ///
   /// The rotation is baked into the bitmap because google_maps_flutter_web ignores
   /// `Marker.rotation` entirely: on the web build every co-located telco pin rendered bolt
@@ -106,6 +107,13 @@ class TelcoHelper {
   /// Telstra one (the Java app fans them out at ±60° etc., which is what this restores).
   /// Because the lean is baked in, `Marker.rotation` must STAY 0 on every platform or
   /// Android/iOS would rotate the pin twice.
+  ///
+  /// The TIGHT crop is load-bearing for tap handling: markers hit-test on the whole icon
+  /// bitmap (transparent pixels included). A first version drew every pin at the centre of
+  /// the same swept-circle square, so all co-located telcos' tap targets were identical
+  /// concentric rectangles and every tap landed on the top of the stack (always Telstra).
+  /// Cropped, Telstra's bitmap extends only to the left of the shared tip and Vodafone's
+  /// only to the right, so each pin's head is tappable in its own right.
   static Future<Uint8List> getRotatedIcon(Telco telco) async {
     Uint8List? cached = _rotatedIconCache[telco];
     if (cached != null) return cached;
@@ -115,24 +123,37 @@ class TelcoHelper {
     ui.Image image = (await codec.getNextFrame()).image;
     final double w = image.width.toDouble();
     final double h = image.height.toDouble();
+    final double theta = getRotation(telco) * math.pi / 180.0;
+    final double cosT = math.cos(theta);
+    final double sinT = math.sin(theta);
 
-    // Rotating about the tip sweeps the pin inside this radius, whatever the angle
-    // (NBN is 120°, Other -120° — not just the ±60° telco leans).
-    final double radius = math.sqrt(h * h + (w / 2) * (w / 2));
-    final int side = (radius * 2).ceil();
+    // Rotate the pin rectangle's corners about the tip (the PNG's bottom-centre, our
+    // origin) and take the bounding box. The tip (0,0) is one of the rectangle's edge
+    // points, so it always lies within the box.
+    double minX = 0, maxX = 0, minY = 0, maxY = 0;
+    for (final corner in [
+      [-w / 2, -h], [w / 2, -h], [w / 2, 0.0], [-w / 2, 0.0]
+    ]) {
+      final double rx = corner[0] * cosT - corner[1] * sinT;
+      final double ry = corner[0] * sinT + corner[1] * cosT;
+      minX = math.min(minX, rx); maxX = math.max(maxX, rx);
+      minY = math.min(minY, ry); maxY = math.max(maxY, ry);
+    }
+    final int outW = (maxX - minX).ceil();
+    final int outH = (maxY - minY).ceil();
 
     final ui.PictureRecorder recorder = ui.PictureRecorder();
     final ui.Canvas canvas = ui.Canvas(recorder);
-    canvas.translate(side / 2, side / 2);
-    canvas.rotate(getRotation(telco) * math.pi / 180.0);
-    // Draw with the pin tip (bottom-centre of the PNG) at the origin, i.e. the canvas centre.
+    canvas.translate(-minX, -minY); // tip lands at (-minX, -minY) inside the box
+    canvas.rotate(theta);
     canvas.drawImage(image, ui.Offset(-w / 2, -h), ui.Paint());
-    final ui.Image out = await recorder.endRecording().toImage(side, side);
+    final ui.Image out = await recorder.endRecording().toImage(outW, outH);
     final Uint8List bytes =
         (await out.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
 
     _rotatedIconCache[telco] = bytes;
-    _rotatedIconWidthFactor[telco] = side / w;
+    _rotatedIconWidthFactor[telco] = outW / w;
+    _rotatedIconAnchor[telco] = ui.Offset(-minX / outW, -minY / outH);
     return bytes;
   }
 
@@ -141,6 +162,12 @@ class TelcoHelper {
   /// [getRotatedIcon] has completed for this telco.
   static double rotatedIconWidthFactor(Telco telco) {
     return _rotatedIconWidthFactor[telco] ?? 1.0;
+  }
+
+  /// Where the pin TIP sits inside the cropped rotated bitmap, as a fractional Marker
+  /// anchor. Only valid after [getRotatedIcon] has completed for this telco.
+  static ui.Offset rotatedIconAnchor(Telco telco) {
+    return _rotatedIconAnchor[telco] ?? const ui.Offset(0.5, 1.0);
   }
 
   // static double getColour(Telco telco) {
