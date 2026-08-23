@@ -190,6 +190,15 @@ Non-subscribed users see an inline adaptive AdMob banner at the bottom of the ma
   types (`Size`/plain `Widget` instead of `AdSize`/`AdWidget`) so its sizing logic can be exercised
   in a plain widget test without a platform channel. Covered by
   `test/ui/widgets/ad_banner_container_test.dart`.
+- **`EntitlementGatedAdBanner`** (`lib/ui/widgets/entitlement_gated_ad_banner.dart`): the
+  bottom-anchored banner region in `MapBody`, a `Consumer<PurchaseHelper>` around
+  `AdBannerContainer`. It **must** stay a live Consumer: it used to be a plain
+  `Visibility(visible: !PurchaseHelper().isSubscribed)` read once per build, so when
+  `restorePurchases()`/a purchase delivered the ad-free entitlement *after* the ad had already
+  rendered (the usual ordering at cold start), the ad strip stayed on screen until some
+  unrelated rebuild — i.e. paying users kept seeing ads. `adSize`/`adChild` are getters so a
+  purchase-triggered rebuild re-reads the just-torn-down ad state instead of stale captures.
+  Covered by `test/ui/widgets/entitlement_gated_ad_banner_test.dart`.
 
 ### Billing
 - **`PurchaseHelper`** (singleton, `ChangeNotifier`): wraps `in_app_purchase` /

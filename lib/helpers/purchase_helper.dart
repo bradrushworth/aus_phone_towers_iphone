@@ -31,7 +31,12 @@ class PurchaseHelper with ChangeNotifier {
 
   /// Is the API available on the device
   bool available = false;
-  final InAppPurchase _inAppPurchase = InAppPurchase.instance;
+
+  /// `late` so merely constructing the singleton (e.g. in widget tests that
+  /// only read entitlement flags) doesn't touch `InAppPurchase.instance`,
+  /// whose platform registration opens a billing platform channel and fails
+  /// asynchronously in tests where no channel handler exists.
+  late final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
   // ignore: unused_field
   List<String> _notFoundIds = [];

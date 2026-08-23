@@ -40,7 +40,7 @@ import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/ui/map_platform.dart'
     if (dart.library.js) 'package:phonetowers/ui/map_web.dart';
-import 'package:phonetowers/ui/widgets/ad_banner_container.dart';
+import 'package:phonetowers/ui/widgets/entitlement_gated_ad_banner.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
@@ -476,24 +476,16 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
             ),
           ),
         ),
-        Visibility(
-          visible: !PurchaseHelper().isSubscribed,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: SafeArea(
-              child: AdBannerContainer(
-                adSize: AdsHelper().loadedAdSize == null
-                    ? null
-                    : Size(
-                        AdsHelper().loadedAdSize!.width.toDouble(),
-                        AdsHelper().loadedAdSize!.height.toDouble(),
-                      ),
-                adChild: AdsHelper().bannerAd == null
-                    ? null
-                    : AdWidget(ad: AdsHelper().bannerAd!),
-              ),
-            ),
-          ),
+        EntitlementGatedAdBanner(
+          adSize: () => AdsHelper().loadedAdSize == null
+              ? null
+              : Size(
+                  AdsHelper().loadedAdSize!.width.toDouble(),
+                  AdsHelper().loadedAdSize!.height.toDouble(),
+                ),
+          adChild: () => AdsHelper().bannerAd == null
+              ? null
+              : AdWidget(ad: AdsHelper().bannerAd!),
         ),
       ],
     );

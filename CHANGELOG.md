@@ -8,6 +8,19 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Ads could stay on screen after buying (or restoring) Remove Ads** — the banner region in
+  `MapBody` read `PurchaseHelper().isSubscribed` once per build without listening for changes.
+  At cold start the ad usually finishes loading before `restorePurchases()` delivers a paid
+  user's entitlement, so the ad rendered first — and when the entitlement then arrived, nothing
+  rebuilt the banner subtree; the ad strip stayed visible until some unrelated rebuild touched
+  the map UI. The region is now `EntitlementGatedAdBanner`
+  (`lib/ui/widgets/entitlement_gated_ad_banner.dart`), a `Consumer<PurchaseHelper>` that hides
+  the moment the entitlement lands and re-shows if a yearly entitlement lapses mid-session.
+  Covered by `test/ui/widgets/entitlement_gated_ad_banner_test.dart`.
+
 ## [1.13.15+130] — 2026-08-23
 
 ### Fixed
