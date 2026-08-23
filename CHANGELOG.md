@@ -8,6 +8,18 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Real (licence_hrp) coverage polygons drew several times too large** — the HRP polygon
+  loop used the density-only `calculateDistance` overload, but since the 2026-08-22 trainer
+  re-baseline the server publishes ONLY composite (`density|mnc|networkType|band`)
+  coefficient groups, so the lookup found nothing and silently fell back to raw analytic
+  Okumura–Hata: ~3.8× too far for a 778 MHz LTE cell, 12×+ for 3.5 GHz NR (which also
+  missed the 3GPP 38.901 anchor — only the composite path routes NR there). Tapped-tower
+  polygons now use the same trained composite calibration as the estimated (basic) polygons
+  and the connected-tower mapping path. Sister change to `aus_phone_towers_java`.
+
 ## [1.13.15+130] — 2026-08-23
 
 ### Fixed

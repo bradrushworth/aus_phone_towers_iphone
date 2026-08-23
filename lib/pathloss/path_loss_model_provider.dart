@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/pathloss/learned_path_loss_model.dart';
@@ -66,6 +67,15 @@ class PathLossModelProvider {
         _coefficients ?? PathLossCoefficients.empty();
     _coefficients = coeffs;
     return LearnedPathLossModel(coeffs);
+  }
+
+  /// Install specific coefficients (and the learned model built from them) without any
+  /// network fetch, so unit tests can reproduce the exact coefficient shape the server
+  /// publishes (e.g. composite-only groups).
+  @visibleForTesting
+  void overrideCoefficientsForTesting(PathLossCoefficients coeffs) {
+    _coefficients = coeffs;
+    _model = LearnedPathLossModel(coeffs);
   }
 
   /// Force a reload from the server (e.g. after coefficients are updated).

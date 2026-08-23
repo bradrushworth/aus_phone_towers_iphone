@@ -8,6 +8,7 @@ import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
+import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/height_distance_pair.dart';
 import 'package:phonetowers/model/site.dart';
@@ -139,10 +140,13 @@ class GetLicenceHRP {
           int receiver_dBm = polygons[p];
           double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
-          // Calculate the distance the signal will travel
+          // Calculate the distance the signal will travel. Use the composite
+          // (mnc + networkType + density + band) lookup — see hrpDistanceKm.
           CityDensity model =
               device.getRadiationModel() ?? defaultRadiationModel;
-          double distanceKm = calculateDistance(
+          double distanceKm = hrpDistanceKm(
+              TelcoHelper.getMnc(site.getTelco()),
+              device.getNetworkType(),
               model,
               freeSpaceLoss_dBi,
               freqInMHz,
@@ -231,6 +235,21 @@ class GetLicenceHRP {
   static double calculateDistanceWithContext(int mnc, NetworkType networkType,
       CityDensity density, double levelInDb, double freqInMHz, double height) {
     return PathLossModelProvider.calculateDistanceWithContext(
+        mnc, networkType, density, levelInDb, freqInMHz, height);
+  }
+
+  /// Distance (km) for one licence_hrp sample, as drawn by the real-pattern polygon loop.
+  ///
+  /// MUST use the composite (mnc + networkType + density + frequency-band) overload: since
+  /// the 2026-08-22 trainer re-baseline the server publishes ONLY composite coefficient
+  /// groups, so a density-only lookup finds nothing and silently falls back to raw analytic
+  /// Okumura-Hata — drawing real coverage polygons several times too large (3.8x for a
+  /// 778 MHz LTE cell, 12x+ for 3.5 GHz NR, which additionally missed the 3GPP 38.901
+  /// anchor that only the composite path applies). Static and pure so it is unit-testable;
+  /// mirrors PolygonHelper.createBasicPolygon and the connected-tower mapping path.
+  static double hrpDistanceKm(int mnc, NetworkType networkType,
+      CityDensity density, double levelInDb, double freqInMHz, double height) {
+    return calculateDistanceWithContext(
         mnc, networkType, density, levelInDb, freqInMHz, height);
   }
 
