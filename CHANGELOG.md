@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.13.15+130] — 2026-08-23
 
 ### Fixed
 - **Towers whose licence has NO `licence_hrp` rows silently drew no coverage polygon at all** —
