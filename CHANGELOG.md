@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.13.16+131] — 2026-08-23
 
 ### Fixed
 - **Ads could stay on screen after buying (or restoring) Remove Ads** — the banner region in
