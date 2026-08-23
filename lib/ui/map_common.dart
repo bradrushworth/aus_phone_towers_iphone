@@ -1264,15 +1264,17 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         ),
         // title: site.name,
         position: LatLng(site.latitude!, site.longitude!),
-        // The per-telco lean is baked into the bitmap (rotated about the pin tip, tip at
-        // the canvas centre) because google_maps_flutter_web ignores Marker.rotation —
-        // co-located telco pins were hiding each other on the web build. rotation stays 0
-        // and the anchor is the canvas centre; see TelcoHelper.getRotatedIcon.
+        // The per-telco lean is baked into the bitmap (rotated about the pin tip, cropped
+        // to the pin's tight bounding box) because google_maps_flutter_web ignores
+        // Marker.rotation — co-located telco pins were hiding each other on the web build.
+        // The tight crop keeps each pin's TAP TARGET (the whole bitmap rectangle) mostly
+        // disjoint from its co-located neighbours; the anchor is wherever the tip sits in
+        // the cropped box. rotation stays 0 or mobile would rotate twice.
         icon: BitmapDescriptor.bytes(
           await TelcoHelper.getRotatedIcon(site.telco),
           width: 20 * TelcoHelper.rotatedIconWidthFactor(site.telco),
         ),
-        anchor: const Offset(0.5, 0.5),
+        anchor: TelcoHelper.rotatedIconAnchor(site.telco),
         rotation: 0,
         alpha: site.alpha,
         visible: site.shouldBeVisible(),
