@@ -19,6 +19,17 @@ void main() {
     expect(d.getPowerAtBearing(0) - d.getPowerAtBearing(180), closeTo(25.0, 0.001));
   });
 
+  test('omni antennas are calibrated and flat', () {
+    // No azimuth = omnidirectional. Measured against 17 real omni devices (6,120 licence_hrp
+    // rows): without omniCalibrationDb the estimate ran 13.5 dB below the real (flat)
+    // pattern — omni polygons rendered ~2.4x too small. Mirrors the Java app.
+    final d = DeviceDetails(networkType: NetworkType.LTE)..eirp = 2000.0;
+    final p = d.getPowerAtBearing(0);
+    expect(p, closeTo(d.getPowerAtBearing(137), 0.001));
+    // dBm(2000 W) = 63.0, +3 empirical, -41.7 shared constant, +13.5 omni calibration
+    expect(p, closeTo(37.81, 0.05));
+  });
+
   test('main lobe shape is unchanged by the back-lobe clamp', () {
     final d = device();
     final front = d.getPowerAtBearing(0);

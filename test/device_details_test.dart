@@ -648,14 +648,16 @@ void main() {
 
     test('getPowerAtBearing1', () {
       deviceDetails.eirp = 1472.0;
-      // Using null value of bearingToPowerMap variable
-      expect(deviceDetails.getPowerAtBearing(0), closeTo(22.979, 0.001));
+      // Using null value of bearingToPowerMap variable. No azimuth = omni, which now includes
+      // DeviceDetails.omniCalibrationDb (+13.5 dB, measured against real licence_hrp omni
+      // patterns on 2026-08-23 — see radiation_pattern_test.dart).
+      expect(deviceDetails.getPowerAtBearing(0), closeTo(22.979 + 13.5, 0.001));
     });
 
     test('getPowerAtBearing2', () {
       deviceDetails.eirp = 6760.0;
-      // Using null value of bearingToPowerMap variable
-      expect(deviceDetails.getPowerAtBearing(0), closeTo(29.599, 0.001));
+      // Using null value of bearingToPowerMap variable (omni: includes omniCalibrationDb).
+      expect(deviceDetails.getPowerAtBearing(0), closeTo(29.599 + 13.5, 0.001));
     });
 
     test('getSite', () {
