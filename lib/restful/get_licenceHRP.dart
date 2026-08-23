@@ -70,12 +70,15 @@ class GetLicenceHRP {
 
       int totalRows = rawResponse?.restify?.rows?.length ?? 0;
 
-      //If no data found for this telco then don't do anything
-      if (totalRows == 0) {
-        return;
+      // A licence can legitimately have ZERO licence_hrp rows (e.g. device 12876553,
+      // surfaced when the 2026-08-22 cell_mapping re-baseline started selecting it). This
+      // used to early-return here, skipping the createBasicPolygon fallback below entirely —
+      // the tower was silently drawn with no coverage polygon at all. Flow through instead:
+      // with no rows, dataFound stays false and the fallback draws the estimated pattern,
+      // exactly like a missing registration identifier does. Mirrors the Java app.
+      if (totalRows > 0) {
+        dataFound = true;
       }
-
-      dataFound = true;
 
       double freqInMHz = 1.0 * device.frequency! / 1000 / 1000;
 

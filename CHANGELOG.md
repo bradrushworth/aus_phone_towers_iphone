@@ -8,6 +8,19 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Towers whose licence has NO `licence_hrp` rows silently drew no coverage polygon at all** —
+  the zero-rows early return skipped the `createBasicPolygon` fallback entirely (surfaced by
+  the 2026-08-22 `cell_mapping` re-baseline selecting such devices). An empty result now flows
+  through to the estimated pattern, exactly like a missing registration identifier. Mirrors
+  the Java app.
+- **Omnidirectional simple polygons rendered ~2.4× too small** — the shared −41.7 dB constant
+  was calibrated for directional antennas (which also add gain − 2.15); the omni branch
+  measured 13.5 dB below its real `licence_hrp` levels (17 omni devices / 6,120 HRP rows).
+  New `omniCalibrationDb` (+13.5) centres it. Mirrors the Java app.
+
 ## [1.13.14+129] — 2026-08-23
 
 ### Fixed

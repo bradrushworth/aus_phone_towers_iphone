@@ -21,6 +21,12 @@ class DeviceDetails {
   // unaffected either way.
   static bool refarmEnabled = true;
 
+  /// Calibration for the omnidirectional branch of [getPowerAtBearing]: the shared -41.7 dB
+  /// constant was tuned for directional antennas (which also add gain - 2.15), and omni
+  /// estimates measured 13.5 dB below their real licence_hrp levels without it. Mirrors the
+  /// Java app's DeviceDetails.OMNI_CALIBRATION_DB.
+  static const double omniCalibrationDb = 13.5;
+
   // Details from the database
 
   String? sddId,
@@ -458,7 +464,14 @@ class DeviceDetails {
         41.7; // https://www.phys.hawaii.edu/~anita/new/papers/militaryHandbook/antennas.pdf
 
     if (azimuth == null) {
-      // This is an omnidirectional antenna
+      // This is an omnidirectional antenna. The -41.7 constant above was calibrated for the
+      // DIRECTIONAL case, which also adds (gain - 2.15); skipping any gain term left omni
+      // estimates 13.5 dB below their real licence_hrp levels (median across 17 omni devices /
+      // 6,120 HRP rows, live-measured 2026-08-23; real omni patterns are flat) — omni polygons
+      // rendered ~2.4x too small. The recorded antenna gain is NOT used: most omni rows carry
+      // gain 0.0, and the median-error constant is what centres the estimate. Mirrors the Java
+      // app's DeviceDetails.OMNI_CALIBRATION_DB.
+      power_dBm += omniCalibrationDb;
       logger.d(
           'DeviceDetails - getPowerAtBearing(): bearing=$bearing antennaId=$antennaId gainDBi=$gainDBi frontToBackRatio=$frontToBackRatio beamwidth=$beamwidth azimuth=$azimuth');
       return power_dBm;
