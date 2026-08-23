@@ -88,8 +88,29 @@ workflows:
         script: flutter build web --release
       # The workflow editor's "AWS S3 Bucket" publishing step: this bucket IS
       # https://ausphonetowers.com.au, so a green build deploys the website.
+      #
+      # --cache-control "no-cache" is load-bearing: the site sits behind Cloudflare, and
+      # when S3 sends no Cache-Control, Cloudflare edge-caches .js by its default TTL —
+      # after the 1.13.12 deploy, edges kept serving the OLD main.dart.js (flutter web
+      # filenames are not content-hashed, and browsers heuristic-cache them on top).
+      # no-cache means "revalidate every time": Cloudflare/browsers send the ETag and get
+      # a cheap 304 when unchanged, and the new bundle the moment one is deployed.
       - name: Publish web app to S3 (ausphonetowers.com.au)
-        script: aws s3 sync build/web "s3://$AWS_S3_BUCKET" --delete
+        script: aws s3 sync build/web "s3://$AWS_S3_BUCKET" --delete --cache-control "no-cache"
+      # Old objects cached at Cloudflare edges persist until their TTL even after the
+      # headers change, so purge on deploy. No-ops until CLOUDFLARE_ZONE_ID and
+      # CLOUDFLARE_API_TOKEN (a token with Zone.Cache Purge permission) are added to the
+      # Codemagic environment group.
+      - name: Purge Cloudflare cache (skipped until credentials configured)
+        script: |
+          if [ -n "${CLOUDFLARE_ZONE_ID:-}" ] && [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            curl -fsS -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data '{"purge_everything":true}'
+          else
+            echo "Cloudflare purge skipped: CLOUDFLARE_ZONE_ID / CLOUDFLARE_API_TOKEN not set"
+          fi
     artifacts:
       - build/app/outputs/bundle/release/*.aab
       - build/ios/ipa/*.ipa

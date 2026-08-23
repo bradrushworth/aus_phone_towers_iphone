@@ -8,6 +8,19 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.13.13+128] — 2026-08-23
+
+### Fixed
+- **Web deploys were invisible to returning visitors** — ausphonetowers.com.au sits behind
+  Cloudflare, and the S3 sync uploaded with no `Cache-Control`, so Cloudflare edge-cached
+  `main.dart.js` at its default TTL (and browsers heuristic-cached it on top; Flutter web
+  filenames are not content-hashed). After the 1.13.12 deploy, edges kept serving the old
+  bundle — the marker fan-out and polygon fixes never reached the page. The deploy now uploads
+  everything with `Cache-Control: no-cache` (revalidate via ETag → cheap 304s), and a
+  purge-on-deploy step activates once `CLOUDFLARE_ZONE_ID`/`CLOUDFLARE_API_TOKEN` are added to
+  the Codemagic environment. A one-off manual "Purge Everything" in the Cloudflare dashboard
+  clears the already-cached old objects.
+
 ## [1.13.12+127] — 2026-08-22
 
 ### Fixed
