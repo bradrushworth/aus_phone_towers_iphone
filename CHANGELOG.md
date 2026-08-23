@@ -8,6 +8,30 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Co-located telco pins hid each other on the Web build** — the Java app fans out markers at
+  per-telco angles (Telstra −60°, Optus 0°, Vodafone +60°, …) via `Marker.rotation`, which
+  `google_maps_flutter_web` silently ignores: on ausphonetowers.com.au every pin rendered bolt
+  upright, so a Vodafone pin at a shared site was completely hidden behind the Telstra one. The
+  lean is now baked into the icon bitmap itself (`TelcoHelper.getRotatedIcon` rotates the PNG
+  about the pin tip on an enlarged canvas, cached per telco; the Marker anchors at the canvas
+  centre with `rotation: 0` so mobile doesn't rotate twice). Pinned by
+  `rotated_marker_icon_test.dart`.
+- **Simple (non-HRP) coverage polygons over-attenuated behind the antenna** — the estimated
+  radiation pattern's `(1−cos θ)^1.15 × frontToBack` loss curve is tuned for the main lobe
+  (−3 dB at 32°) but was unbounded behind the antenna: 2.22× the front-to-back ratio at 180°
+  (~55 dB instead of 25 dB), while front-to-back ratio is by definition the rear attenuation.
+  Now clamped at the front-to-back ratio, mirroring the Java app. Validated against 45 real
+  `licence_hrp` patterns across all three telcos: back-lobe error improves from −23.6 dB median
+  to −1.1 dB, with boresight (+1.4 dB median) and side sectors unchanged. New
+  `radiation_pattern_test.dart`.
+- **Coverage polygons and borders far darker than the Android app** — the fill alpha had drifted
+  to double Java's (base 20 vs 10, satellite/hybrid +40 vs +25). With dozens of stacked rings
+  per suburb the doubled per-ring fill compounded into a near-opaque blue sheet. Now matches the
+  Java `PolygonHelper.createPolygon` values exactly; the border alpha (30 + fill) lightens with it.
+
 ## [1.13.11+126] — 2026-08-22
 
 ### Fixed

@@ -472,6 +472,13 @@ class DeviceDetails {
     if (radiationPatternLoss.isNaN) {
       radiationPatternLoss = frontToBackRatio;
     }
+    // The (1-cos)^1.15 curve is tuned for the MAIN lobe (-3 dB at 32 deg off boresight) but is
+    // unbounded behind the antenna: at 180 deg it reaches 2.22x the front-to-back ratio
+    // (~55 dB instead of 25 dB). Physically the front-to-back ratio IS the rear attenuation,
+    // so clamp there. Validated against 45 real licence_hrp patterns (2026-08-22): the
+    // basic-polygon back-lobe error improves from -23.6 dB median to -1.1 dB, with the
+    // boresight (+1.4 dB median) and side (-2.9 dB) sectors unchanged. Mirrors the Java app.
+    radiationPatternLoss = math.min(radiationPatternLoss, frontToBackRatio);
 
     if (AppConstants.isDebug)
       logger.d(
