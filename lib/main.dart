@@ -92,6 +92,7 @@ Future<void> main() async {
     AdsHelper.iOSLandscapeAdUnitId = secret.iOSLandscapeAdUnitId;
     PolygonHelper.terrainAwarenessKey = secret.terrainAwarenessKey;
     PolygonHelper.terrainAwarenessKeyIos = secret.terrainAwarenessKeyIos;
+    PolygonHelper.terrainAwarenessKeyAndroid = secret.terrainAwarenessKeyAndroid;
     //print("iOSLandscapeAdUnitId is ${secret.iOSLandscapeAdUnitId}");
 
     // Fetch learned path-loss coefficients from the server (fire-and-forget). The app

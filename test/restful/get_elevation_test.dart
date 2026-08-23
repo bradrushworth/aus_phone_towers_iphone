@@ -70,11 +70,44 @@ void main() {
       );
     });
 
-    test('Android build uses the legacy key', () {
+    test('Android build uses the legacy key when no Android key is configured', () {
       expect(
         GetElevation.selectTerrainKey(
             isWeb: false, isIOS: false, defaultKey: legacy, iosKey: ios),
         legacy,
+      );
+    });
+
+    test('Android build uses the Android-restricted key once configured', () {
+      expect(
+        GetElevation.selectTerrainKey(
+            isWeb: false,
+            isIOS: false,
+            defaultKey: legacy,
+            iosKey: ios,
+            androidKey: 'android-key'),
+        'android-key',
+      );
+    });
+
+    test('the Android key never leaks onto web or iOS', () {
+      expect(
+        GetElevation.selectTerrainKey(
+            isWeb: true,
+            isIOS: false,
+            defaultKey: legacy,
+            iosKey: ios,
+            androidKey: 'android-key'),
+        legacy,
+      );
+      expect(
+        GetElevation.selectTerrainKey(
+            isWeb: false,
+            isIOS: true,
+            defaultKey: legacy,
+            iosKey: ios,
+            androidKey: 'android-key'),
+        ios,
       );
     });
   });
@@ -95,6 +128,20 @@ void main() {
       expect(
         GetElevation.elevationRequestHeaders(isWeb: false, isIOS: false),
         {'Referer': 'https://ausphonetowers.com.au/'},
+      );
+    });
+
+    test('Android proves app identity once its own restricted key is configured', () {
+      // The web service checks these headers against the key's registered
+      // (package, SHA-1) rows; the fingerprint constant matches the registered
+      // debug-keystore cert (54:EF:0F:58:...:D1:78, colon-free uppercase).
+      expect(
+        GetElevation.elevationRequestHeaders(
+            isWeb: false, isIOS: false, hasAndroidKey: true),
+        {
+          'X-Android-Package': 'au.com.bitbot.phonetowers.flutter',
+          'X-Android-Cert': '54EF0F58CE4DE39A1C29538EE795E1DE92BFD178',
+        },
       );
     });
 
