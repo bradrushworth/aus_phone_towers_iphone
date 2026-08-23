@@ -8,6 +8,26 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Terrain awareness now survives the Maps key lockdown, and failures are loud** — sister
+  change to the Java app (problem report 2026-08-23, Tasmania). The Google Elevation web
+  service reports failures such as `REQUEST_DENIED` as an HTTP **200** with an empty
+  `results` array; `GetElevation` looped over the zero rows "successfully" — and only set
+  `finishedDownloadingElevations` inside that loop, so an empty response also left the
+  licence-HRP wait loop spinning forever. Now:
+  - Each platform uses the key whose restriction it can satisfy, and proves the identity
+    that restriction checks: **iOS** uses the new iOS-restricted key
+    (`terrainAwarenessKeyIos`) with the `X-Ios-Bundle-Identifier` header; **Android** sends
+    the `Referer` the legacy key is now Websites-restricted to (interim until
+    `au.com.bitbot.phonetowers.flutter` gets its own Android-restricted key); **web** relies
+    on the browser's own Referer, which the api.bitbot.com.au CORS proxy must forward.
+  - A non-OK status (or no response) is logged and surfaced once per session as a "Terrain
+    data is unavailable — drawing coverage without terrain" snackbar, the response is no
+    longer force-unwrapped, and the finished flag is always released so polygons can never
+    hang waiting for elevations. Pinned by `get_elevation_test.dart`.
+
 ## [1.13.16+131] — 2026-08-23
 
 ### Fixed

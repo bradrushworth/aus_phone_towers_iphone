@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -81,6 +82,10 @@ class PolygonHelper with ChangeNotifier {
   static CancelToken? cancelFetchingPolygonRequestToken;
   static String terrainAwarenessKey = '';
 
+  /// The iOS-restricted Maps key (Elevation API enabled, bundle au.com.bitbot.phonetowers).
+  /// Empty when the secrets file predates it — iOS then falls back to the legacy key.
+  static String terrainAwarenessKeyIos = '';
+
   /// Cache of generated label icons keyed by "text|argb" so we don't re-render text every time.
   static final Map<String, BitmapDescriptor> _labelIconCache =
       <String, BitmapDescriptor>{};
@@ -162,9 +167,23 @@ class PolygonHelper with ChangeNotifier {
         if (!site.startedDownloadingElevations) {
           site.startedDownloadingElevations = true;
           String positionsString = GetElevation.getPositionsString(site.getLatLng());
+          // Each platform uses the key whose restriction it can satisfy, and sends the
+          // identity that restriction is checked against — see GetElevation.
+          final bool isIOS = !kIsWeb && Platform.isIOS;
+          final String key = GetElevation.selectTerrainKey(
+              isWeb: kIsWeb,
+              isIOS: isIOS,
+              defaultKey: terrainAwarenessKey,
+              iosKey: terrainAwarenessKeyIos);
           String url = (kIsWeb ? 'https://api.bitbot.com.au/cors/' : '') +
-              'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$terrainAwarenessKey';
-          GetElevation(site: site, url: url).getElevationData();
+              'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$key';
+          GetElevation(
+                  site: site,
+                  url: url,
+                  headers: GetElevation.elevationRequestHeaders(
+                      isWeb: kIsWeb, isIOS: isIOS),
+                  showSnackBar: showSnackBar)
+              .getElevationData();
         }
       } catch (e, stack) {
         site.startedDownloadingElevations = false;

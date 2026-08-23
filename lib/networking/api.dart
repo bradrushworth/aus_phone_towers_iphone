@@ -134,10 +134,13 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
     }
   }
 
-  /// Get elevation data
-  Future<ElevationResponse?> getElevationDataApi(String path) async {
+  /// Get elevation data. [headers] carries the key-restriction identity the platform
+  /// needs (X-Ios-Bundle-Identifier on iOS, the site Referer on Android, nothing on web).
+  Future<ElevationResponse?> getElevationDataApi(String path,
+      {Map<String, String> headers = const {}}) async {
     try {
-      Response response = await dio.get(path, options: Options());
+      Response response = await dio.get(path,
+          options: Options(headers: headers.isEmpty ? null : headers));
       logger.i("elevation data: ${response.data.toString()}");
       final int? statusCode = response.statusCode;
       logger.i("raw elevation response ${response.data.toString()}");

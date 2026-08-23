@@ -6,7 +6,24 @@ import 'package:phonetowers/networking/response/elevation_response.dart';
 
 import 'get_licenceHRP.dart';
 
+typedef void ShowSnackBar({
+  required String message,
+  Duration duration,
+  bool isDismissible,
+});
+
 class GetElevation {
+  /// The iOS app's bundle identifier, sent as X-Ios-Bundle-Identifier so the Elevation web
+  /// service can verify the iOS-restricted key's identity (mirrors the Java app's
+  /// GoogleApiIdentity for its Android-restricted key).
+  static const String iosBundleId = 'au.com.bitbot.phonetowers';
+
+  /// The website the legacy key is Websites-restricted to. Google accepts Elevation
+  /// requests carrying a matching Referer (live-verified 2026-08-23), so the Android build
+  /// sends it explicitly until au.com.bitbot.phonetowers.flutter gets its own
+  /// Android-restricted key.
+  static const String siteReferer = 'https://ausphonetowers.com.au/';
+
   static final List<double> SAMPLE_DISTANCES = [
     0.50,
     0.75,
@@ -32,8 +49,46 @@ class GetElevation {
   Site site;
   Api api = Api.initialize();
   String url;
+  Map<String, String> headers;
+  ShowSnackBar? showSnackBar;
 
-  GetElevation({required this.url, required this.site});
+  GetElevation(
+      {required this.url,
+      required this.site,
+      this.headers = const {},
+      this.showSnackBar});
+
+  /// Which Maps key the elevation request should use. iOS has its own iOS-restricted key
+  /// (proved via [iosBundleId]); every other platform keeps the legacy key until it gets its
+  /// own restricted arrangement. Pure and static so it is unit-testable.
+  static String selectTerrainKey(
+      {required bool isWeb,
+      required bool isIOS,
+      required String defaultKey,
+      required String iosKey}) {
+    if (!isWeb && isIOS && iosKey.isNotEmpty) return iosKey;
+    return defaultKey;
+  }
+
+  /// The identity headers the elevation request must carry for its key's restriction:
+  /// iOS proves its bundle id; Android sends the site Referer the legacy key is restricted
+  /// to; web sends nothing (XHR forbids overriding Referer — the browser sends the page
+  /// origin, and the CORS proxy must forward it to Google). Pure and static.
+  static Map<String, String> elevationRequestHeaders(
+      {required bool isWeb, required bool isIOS}) {
+    if (isWeb) return const {};
+    if (isIOS) return const {'X-Ios-Bundle-Identifier': iosBundleId};
+    return const {'Referer': siteReferer};
+  }
+
+  /// A human-readable description of a failed elevation response, or null when it is OK.
+  /// Google reports failures (REQUEST_DENIED, OVER_QUERY_LIMIT, ...) inside an HTTP 200,
+  /// so the body's status field is the only failure signal. Pure and static.
+  static String? describeElevationFailure(String? status, String? errorMessage) {
+    if (status == null || status == 'OK') return null;
+    if (errorMessage == null || errorMessage.isEmpty) return status;
+    return '$status: $errorMessage';
+  }
 
   static String getPositionsString(LatLng latLng) {
     StringBuffer sb = StringBuffer();
@@ -76,19 +131,48 @@ class GetElevation {
   }
 
   Future getElevationData() async {
-    ElevationResponse? elevationResponse = await api.getElevationDataApi(url);
-    List<Results>? rows = elevationResponse!.results;
+    try {
+      ElevationResponse? elevationResponse =
+          await api.getElevationDataApi(url, headers: headers);
 
-    // looping through rows
-    for (int i = 0; i < rows!.length; i++) {
-      Results row = rows[i];
-      double elevation = row.elevation.toDouble();
-      double lat = row.location!.lat.toDouble();
-      double lng = row.location!.lng.toDouble();
-      site.addElevation(LatLng(lat, lng), elevation);
-      if (i == rows.length - 1) {
-        site.finishedDownloadingElevations = true;
+      // Google reports failures as HTTP 200 with a non-OK status and an empty results
+      // array (e.g. REQUEST_DENIED for a restricted key with no identity). Looping over
+      // the zero rows used to "succeed" silently — and, worse, the finished flag was only
+      // set inside the loop, so an empty response left GetLicenceHRP's wait loop spinning
+      // forever. Surface the failure instead; the finally below always releases the wait.
+      String? failure = describeElevationFailure(
+          elevationResponse?.status, elevationResponse?.errorMessage);
+      if (elevationResponse == null || failure != null) {
+        logger.e('Elevation request failed: ${failure ?? "no response"}');
+        _warnTerrainUnavailableOnce(failure ?? 'no response');
+        return;
       }
+
+      List<Results> rows = elevationResponse.results ?? [];
+      for (Results row in rows) {
+        double elevation = row.elevation.toDouble();
+        double lat = row.location!.lat.toDouble();
+        double lng = row.location!.lng.toDouble();
+        site.addElevation(LatLng(lat, lng), elevation);
+      }
+    } finally {
+      // Always release GetLicenceHRP's wait loop — on failure the polygons simply draw
+      // without terrain, and the user has been told why.
+      site.finishedDownloadingElevations = true;
     }
+  }
+
+  /// Tell the user terrain data is unavailable — once per app session, not once per site.
+  static bool _warnedTerrainUnavailable = false;
+
+  void _warnTerrainUnavailableOnce(String failure) {
+    if (_warnedTerrainUnavailable) return;
+    _warnedTerrainUnavailable = true;
+    showSnackBar?.call(
+      message: 'Terrain data is unavailable (${failure.split(':').first}) — '
+          'drawing coverage without terrain.',
+      duration: const Duration(seconds: 6),
+      isDismissible: true,
+    );
   }
 }
