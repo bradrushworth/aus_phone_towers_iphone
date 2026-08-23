@@ -2,7 +2,11 @@ class ElevationResponse {
   List<Results>? results;
   late String status;
 
-  ElevationResponse({required this.results, required this.status});
+  /// Google's human-readable failure reason. Only present when status is not OK
+  /// (e.g. REQUEST_DENIED for a restricted key queried without app identity).
+  String? errorMessage;
+
+  ElevationResponse({required this.results, required this.status, this.errorMessage});
 
   ElevationResponse.fromJson(Map<String, dynamic> json) {
     if (json['results'] != null) {
@@ -12,6 +16,7 @@ class ElevationResponse {
       });
     }
     status = json['status'];
+    errorMessage = json['error_message'];
   }
 
   Map<String, dynamic> toJson() {

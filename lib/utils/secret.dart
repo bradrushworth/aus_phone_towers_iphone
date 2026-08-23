@@ -8,6 +8,10 @@ class Secret {
   final String iOSLandscapeAdUnitId;
   final String terrainAwarenessKey;
 
+  /// The iOS-restricted Maps key for the Elevation API (see GetElevation). Optional so a
+  /// secrets file that predates it still loads; iOS then falls back to the legacy key.
+  final String terrainAwarenessKeyIos;
+
   Secret(
       {this.androidAdmobAppId = '',
       this.androidPortraitAdUnitId = '',
@@ -15,7 +19,8 @@ class Secret {
       this.iOSAdmobAppId = '',
       this.iOSLandscapeAdUnitId = '',
       this.iOSPortraitAdUnitId = '',
-      this.terrainAwarenessKey = ''});
+      this.terrainAwarenessKey = '',
+      this.terrainAwarenessKeyIos = ''});
 
   factory Secret.fromJson(Map<String, dynamic> jsonMap) {
     return new Secret(
@@ -26,6 +31,7 @@ class Secret {
       iOSLandscapeAdUnitId: jsonMap["iOSLandscapeAdUnitId"],
       iOSPortraitAdUnitId: jsonMap["iOSPortraitAdUnitId"],
       terrainAwarenessKey: jsonMap["terrainAwarenessKey"],
+      terrainAwarenessKeyIos: jsonMap["terrainAwarenessKeyIos"] ?? '',
     );
   }
 }
