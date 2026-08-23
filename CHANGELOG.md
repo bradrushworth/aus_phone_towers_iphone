@@ -8,6 +8,17 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **Android is ready for its own Android-restricted elevation key** — new optional
+  `terrainAwarenessKeyAndroid` secret. Once provisioned (Cloud console: a key allowing the
+  Maps Elevation API, restricted to Android apps with the row
+  `au.com.bitbot.phonetowers.flutter` / `54:EF:0F:58:CE:4D:E3:9A:1C:29:53:8E:E7:95:E1:DE:92:BF:D1:78`),
+  the Android build proves that identity via `X-Android-Package`/`X-Android-Cert` instead of
+  the interim site-Referer arrangement on the legacy key. While the secret is empty this is
+  a no-op. Last step before the exposed legacy key can be retired from mobile builds.
+
 ## [1.13.17+132] — 2026-08-24
 
 ### Fixed

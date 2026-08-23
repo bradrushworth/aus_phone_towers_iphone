@@ -24,6 +24,15 @@ class GetElevation {
   /// Android-restricted key.
   static const String siteReferer = 'https://ausphonetowers.com.au/';
 
+  /// The Android app's identity for its own Android-restricted key (used once
+  /// terrainAwarenessKeyAndroid is configured). The Elevation web service checks these
+  /// headers against the key's registered (package, SHA-1) rows — it cannot verify which
+  /// certificate actually signed the APK, so any registered pair works; this fingerprint is
+  /// the registered debug-keystore cert (54:EF:0F:58:...:D1:78) in the colon-free uppercase
+  /// form the headers require.
+  static const String androidPackage = 'au.com.bitbot.phonetowers.flutter';
+  static const String androidCertSha1 = '54EF0F58CE4DE39A1C29538EE795E1DE92BFD178';
+
   static final List<double> SAMPLE_DISTANCES = [
     0.50,
     0.75,
@@ -59,25 +68,36 @@ class GetElevation {
       this.showSnackBar});
 
   /// Which Maps key the elevation request should use. iOS has its own iOS-restricted key
-  /// (proved via [iosBundleId]); every other platform keeps the legacy key until it gets its
-  /// own restricted arrangement. Pure and static so it is unit-testable.
+  /// (proved via [iosBundleId]); Android uses its own Android-restricted key once one is
+  /// configured (proved via [androidPackage]/[androidCertSha1]); everything else keeps the
+  /// legacy key. Pure and static so it is unit-testable.
   static String selectTerrainKey(
       {required bool isWeb,
       required bool isIOS,
       required String defaultKey,
-      required String iosKey}) {
+      required String iosKey,
+      String androidKey = ''}) {
     if (!isWeb && isIOS && iosKey.isNotEmpty) return iosKey;
+    if (!isWeb && !isIOS && androidKey.isNotEmpty) return androidKey;
     return defaultKey;
   }
 
   /// The identity headers the elevation request must carry for its key's restriction:
-  /// iOS proves its bundle id; Android sends the site Referer the legacy key is restricted
-  /// to; web sends nothing (XHR forbids overriding Referer — the browser sends the page
-  /// origin, and the CORS proxy must forward it to Google). Pure and static.
+  /// iOS proves its bundle id; Android proves its package + signing-cert SHA-1 once its own
+  /// Android-restricted key is configured ([hasAndroidKey]), else it sends the site Referer
+  /// the legacy key is restricted to; web sends nothing (XHR forbids overriding Referer —
+  /// the browser sends the page origin, and the CORS proxy forwards it to Google). Pure and
+  /// static.
   static Map<String, String> elevationRequestHeaders(
-      {required bool isWeb, required bool isIOS}) {
+      {required bool isWeb, required bool isIOS, bool hasAndroidKey = false}) {
     if (isWeb) return const {};
     if (isIOS) return const {'X-Ios-Bundle-Identifier': iosBundleId};
+    if (hasAndroidKey) {
+      return const {
+        'X-Android-Package': androidPackage,
+        'X-Android-Cert': androidCertSha1,
+      };
+    }
     return const {'Referer': siteReferer};
   }
 
