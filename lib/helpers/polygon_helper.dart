@@ -300,7 +300,11 @@ class PolygonHelper with ChangeNotifier {
       Telco telco = site.getTelco();
       int alpha = 50;
       if (TelcoHelper.isTelecommunications(telco)) {
-        alpha = 20;
+        // Match the Java app exactly (PolygonHelper.createPolygon): base 10, not 20 — a
+        // suburb stacks dozens of rings (per signal level × per antenna × per site), so a
+        // doubled per-ring fill compounds into the near-opaque blue sheet reported on the
+        // web build. The border alpha (30 + fill) lightens with it.
+        alpha = 10;
         if (MapHelper.followGPS) {
           alpha += 20;
         }
@@ -311,7 +315,8 @@ class PolygonHelper with ChangeNotifier {
         case 2:
         case 3:
           {
-            alpha += 40;
+            // Java adds 25 on satellite/hybrid, not 40.
+            alpha += 25;
           }
           break;
       }

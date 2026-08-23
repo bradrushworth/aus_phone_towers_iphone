@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -88,6 +89,58 @@ class TelcoHelper {
 
   static Future<Uint8List> getIcon(Telco telco) {
     return getIconByString(getIconFullName(telco));
+  }
+
+  // The rotated pin is identical for every site of a telco, and thousands of markers are
+  // created while panning — decode/rotate/encode once per telco only.
+  static final Map<Telco, Uint8List> _rotatedIconCache = {};
+  static final Map<Telco, double> _rotatedIconWidthFactor = {};
+
+  /// The telco's pin PNG pre-rotated about its TIP by [getRotation], drawn on a square
+  /// canvas with the tip at the canvas centre — so the Marker must use
+  /// `anchor: Offset(0.5, 0.5)` and `rotation: 0`.
+  ///
+  /// The rotation is baked into the bitmap because google_maps_flutter_web ignores
+  /// `Marker.rotation` entirely: on the web build every co-located telco pin rendered bolt
+  /// upright on top of the others, completely hiding e.g. the Vodafone pin behind the
+  /// Telstra one (the Java app fans them out at ±60° etc., which is what this restores).
+  /// Because the lean is baked in, `Marker.rotation` must STAY 0 on every platform or
+  /// Android/iOS would rotate the pin twice.
+  static Future<Uint8List> getRotatedIcon(Telco telco) async {
+    Uint8List? cached = _rotatedIconCache[telco];
+    if (cached != null) return cached;
+
+    ByteData data = await rootBundle.load(getIconFullName(telco));
+    ui.Codec codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    ui.Image image = (await codec.getNextFrame()).image;
+    final double w = image.width.toDouble();
+    final double h = image.height.toDouble();
+
+    // Rotating about the tip sweeps the pin inside this radius, whatever the angle
+    // (NBN is 120°, Other -120° — not just the ±60° telco leans).
+    final double radius = math.sqrt(h * h + (w / 2) * (w / 2));
+    final int side = (radius * 2).ceil();
+
+    final ui.PictureRecorder recorder = ui.PictureRecorder();
+    final ui.Canvas canvas = ui.Canvas(recorder);
+    canvas.translate(side / 2, side / 2);
+    canvas.rotate(getRotation(telco) * math.pi / 180.0);
+    // Draw with the pin tip (bottom-centre of the PNG) at the origin, i.e. the canvas centre.
+    canvas.drawImage(image, ui.Offset(-w / 2, -h), ui.Paint());
+    final ui.Image out = await recorder.endRecording().toImage(side, side);
+    final Uint8List bytes =
+        (await out.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+
+    _rotatedIconCache[telco] = bytes;
+    _rotatedIconWidthFactor[telco] = side / w;
+    return bytes;
+  }
+
+  /// Multiplier for the Marker's `width` so the pin inside the (larger) rotated canvas
+  /// renders at the same on-screen size the unrotated PNG did. Only valid after
+  /// [getRotatedIcon] has completed for this telco.
+  static double rotatedIconWidthFactor(Telco telco) {
+    return _rotatedIconWidthFactor[telco] ?? 1.0;
   }
 
   // static double getColour(Telco telco) {
