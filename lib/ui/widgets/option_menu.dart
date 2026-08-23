@@ -115,6 +115,11 @@ class _OptionsMenuState extends State<OptionsMenu> {
               .where((OptionMenuItem item) {
                 // Donations are not available on the Web build (no App Store purchases).
                 if (item == OptionMenuItem.donate) return !kIsWeb;
+                // Remove Ads is the same store-purchase machinery — also absent on Web.
+                if (item == OptionMenuItem.removeAds) return !kIsWeb;
+                // There is no store listing to rate from a browser; the Links section still
+                // offers both store pages on Web for anyone wanting the mobile app.
+                if (item == OptionMenuItem.rateApp) return !kIsWeb;
                 // Only Android permits an app to programmatically exit -- iOS and Web have no
                 // equivalent, so the menu item is irrelevant there rather than just a no-op.
                 if (item == OptionMenuItem.closeApp) {
@@ -288,13 +293,16 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 // Store install (TestFlight, sandbox, debug builds) -- and isAvailable() only
                 // reports whether the API exists, not whether the prompt will actually appear
                 // -- so it can't be trusted to gate the only working path. Always also open the
-                // App Store listing directly so tapping this reliably does something visible.
+                // store listing directly so tapping this reliably does something visible --
+                // the listing for THIS platform's store: this Flutter app ships on Android
+                // too, where the Apple link was simply wrong. (Hidden entirely on Web.)
                 final InAppReview inAppReview = InAppReview.instance;
                 if (await inAppReview.isAvailable()) {
                   inAppReview.requestReview();
                 }
-                Utils.launchURL(
-                    'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
+                Utils.launchURL(!kIsWeb && Platform.isAndroid
+                    ? 'https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers.flutter'
+                    : 'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
                 break;
               }
             case OptionMenuItem.closeApp:
@@ -554,7 +562,12 @@ class _OptionsMenuState extends State<OptionsMenu> {
       SingleRowItem(title: Strings.reportProblem, isEnabled: true),
       SingleRowItem(isTitle: true, title: Strings.links, isEnabled: false),
       SingleRowItem(title: Strings.ausphonetowers, isEnabled: true),
-      SingleRowItem(title: Strings.iosAppStore, isEnabled: true),
+      // Store links for THIS platform's store; the Web build shows both, since a browser
+      // visitor may want the mobile app for either platform.
+      if (kIsWeb || !Platform.isAndroid)
+        SingleRowItem(title: Strings.iosAppStore, isEnabled: true),
+      if (kIsWeb || (!kIsWeb && Platform.isAndroid))
+        SingleRowItem(title: Strings.androidPlayStore, isEnabled: true),
       SingleRowItem(title: Strings.sourceCode, isEnabled: true),
     ];
     final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kProblemsMenu);
@@ -568,6 +581,9 @@ class _OptionsMenuState extends State<OptionsMenu> {
     } else if (chosen.title == Strings.iosAppStore) {
       Utils.launchURL(
           'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
+    } else if (chosen.title == Strings.androidPlayStore) {
+      Utils.launchURL(
+          'https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers.flutter');
     } else if (chosen.title == Strings.sourceCode) {
       Utils.launchURL(
           'https://github.com/bradrushworth/aus_phone_towers_iphone');
