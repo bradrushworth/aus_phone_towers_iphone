@@ -47,36 +47,20 @@ class AdsHelper {
         maxAdContentRating: 'MA', testDeviceIds: testDevices);
     MobileAds.instance.updateRequestConfiguration(requestConfiguration);
 
-    AdRequest adRequestBuilder = new AdRequest(keywords: []);
-    adRequestBuilder.keywords!.add("mobile");
-    adRequestBuilder.keywords!.add("mobile tower");
-    adRequestBuilder.keywords!.add("mobile coverage");
-    adRequestBuilder.keywords!.add("telco");
-    adRequestBuilder.keywords!.add("telecommunications");
-    adRequestBuilder.keywords!.add("phone tower");
-    adRequestBuilder.keywords!.add("cell tower");
-    adRequestBuilder.keywords!.add("cell site");
-    adRequestBuilder.keywords!.add("mobile phone");
-    adRequestBuilder.keywords!.add("4G");
-    adRequestBuilder.keywords!.add("5G");
-    adRequestBuilder.keywords!.add("LTE");
-    adRequestBuilder.keywords!.add("NR");
-    adRequestBuilder.keywords!.add("spectrum");
-    adRequestBuilder.keywords!.add("internet");
-    adRequestBuilder.keywords!.add("NBN");
-    adRequestBuilder.keywords!.add("broadband");
-    adRequestBuilder.keywords!.add("radio");
-    adRequestBuilder.keywords!.add("TV");
-    adRequestBuilder.keywords!.add("CBRS");
-    adRequestBuilder.keywords!.add("aviation");
-    adRequestBuilder.keywords!.add("pager");
-    adRequestBuilder.keywords!.add("emergency");
-    adRequestBuilder.keywords!.add("PMR");
-    adRequestBuilder.keywords!.add("satellite");
-    adRequestBuilder.keywords!.add("CB radio");
-    adRequestBuilder.keywords!.add("amateur radio");
-    adRequestBuilder.keywords!.add("scanner");
-    adRequestBuilder.keywords!.add("Australia");
+    // Commercial-intent keywords only, mirroring the Android (Java) app's tuned
+    // buildAdKeywords head: terms telcos and ISPs actually bid on (plans, SIMs, data,
+    // home internet) plus the app's own coverage/tower vocabulary and the road-trip
+    // audience. The old hobbyist tail (pager, PMR, CB radio, amateur radio, scanner,
+    // TV, CBRS, aviation) had near-zero advertiser demand and diluted the list.
+    AdRequest adRequestBuilder = new AdRequest(keywords: [
+      "mobile phone", "mobile plan", "SIM only", "prepaid", "unlimited data",
+      "home internet", "internet plan", "NBN", "broadband",
+      "mobile coverage", "coverage map", "signal booster",
+      "mobile tower", "phone tower", "cell tower",
+      "5G", "4G", "wireless internet",
+      "GPS navigation", "road trip", "camping",
+      "satellite phone", "Australia",
+    ]);
 
     BannerAd(
       adUnitId: adUnitId,

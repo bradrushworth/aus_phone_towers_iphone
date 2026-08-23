@@ -146,6 +146,7 @@ class Strings {
   static String links = 'Links';
   static String ausphonetowers = 'AusPhoneTowers.com.au';
   static String iosAppStore = 'iOS App Store';
+  static String androidPlayStore = 'Google Play (Android)';
   static String sourceCode = 'Source Code';
   static String closeApp = 'Close App';
 

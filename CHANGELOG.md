@@ -8,6 +8,23 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Platform-inappropriate menu items on the Web build** — "Rate App" is hidden on Web (no
+  store listing to rate from a browser) and "Remove Ads" is hidden on Web (same store-purchase
+  machinery as Donate, which was already hidden there).
+- **Store links now match the platform** — "Rate App" on the Android build opened the *Apple*
+  App Store listing; it now opens the Google Play listing on Android and the App Store on iOS.
+  The Help/Links section shows the store link for the current platform (both stores on Web,
+  where a visitor may want the mobile app for either).
+
+### Changed
+- **Ad keywords mirror the Android app's tuned commercial-intent head** — plans/SIM/data/home
+  internet terms telcos actually bid on, plus the app's coverage/tower vocabulary and the
+  road-trip audience. The old hobbyist tail (pager, PMR, CB radio, amateur radio, scanner, TV,
+  CBRS, aviation) had near-zero advertiser demand and diluted the list.
+
 ## [1.13.10+125] — 2026-08-22
 
 ### Fixed
