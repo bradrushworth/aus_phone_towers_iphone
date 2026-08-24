@@ -320,7 +320,10 @@ class PolygonHelper with ChangeNotifier {
       }
 
       String filter = "device_registration_identifier%3D%3D" + dri;
-      String fields = "start_angle%2Cpower";
+      // stop_angle is needed to place each vertex at the middle of the sector the row measures:
+      // ACMA publishes a mix of sector widths, so it cannot be assumed (see sectorHalfWidth).
+      // %2C is an encoded comma.
+      String fields = "start_angle%2Cstop_angle%2Cpower";
       String url =
           '/towers/licence_hrp/?_view=json&_expand=no&_count=360&_filter=$filter&_fields=$fields&_sort=start_angle ASC';
 

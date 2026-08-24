@@ -110,7 +110,9 @@ class GetLicenceHRP {
         //Get the row
         Values? values = rawResponse!.restify!.rows![i].values;
         double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
-        //double stop_angle = row.getJSONObject("stop_angle").getDouble("value");
+        double? stop_angle = values.stopAngle == null
+            ? null
+            : double.tryParse(values.stopAngle!.value);
         double power_dBm = double.tryParse(values.power!.value) ?? 0;
 
         // Convert RSRP to RSSI to get more accurate results
@@ -118,8 +120,14 @@ class GetLicenceHRP {
           //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
         }
 
-        // 1.25 is half of 2.5, which is the measurement resolution with ACMA
-        double bearing = start_angle + 1.25;
+        // Place the vertex at the middle of the sector this row measures, using the sector's
+        // own width rather than a constant. This used to add a fixed 1.25 degrees ("half of 2.5,
+        // the measurement resolution with ACMA"), but ACMA does not publish at a single
+        // resolution: of ~175M licence_hrp rows, 96.2% are 1 degree sectors and only 2.1% are
+        // actually 2.5 degrees (the rest run 0.5-6). So the constant was right for ~2% of rows
+        // and rotated the other 96% by 0.75 degrees. Mirrors the Java app's
+        // GetLicenceHRP.sectorHalfWidth. Measured against the live database 2026-08-24.
+        double bearing = start_angle + sectorHalfWidth(start_angle, stop_angle);
         bearingToPower[bearing] = power_dBm;
 
         Set<HeightDistancePair> heightToDistance = {};
@@ -216,6 +224,34 @@ class GetLicenceHRP {
     final int step =
         (2 * bearingIncrement / PolygonHelper.BEARING_INCREMENT).round();
     return step < 1 ? 1 : step;
+  }
+
+  /// Width assumed for a licence_hrp sector when the row carries no usable stop_angle.
+  /// 1 degree is what 96.2% of published rows use.
+  static const double kDefaultSectorWidthDegrees = 1.0;
+
+  /// Half the angular width of the sector a licence_hrp row measures, i.e. how far past
+  /// [startAngle] that row's vertex belongs.
+  ///
+  /// Derived from the row's own stop_angle because ACMA publishes a mix of resolutions
+  /// (1, 2, 2.5, 3, 0.5 and 4-6 degrees all occur). Falls back to
+  /// [kDefaultSectorWidthDegrees] when stop_angle is absent or unusable, so a partial response
+  /// degrades to the dominant case. Mirrors the Java app's GetLicenceHRP.sectorHalfWidth.
+  static double sectorHalfWidth(double startAngle, double? stopAngle) {
+    double width = kDefaultSectorWidthDegrees;
+    if (stopAngle != null && !stopAngle.isNaN) {
+      double measured = stopAngle - startAngle;
+      // The last sector of a pattern wraps through north (e.g. 359 -> 0).
+      if (measured < 0) {
+        measured += 360;
+      }
+      // Ignore nonsense (zero-width rows, or a whole-circle span from a malformed row);
+      // a sector wider than a semicircle is not a radiation pattern sample.
+      if (measured > 0 && measured <= 180) {
+        width = measured;
+      }
+    }
+    return width / 2;
   }
 
   // Distance in km.
