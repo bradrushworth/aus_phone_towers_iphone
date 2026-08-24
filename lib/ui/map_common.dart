@@ -43,6 +43,9 @@ import 'package:phonetowers/ui/map_platform.dart'
 import 'package:phonetowers/ui/widgets/entitlement_gated_ad_banner.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
+import 'package:phonetowers/ui/widgets/filter_sheet.dart';
+import 'package:phonetowers/ui/widgets/layers_settings_sheets.dart';
+import 'package:phonetowers/ui/widgets/legend_sheet.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
 import 'package:phonetowers/utils/geo_hash.dart';
 import 'package:phonetowers/utils/hex_color.dart';
@@ -310,6 +313,9 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   final TextEditingController _searchTextFilter = new TextEditingController();
   bool isShowCancelSearch = false;
 
+  /// F0: the night map style JSON, loaded once in initState.
+  String? _darkMapStyle;
+
   /*
   * Method channel for taking screenshots
   * */
@@ -332,6 +338,15 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     _loadNavigationSavedState();
     logger = Logger();
     api = Api.initialize();
+
+    // F0 (UI overhaul port): the dark map style (ported from the Android app's
+    // map_style_night.json). Applied only in dark mode and only to the NORMAL map type —
+    // Google Maps ignores styles for terrain/satellite/hybrid, same as on Android.
+    rootBundle.loadString('assets/json/map_style_night.json').then((style) {
+      if (mounted) setState(() => _darkMapStyle = style);
+    }).catchError((Object e) {
+      logger.e('Failed to load dark map style: $e');
+    });
 
     //Search text controller listener
     _searchTextFilter.addListener(() {
@@ -367,6 +382,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                 zoomControlsEnabled: true,
                 zoomGesturesEnabled: !MapBodyState.lockMap,
                 initialCameraPosition: CameraPosition(target: kLagLongBathurst, zoom: kDefaultZoom),
+                style: Theme.of(context).brightness == Brightness.dark &&
+                        mapHelper.getMapType() == MapType.normal
+                    ? _darkMapStyle
+                    : null,
                 markers: _buildMarkerSet(),
                 polygons: PolygonHelper.globalListPolygons.isNotEmpty
                     ? PolygonHelper.globalListPolygons.map((data) => data.polygon!).toSet()
@@ -376,7 +395,8 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               ),
             ),
             Container(
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.5)),
+              decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -441,31 +461,52 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                 //                    onPressed: () {},
                 //                  ),
                 //                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 0),
-                  child: IconButton(
-                    icon: Image.asset(
-                      PolygonHelper.calculateTerrain
-                          ? 'assets/images/ic_terrain_selected.png'
-                          : 'assets/images/ic_terrain_unselected.png',
-                    ),
-                    tooltip: Strings.calculate_terrain,
-                    onPressed: () {
-                      PolygonHelper.calculateTerrain = !PolygonHelper.calculateTerrain;
-                      SharedPreferencesHelper.saveBoolean(
-                        key: SharedPreferencesHelper.kcalculateTerrain,
-                        value: PolygonHelper.calculateTerrain,
-                        prefs: prefs,
-                      );
-                      setState(() {});
-                      showSnackbar(
-                        message: PolygonHelper.calculateTerrain
-                            ? 'Using terrain data when calculating propagation models! This is more accurate but slower.'
-                            : 'Ignoring terrain when calculating propagation models.',
-                      );
-                      PolygonHelper().switchTerrainAwareness();
-                    },
+                // F4 (UI overhaul port): the filter funnel with an active-filter badge — the
+                // filters finally have a visible entry point (the drawer previously had no
+                // hamburger and could only be opened by an edge swipe).
+                IconButton(
+                  icon: Badge.count(
+                    count: FilterSheet.activeFilterCount(),
+                    isLabelVisible: FilterSheet.activeFilterCount() > 0,
+                    child: Icon(Icons.filter_list),
                   ),
+                  tooltip: 'Filters',
+                  onPressed: () {
+                    FilterSheet.show(context).then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  },
+                ),
+                // F5 (UI overhaul port): Follow GPS is a real toolbar toggle (previously buried
+                // in the overflow); Layers opens the map-surface sheet (Calculate Terrain moved
+                // there); Search gets a visible entry point in the bar.
+                IconButton(
+                  icon: Icon(MapHelper.followGPS ? Icons.gps_fixed : Icons.gps_off,
+                      color: MapHelper.followGPS
+                          ? Theme.of(context).colorScheme.primary
+                          : null),
+                  tooltip: 'Follow GPS',
+                  onPressed: () async {
+                    await MapBodyState.toggleFollowGPS();
+                    if (mounted) setState(() {});
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.layers_outlined),
+                  tooltip: 'Map Layers',
+                  onPressed: () {
+                    LayersSheet.show(context, prefs: prefs, showSnackBar: showSnackbar)
+                        .then((_) {
+                      if (mounted) setState(() {});
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.search),
+                  tooltip: 'Search Sites',
+                  onPressed: () {
+                    Provider.of<SearchHelper>(context, listen: false).setSearchStatus(true);
+                  },
                 ),
                 OptionsMenu(
                   showSnackBar: showSnackbar,
@@ -476,6 +517,52 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
             ),
           ),
         ),
+        // F3 (UI overhaul port): the persistent Legend chip.
+        Positioned(
+          top: 88,
+          left: 10,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(999),
+              onTap: () => LegendSheet.show(context),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('ⓘ Legend',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer)),
+              ),
+            ),
+          ),
+        ),
+        // F5 (UI overhaul port): the Driving chip — Follow-GPS state stays visible without
+        // mutating the app title.
+        if (MapHelper.followGPS)
+          Positioned(
+            top: 88,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('⦿ Driving · following GPS',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer)),
+              ),
+            ),
+          ),
         EntitlementGatedAdBanner(
           adSize: () => AdsHelper().loadedAdSize == null
               ? null
@@ -1494,41 +1581,84 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     }
   }
 
+  /// F1 (UI overhaul port): the site details are a Material bottom sheet (rounded top, drag
+  /// handle, capped at 600 px on wide screens per the web-adaptivity contract) instead of a
+  /// centre-screen dialog — converging on the Android Phase 1 site sheet.
   void _settingModalBottomSheet(BuildContext context, Site site) {
     AutoSizeGroup sizeGroup = AutoSizeGroup();
-    showDialog(
+    final Color telcoColor = TelcoHelper.getColor(site.getTelco(), 255);
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      constraints: BoxConstraints(maxWidth: 600),
       builder: (BuildContext bc) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                padding: EdgeInsets.fromLTRB(12, 12, 12, 0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    bottomRight: Radius.circular(8),
-                    bottomLeft: Radius.circular(8),
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(bc).colorScheme.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: EdgeInsets.fromLTRB(18, 8, 18, 18),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // drag handle
+                Container(
+                  width: 40,
+                  height: 5,
+                  margin: EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Theme.of(bc).colorScheme.outline,
+                    borderRadius: BorderRadius.circular(3),
                   ),
                 ),
-                child: Column(
+                // header: name + telco chip
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        site.getNameFormatted(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(bc).colorScheme.onSurface),
+                      ),
+                    ),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: telcoColor.withValues(alpha: 0.13),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        TelcoHelper.getName(site.getTelco()),
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.bold, color: telcoColor),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 2),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    '${site.state} ${site.postcode}  ·  Site ${site.siteId}',
+                    style: TextStyle(
+                        fontSize: 13, color: Theme.of(bc).colorScheme.onSurfaceVariant),
+                  ),
+                ),
+                SizedBox(height: 8.0),
+                Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    Image.asset(site.getIconFullName(), width: 20),
-                    SizedBox(height: 8.0),
-                    ...prepareSiteTitleForInfoWindow(
-                      '${site.getNameFormatted()} ${site.state} ${site.postcode}',
-                    ),
-                    SizedBox(height: 8.0),
                     SitePropertiesTableWidget(
                       data: {
-                        'Site ID:': '${site.siteId}',
                         'Latitude:': '${site.latitude}',
                         'Longitude:': '${site.longitude}',
                         if (site.elevation!.isNotEmpty) 'Elevation:': '${site.elevation} metres',
@@ -1740,17 +1870,26 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                     ],
                   ],
                 ),
-              ),
-              SizedBox(height: 8),
-              ElevatedButton(
-                style: Theme.of(context).elevatedButtonTheme.style,
-                onPressed: () {
-                  launchURL(site.siteId!);
-                },
-                child: AutoSizeText('ACMA Website'),
-              ),
-              SizedBox(height: 16),
-            ],
+                SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonal(
+                        onPressed: () => launchDirections(site),
+                        child: AutoSizeText('Directions', maxLines: 1),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.tonal(
+                        onPressed: () => launchURL(site.siteId!),
+                        child: AutoSizeText('ACMA ↗', maxLines: 1),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -1932,6 +2071,16 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     } else {
       //throw 'Could not launch $url';
       logger.w('Could not launch url');
+    }
+  }
+
+  /// F1: opens the platform maps app (or Google Maps on web) pointed at the site.
+  launchDirections(Site site) async {
+    final uri = Uri.parse('https://maps.google.com/?q=${site.latitude},${site.longitude}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      logger.w('Could not launch directions url');
     }
   }
 

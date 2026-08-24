@@ -141,28 +141,56 @@ Future<void> main() async {
 }
 
 class AusPhoneTowers extends StatelessWidget {
-  // This widget is the root of the application.
+  // F0 (UI overhaul port): light + dark themes seeded from the same purple accent the Android
+  // app's Material 3 components use, following the system setting. The status bar follows the
+  // theme instead of being hard-forced light.
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark
-        .copyWith(statusBarColor: Colors.white, statusBarIconBrightness: Brightness.dark));
+    final brightness = MediaQuery.platformBrightnessOf(context);
+    SystemChrome.setSystemUIOverlayStyle(brightness == Brightness.dark
+        ? SystemUiOverlayStyle.light.copyWith(
+            statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.light)
+        : SystemUiOverlayStyle.dark.copyWith(
+            statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark));
 
     return MaterialApp(
       title: Strings.app_title,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-          appBarTheme: AppBarTheme(
-              iconTheme: new IconThemeData(color: Colors.grey, size: 32),
-              elevation: 0.0,
-              backgroundColor: Colors.white.withValues(alpha: 0.85)),
-          textTheme: TextTheme(
-              bodySmall: TextStyle(fontFamily: 'RobotoMono', color: Colors.grey[800], fontSize: 10),
-              labelLarge: TextStyle(color: Colors.grey[700])),
-          inputDecorationTheme: InputDecorationTheme(
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
-            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey[700]!)),
-          )),
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
+      themeMode: ThemeMode.system,
       home: MapScreen(),
     );
+  }
+
+  ThemeData _buildTheme(Brightness brightness) {
+    final bool dark = brightness == Brightness.dark;
+    final ColorScheme scheme =
+        ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4), brightness: brightness);
+    return ThemeData(
+        colorScheme: scheme,
+        appBarTheme: AppBarTheme(
+            iconTheme: IconThemeData(color: dark ? Colors.grey[400] : Colors.grey, size: 32),
+            elevation: 0.0,
+            backgroundColor:
+                (dark ? const Color(0xFF1D1B23) : Colors.white).withValues(alpha: 0.85)),
+        textTheme: TextTheme(
+            bodySmall: TextStyle(
+                fontFamily: 'RobotoMono',
+                color: dark ? Colors.grey[300] : Colors.grey[800],
+                fontSize: 10),
+            labelLarge: TextStyle(color: dark ? Colors.grey[300] : Colors.grey[700])),
+        inputDecorationTheme: InputDecorationTheme(
+          enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: dark ? Colors.grey[400]! : Colors.grey[700]!)),
+          focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: dark ? Colors.grey[400]! : Colors.grey[700]!)),
+        ),
+        // map_common.dart references elevatedButtonTheme.style, which previously resolved to
+        // null because no theme ever defined it.
+        elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: scheme.secondaryContainer,
+                foregroundColor: scheme.onSecondaryContainer)));
   }
 }
