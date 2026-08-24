@@ -14,12 +14,16 @@ class GetAntenna {
   GetAntenna({required this.url, required this.deviceDetails});
 
   Future getAntennaData() async {
+    final int? antennaId = deviceDetails.antennaId;
     deviceDetails.antenna = Antenna();
-    antennaCache[deviceDetails.antennaId!] = deviceDetails.antenna!;
+    if (antennaId != null) {
+      antennaCache[antennaId] = deviceDetails.antenna!;
+    }
 
-    if (deviceDetails.antennaId == 0) {
+    if (antennaId == null || antennaId == 0) {
       // logger.w(
       //     "GetAntenna", "The antennaId must be set to retrieve the record!");
+      _abandon(antennaId);
       return;
     }
 
@@ -31,6 +35,7 @@ class GetAntenna {
 
     //If no data found for this telco then don't do anything
     if (totalLatLong == 0) {
+      _abandon(antennaId);
       return;
     }
 
@@ -47,5 +52,17 @@ class GetAntenna {
     //     ' gain= ${deviceDetails.antenna.gain} '
     //     'frontToBack=${deviceDetails.antenna.frontToBack} '
     //     'horizontalBeamwidth= ${deviceDetails.antenna.horizontalBeamwidth}');
+  }
+
+  /// Drop the placeholder we optimistically cached, on any path that returns without filling it.
+  ///
+  /// The cache is consulted by every later device sharing this antennaId (get_devices.dart:170),
+  /// so leaving an empty Antenna behind would make one failed lookup permanent for the rest of
+  /// the session — no device would ever retry the fetch. Java does exactly this in
+  /// GetAntenna.onCancelled().
+  void _abandon(int? antennaId) {
+    if (antennaId != null) {
+      antennaCache.remove(antennaId);
+    }
   }
 }

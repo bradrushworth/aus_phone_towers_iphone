@@ -81,8 +81,14 @@ class _NavigationMenuState extends State<NavigationMenu> {
     screenWidth = MediaQuery.of(context).size.width;
     screenheight = MediaQuery.of(context).size.height;
 
+    // The drawer used to be a hard 200 px. That is a fair thumb-width on a phone, but the web
+    // build runs in a ~1300 px browser window, where seven filter groups were squeezed into a
+    // sliver down the left edge. Scale with the viewport, clamped so phones keep the old width
+    // and desktops stop at Material's 320 dp standard drawer rather than sprawling.
+    final double drawerWidth = (screenWidth * 0.28).clamp(200.0, 320.0);
+
     return SizedBox(
-      width: 200,
+      width: drawerWidth,
       child: Drawer(
         child: ListView(
           children: <Widget>[
