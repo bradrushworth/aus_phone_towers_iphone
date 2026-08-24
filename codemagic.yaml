@@ -61,6 +61,23 @@ workflows:
         - pattern: dev
           include: true
           source: true
+    # Only run the full build when the version is bumped, mirroring the Java app's guard on
+    # app/build.gradle. Without this, EVERY push to main built and published: the S3 script below
+    # syncs to ausphonetowers.com.au with --cache-control no-cache, so an ordinary merge went
+    # live on the website immediately, and the App Store Connect step re-uploaded an already-used
+    # build number and failed. Landed 2026-08-24 after exactly that happened (iphone#52).
+    #
+    # Blast radius (AGENTS.md requires this to be stated for codemagic.yaml changes):
+    #   * A merge to main that does not touch pubspec.yaml no longer builds, publishes to
+    #     TestFlight, or deploys the web app. Shipping now REQUIRES a version bump - if a change
+    #     seems not to have reached the site, check that pubspec.yaml was part of the same push.
+    #   * Applies to the dev branch too, since `when` is workflow-wide.
+    #   * The version line is the only gate; editing pubspec.yaml for any other reason (a
+    #     dependency change, say) will also trigger a build.
+    when:
+      changeset:
+        includes:
+          - 'pubspec.yaml'
     scripts:
       - name: Get Flutter packages
         script: flutter packages pub get
