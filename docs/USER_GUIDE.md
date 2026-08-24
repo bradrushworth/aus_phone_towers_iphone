@@ -63,9 +63,9 @@ Tower markers use carrier logo icons. The colours below are used for the **cover
 
 | Carrier / type | Polygon colour (RGB) | Meaning |
 |---|---|---|
-| Telstra | Blue (0, 10, 255) | Telstra towers |
+| Telstra | Blue (13, 84, 255) | Telstra towers |
 | Optus | Teal / Cyan (0, 127, 135) | Optus towers |
-| Vodafone | Red (255, 0, 0) | Vodafone towers |
+| Vodafone | Red (230, 0, 0) | Vodafone towers |
 | Dense Air | Navy (17, 53, 79) | Dense Air small cells |
 | NBN | Magenta / Violet (145, 15, 145) | NBN fixed‑wireless & mobile |
 | Other | Azure (0, 127, 255) | Other providers (TPG, Lycamobile, Vivid Wireless, …) |

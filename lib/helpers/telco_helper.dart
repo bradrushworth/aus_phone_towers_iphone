@@ -33,14 +33,27 @@ class TelcoHelper {
     return false;
   }
 
+  /// Carrier colours, checked against each brand's published guidelines (2026-08-24).
+  ///
+  /// Telstra is "Blue Ribbon" #0D54FF and Vodafone is #E60000 (Pantone 485) — both were
+  /// previously approximated (#000AFF and #FF0000). The Telstra correction also helps
+  /// legibility: the old near-pure blue muddied against dark terrain at small sizes.
+  ///
+  /// Optus is a DELIBERATE deviation and should not be "corrected" to their brand yellow
+  /// (#FECD03). Yellow has almost no contrast on a light terrain basemap, and yellow and
+  /// orange are already taken here — yellow is the serving-cell/OpenCellID marker, orange
+  /// is the observation trail. #007F87 is a darkened take on Optus's own secondary
+  /// aquamarine (#39A8AF); their lighter value would lose contrast against the map.
+  ///
+  /// Keep in lockstep with the Java app's Telco.getColor / getHtmlColour / getColour.
   static Color getColor(Telco selectedEnum, int alpha) {
     switch (selectedEnum) {
       case Telco.Telstra:
-        return Color.fromARGB(alpha, 0, 10, 255);
+        return Color.fromARGB(alpha, 13, 84, 255);
       case Telco.Optus:
         return Color.fromARGB(alpha, 0, 127, 135);
       case Telco.Vodafone:
-        return Color.fromARGB(alpha, 255, 0, 0);
+        return Color.fromARGB(alpha, 230, 0, 0);
       case Telco.NBN:
         return Color.fromARGB(alpha, 145, 15, 145);
       case Telco.Dense_Air:

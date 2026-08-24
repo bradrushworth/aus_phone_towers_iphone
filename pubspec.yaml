@@ -119,10 +119,21 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
 
-flutter_icons:
+# Regenerate with: dart run flutter_launcher_icons
+# (key is flutter_launcher_icons, not the deprecated flutter_icons)
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/appicon.png"
-  remove_alpha_ios: true
-  #adaptive_icon_background: "#ffffff"
-  #adaptive_icon_foreground: "assets/ItunesArtwork@2x.png"
+  remove_alpha_ios: true   # the App Store rejects icons carrying an alpha channel
+  # Adaptive-icon layers, which this app previously had no equivalent of at all. Without
+  # them Android masks the legacy bitmap instead, which puts a white plate behind the icon
+  # and rules out themed icons on Android 13+.
+  adaptive_icon_background: "#FAF9F5"
+  adaptive_icon_foreground: "assets/appicon_foreground.png"
+  adaptive_icon_monochrome: "assets/appicon_monochrome.png"
+  web:
+    generate: true
+    image_path: "assets/appicon.png"
+    background_color: "#FAF9F5"
+    theme_color: "#0D54FF"

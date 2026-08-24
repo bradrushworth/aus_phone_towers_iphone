@@ -16,8 +16,8 @@
     "iarc_rating_id": "895697e7-d8c6-4ddc-871b-465a2bcc1d67",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#ffffff",
+    "background_color": "#FAF9F5",
+    "theme_color": "#0D54FF",
     "description": "Australian mobile tower locations, frequencies and radiation patterns from ACMA.",
     "orientation": "any",
     "prefer_related_applications": false,
@@ -34,14 +34,26 @@
     ],
     "icons": [
         {
-            "src": "icons/android-chrome-192x192.png",
+            "src": "icons/Icon-192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/android-chrome-512x512.png",
+            "src": "icons/Icon-512.png",
             "sizes": "512x512",
             "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
         }
     ]
 }
