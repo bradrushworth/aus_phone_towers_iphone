@@ -238,6 +238,7 @@ class Values {
   CallSign? callSign;
   Active? active;
   StartAngle? startAngle;
+  StopAngle? stopAngle;
   Power? power;
   AntennaId? antennaId;
   FrontToBack? frontToBack;
@@ -332,6 +333,9 @@ class Values {
     startAngle = json['start_angle'] != null
         ? new StartAngle.fromJson(json['start_angle'])
         : null;
+    stopAngle = json['stop_angle'] != null
+        ? new StopAngle.fromJson(json['stop_angle'])
+        : null;
     power = json['power'] != null ? new Power.fromJson(json['power']) : null;
     antennaId = json['antenna_id'] != null
         ? new AntennaId.fromJson(json['antenna_id'])
@@ -416,6 +420,9 @@ class Values {
     }
     if (this.startAngle != null) {
       data['start_angle'] = this.startAngle!.toJson();
+    }
+    if (this.stopAngle != null) {
+      data['stop_angle'] = this.stopAngle!.toJson();
     }
     if (this.power != null) {
       data['power'] = this.power!.toJson();
@@ -794,6 +801,25 @@ class StartAngle {
   StartAngle({required this.value});
 
   StartAngle.fromJson(Map<String, dynamic> json) {
+    value = json['value'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['value'] = this.value;
+    return data;
+  }
+}
+
+/// The end of a licence_hrp sector. Paired with [StartAngle] to place each pattern vertex at
+/// the middle of the sector it measures — ACMA publishes a mix of sector widths, so the width
+/// cannot be assumed (see GetLicenceHRP.sectorHalfWidth).
+class StopAngle {
+  late String value;
+
+  StopAngle({required this.value});
+
+  StopAngle.fromJson(Map<String, dynamic> json) {
     value = json['value'];
   }
 
