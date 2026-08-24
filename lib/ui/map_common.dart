@@ -186,7 +186,11 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
                 child: Screenshot(
                   key: Key('screenshotKey'),
                   controller: screenshotController,
-                  child: Scaffold(drawer: NavigationMenu(), body: MapBody(screenshotController)),
+                  // F4 (UI overhaul port): the filter drawer is retired — the funnel's filter
+                  // chip sheet replaces it, matching the Java app (which locks its drawer shut).
+                  // NavigationMenu's static filter state stays load-bearing; only the edge-swipe
+                  // drawer UI is unwired.
+                  child: Scaffold(body: MapBody(screenshotController)),
                 ),
               ),
             ),
@@ -274,6 +278,18 @@ class MapBody extends StatefulWidget {
 class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   /// ******************** State variables ************************************
   late GoogleMapController mapController;
+
+  /// True once [onMapCreated] has assigned [mapController].
+  ///
+  /// Reading the `late` field before then throws a LateInitializationError, and on web the map is
+  /// never created at all when the Google Maps JavaScript API rejects the key
+  /// (RefererNotAllowedMapError) — which took the whole search feature down with it, because the
+  /// submit handler passed [mapController] before anything could use it. Callers that can cope
+  /// without a camera should use [mapControllerOrNull] instead.
+  bool mapControllerReady = false;
+
+  GoogleMapController? get mapControllerOrNull => mapControllerReady ? mapController : null;
+
   Location _locationService = new Location();
 
   // Follow GPS (drive mode): keeps the map centred on the device's location. Mirrors the
@@ -450,7 +466,9 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                       textInputAction: TextInputAction.search,
                       onSubmitted: (query) {
                         logger.d('search query is $query');
-                        handleSearchQuery(mapController, query);
+                        // mapControllerOrNull, never the late field: searching must still work
+                        // when the map failed to initialise (e.g. a rejected Maps JS API key).
+                        handleSearchQuery(mapControllerOrNull, query);
                       },
                     ),
               actions: <Widget>[
@@ -979,6 +997,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   void onMapCreated(dynamic controllerParam) {
     setState(() {
       mapController = controllerParam;
+      mapControllerReady = true;
     });
 
     // If the app was cold-restarted by the OS while backgrounded, restore the

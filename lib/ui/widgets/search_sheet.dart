@@ -13,13 +13,20 @@ import 'package:phonetowers/ui/map_common.dart';
 class SearchSheet {
   static const int _siteSheetWaitMs = 2500; // tile download grace before opening the site sheet
 
-  static void show(
+  /// Returns a Future (never `async void`): an `async void` body would send any failure to the
+  /// zone as an unhandled error that the caller cannot catch.
+  static Future<void> show(
       BuildContext context,
       String query,
       List<SearchResult> results,
       void Function(String geoHash, bool expandGeohash) downloadTowers,
       dynamic mapController) async {
-    final recents = await SearchHelper.getRecentSearches();
+    List<String> recents = const [];
+    try {
+      recents = List<String>.from(await SearchHelper.getRecentSearches());
+    } catch (_) {
+      // Recent searches are a convenience; never let them block the results.
+    }
     recents.remove(query);
     if (!context.mounted) return;
 
