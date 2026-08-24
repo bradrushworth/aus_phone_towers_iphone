@@ -86,32 +86,46 @@ class SearchHelper with ChangeNotifier {
     getSearch(url, query, downloadTowers);
   }
 
-  void getSearch(String url, String query,
+  /// Returns a Future (never `async void`): an `async void` body sends any failure straight to
+  /// the zone as an unhandled error — the caller cannot catch it and the user just sees a dead
+  /// search with an opaque console exception. Everything here is guarded so a network fault or a
+  /// single malformed row reports itself instead of escaping.
+  Future<void> getSearch(String url, String query,
       void Function(String geoHash, bool expandGeohash) downloadTowers) async {
     logger.d('get search url $url');
-    SiteResponse? rawResponse = await api.getSearchedData(url);
-
-    int totalRows = rawResponse?.restify?.rows?.length ?? 0;
     final List<SearchResult> results = [];
-    for (int i = 0; i < totalRows; i++) {
-      final values = rawResponse?.restify?.rows?[i].values;
-      if (values == null) continue;
-      // Some ACMA site names arrive with HTML entities ("cnr MacArthur &amp; Northbourne").
-      final String name = (values.name?.value ?? '')
-          .replaceAll('&amp;', '&')
-          .replaceAll('&quot;', '"')
-          .replaceAll('&lt;', '<')
-          .replaceAll('&gt;', '>')
-          .replaceAll('&#39;', "'");
-      results.add(SearchResult(
-        siteId: '${values.siteId?.value ?? ''}',
-        name: name,
-        state: values.state?.value ?? '',
-        postcode: '${values.postcode?.value ?? ''}',
-        geohash: values.geohash?.value ?? '',
-        latitude: double.tryParse('${values.latitude?.value}') ?? 0,
-        longitude: double.tryParse('${values.longitude?.value}') ?? 0,
-      ));
+    try {
+      SiteResponse? rawResponse = await api.getSearchedData(url);
+
+      int totalRows = rawResponse?.restify?.rows?.length ?? 0;
+      for (int i = 0; i < totalRows; i++) {
+        try {
+          final values = rawResponse?.restify?.rows?[i].values;
+          if (values == null) continue;
+          results.add(SearchResult(
+            siteId: _text(() => values.siteId?.value),
+            // Some ACMA names arrive with HTML entities ("cnr MacArthur &amp; Northbourne").
+            name: _unescape(_text(() => values.name?.value)),
+            state: _text(() => values.state?.value),
+            postcode: _text(() => values.postcode?.value),
+            geohash: _text(() => values.geohash?.value),
+            latitude: double.tryParse(_text(() => values.latitude?.value)) ?? 0,
+            longitude: double.tryParse(_text(() => values.longitude?.value)) ?? 0,
+          ));
+        } catch (e, st) {
+          // The generated response models declare `late String value`, so a null or absent
+          // field throws while reading it. One bad row must not lose the whole result set.
+          logger.w('Skipping malformed search row $i: $e', stackTrace: st);
+        }
+      }
+    } catch (e, st) {
+      logger.e('Search request failed', error: e, stackTrace: st);
+      calculatingSearchResults = false;
+      notifyListeners();
+      showSnackBar?.call(
+          message: 'Could not reach the tower database. Check your connection and try again.',
+          isDismissible: true);
+      return;
     }
 
     calculatingSearchResults = false;
@@ -119,9 +133,26 @@ class SearchHelper with ChangeNotifier {
 
     final context = MapBodyState.currentInstance?.context;
     if (context != null && context.mounted) {
-      SearchSheet.show(context, query, results, downloadTowers, mapController);
+      await SearchSheet.show(context, query, results, downloadTowers, mapController);
     }
   }
+
+  /// Reads a `late String value` field defensively — the generated models throw rather than
+  /// return null when the server omits a column.
+  static String _text(String? Function() read) {
+    try {
+      return read() ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static String _unescape(String s) => s
+      .replaceAll('&amp;', '&')
+      .replaceAll('&quot;', '"')
+      .replaceAll('&lt;', '<')
+      .replaceAll('&gt;', '>')
+      .replaceAll('&#39;', "'");
 
   // ----- recent searches (last 10, newest first) -----
 
