@@ -51,9 +51,38 @@ class LearnedPathLossModel implements PathLossModel {
     String band = PathLossKey.bandBucket(freqInMHz * 1_000_000.0);
     List<double>? beta =
         coefficients.getComposite(mnc, networkType, band, density);
+    beta ??= coefficients.get(density);
+
+    // The density the chosen coefficients were fitted against. When a neighbouring density's
+    // group is borrowed below, the analytic Hata distance that the calibration form inverts must
+    // be recomputed for THAT density too — otherwise borrowed b0/b1 are applied to an input they
+    // were never regressed against.
+    CityDensity fitted = density;
+
     if (beta == null) {
-      beta = coefficients.get(density);
+      // Nearest-density fallback, before abandoning calibration altogether.
+      //
+      // The published table is sparse and lopsided by MNC: at the time of writing it holds 22
+      // groups, of which MNC 3 has two, and the density-only safety net has exactly one row
+      // (URBAN). A carrier whose density happens to miss therefore dropped straight through to
+      // raw analytic Okumura-Hata — "several times too large", as get_licenceHRP already warns.
+      //
+      // That is what made two co-located towers at site 50917 differ by ~6x in radius: Optus has
+      // 31 sites in the geohash so resolved to URBAN and stayed calibrated, while Vodafone's 14
+      // resolved to SUBURBAN and fell through. Borrowing the nearest calibrated density moves
+      // Vodafone from 2.07 km to about 0.20 km, alongside Optus's 0.33 km.
+      for (final CityDensity near in _densitiesNearestFirst(density).skip(1)) {
+        final List<double>? borrowed =
+            coefficients.getComposite(mnc, networkType, band, near) ??
+                coefficients.get(near);
+        if (borrowed != null) {
+          beta = borrowed;
+          fitted = near;
+          break;
+        }
+      }
     }
+
     if (beta == null) {
       if (networkType == NetworkType.NR) {
         double nr =
@@ -65,10 +94,25 @@ class LearnedPathLossModel implements PathLossModel {
       return fallback.calculateDistance(density, levelInDb, freqInMHz, height);
     }
     double distanceKm =
-        _invert(beta, networkType, density, levelInDb, freqInMHz, height);
+        _invert(beta, networkType, fitted, levelInDb, freqInMHz, height);
     return _isUsable(distanceKm)
         ? distanceKm
         : fallback.calculateDistance(density, levelInDb, freqInMHz, height);
+  }
+
+  /// [density] first, then the rest of the METRO..OPEN scale ordered by increasing distance from
+  /// it, preferring the denser side when two are equally close.
+  ///
+  /// e.g. SUBURBAN yields SUBURBAN, MEDIUM, OPEN, URBAN, METRO.
+  static List<CityDensity> _densitiesNearestFirst(CityDensity density) {
+    const List<CityDensity> all = CityDensity.values;
+    final int i = density.index;
+    final List<CityDensity> order = <CityDensity>[density];
+    for (int step = 1; step < all.length; step++) {
+      if (i - step >= 0) order.add(all[i - step]);
+      if (i + step < all.length) order.add(all[i + step]);
+    }
+    return order;
   }
 
   double _invert(List<double> beta, NetworkType? networkType, CityDensity density,

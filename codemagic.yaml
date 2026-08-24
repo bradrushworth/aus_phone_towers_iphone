@@ -147,3 +147,56 @@ workflows:
         auth: integration
         submit_to_testflight: true
         submit_to_app_store: false
+
+  # Store-listing screenshots, captured on an iOS simulator.
+  #
+  # Deliberately has NO `triggering:` block, so it never runs on push and cannot slow or break a
+  # release — start it by hand from the Codemagic UI when the listing needs refreshing. It exists
+  # because App Store screenshots otherwise have to be taken by hand on a physical iPhone, which
+  # is impossible from a Windows machine and was leaving the listing several releases stale.
+  #
+  # It also avoids the privacy trap of hand-taken screenshots: the run is scripted, so it never
+  # centres on whoever happened to be holding the phone.
+  screenshots-workflow:
+    name: Store Screenshots (iOS simulator)
+    instance_type: mac_mini_m4
+    max_build_duration: 30
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: flutter packages pub get
+      - name: Boot an iPhone simulator
+        script: |
+          set -e
+          # Pick the newest available iPhone runtime rather than pinning a model that Apple
+          # later drops from the image.
+          UDID=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; \
+                ds=[x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']]; \
+                print(ds[-1]['udid'] if ds else '')")
+          if [ -z "$UDID" ]; then echo "No iPhone simulator available"; exit 1; fi
+          echo "Booting $UDID"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          echo "SIM_UDID=$UDID" >> $CM_ENV
+      - name: Capture screenshots
+        script: |
+          set -e
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/screenshot_test.dart \
+            -d "$SIM_UDID"
+          ls -la screenshots/
+    artifacts:
+      - screenshots/*.png
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - brushworth@bitbot.com.au
+        notify:
+          success: true
+          failure: true

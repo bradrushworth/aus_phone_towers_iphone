@@ -218,5 +218,72 @@ void main() {
       expect(b[2], closeTo(10.0, 1e-9));
       expect(b[3], closeTo(6.0, 1e-9));
     });
+
+    // ---------------------------------------------------------------------------------
+    // Nearest-density fallback.
+    //
+    // The published table is sparse and lopsided by MNC — at the time of writing the
+    // density-only safety net has exactly one row (URBAN). A carrier whose density missed
+    // dropped straight to raw analytic Okumura-Hata, which get_licenceHRP itself warns is
+    // "several times too large". That is what made two co-located towers at site 50917
+    // differ by ~6x in radius: Optus has 31 sites in the geohash so resolved to URBAN and
+    // stayed calibrated, while Vodafone's 14 resolved to SUBURBAN and fell through.
+    // ---------------------------------------------------------------------------------
+
+    test('borrowsNearestCalibratedDensityInsteadOfDroppingToAnalytic', () {
+      // Only URBAN is published, mirroring the real table's single density-only row.
+      PathLossCoefficients coeffs = PathLossCoefficients.empty(57.0);
+      coeffs.set(CityDensity.URBAN, [100.0, 40.0, 0.0, 0.0], 1000, 0.95);
+      LearnedPathLossModel learned = LearnedPathLossModel(coeffs);
+      AnalyticPathLossModel analytic = AnalyticPathLossModel();
+
+      double level = 100 + 40 * log10(2.0);
+
+      // The Vodafone case: SUBURBAN, MNC 3, no group of its own.
+      double suburban = learned.calculateDistanceWithContext(
+          3, NetworkType.LTE, CityDensity.SUBURBAN, level, 1865.0, 30.0);
+      // The Optus case: URBAN, calibrated.
+      double urban = learned.calculateDistanceWithContext(
+          2, NetworkType.LTE, CityDensity.URBAN, level, 1865.0, 30.0);
+
+      expect(suburban, closeTo(urban, 1e-9),
+          reason: 'a missing density must borrow the nearest calibrated one');
+
+      double raw =
+          analytic.calculateDistance(CityDensity.SUBURBAN, level, 1865.0, 30.0);
+      expect((suburban - raw).abs(), greaterThan(1e-6),
+          reason: 'must no longer fall through to the uncalibrated analytic model');
+    });
+
+    test('prefersTheClosestDensityOnTheScale', () {
+      // MEDIUM is one step from SUBURBAN, METRO is three. SUBURBAN must take MEDIUM.
+      PathLossCoefficients coeffs = PathLossCoefficients.empty(57.0);
+      coeffs.set(CityDensity.MEDIUM, [100.0, 40.0, 0.0, 0.0], 1000, 0.95);
+      coeffs.set(CityDensity.METRO, [200.0, 80.0, 0.0, 0.0], 1000, 0.95);
+      LearnedPathLossModel learned = LearnedPathLossModel(coeffs);
+
+      double level = 100 + 40 * log10(3.0);
+      double got = learned.calculateDistanceWithContext(
+          3, NetworkType.LTE, CityDensity.SUBURBAN, level, 1865.0, 30.0);
+
+      expect(got, closeTo(3.0, 1e-6),
+          reason: 'should invert MEDIUM (nearest), not METRO');
+    });
+
+    test('stillFallsBackToAnalyticWhenNothingIsCalibrated', () {
+      // With nothing published at all the previous behaviour must be unchanged.
+      PathLossCoefficients empty = PathLossCoefficients.empty(57.0);
+      LearnedPathLossModel learned = LearnedPathLossModel(empty);
+      AnalyticPathLossModel analytic = AnalyticPathLossModel();
+
+      double got = learned.calculateDistanceWithContext(
+          3, NetworkType.LTE, CityDensity.SUBURBAN, 127.0, 1865.0, 30.0);
+      expect(
+          got,
+          closeTo(
+              analytic.calculateDistance(
+                  CityDensity.SUBURBAN, 127.0, 1865.0, 30.0),
+              1e-9));
+    });
   });
 }
