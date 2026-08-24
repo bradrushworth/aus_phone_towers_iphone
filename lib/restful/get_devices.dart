@@ -19,6 +19,31 @@ typedef void ShowSnackBar({
 });
 
 class GetDevices {
+  /// Antenna height in metres from an ACMA `height` value.
+  ///
+  /// ACMA publishes decimals ("20.41"). `int.tryParse` returns null for those, so every such
+  /// height silently became 0 and then the 10 m floor in `getTowerHeight()` — shifting both the
+  /// Hata intercept and its `44.9 - 6.55*log10(h)` slope, on iOS and web only. Java's
+  /// `optIntValue` coerces through Double and truncates, so truncate here too rather than
+  /// rounding, keeping the two apps identical on the same record.
+  static int parseHeight(String? raw) {
+    if (raw == null || raw.isEmpty) return 0;
+    return double.tryParse(raw)?.truncate() ?? 0;
+  }
+
+  /// Antenna azimuth in degrees, or **null** for an omnidirectional antenna.
+  ///
+  /// The null MUST survive: `DeviceDetails.getPowerAtBearing` selects its omnidirectional branch
+  /// on `azimuth == null`. Coercing a missing azimuth to 0 made that branch dead code, so
+  /// `omniCalibrationDb` (+13.5 dB) was never applied on iOS or web, and every genuine omni was
+  /// treated as a directional antenna boresighted due north — with `radiationPatternLoss`, up to
+  /// the full front-to-back ratio, subtracted behind it. Java keeps the null and rounds decimals
+  /// (`DeviceDetails.java:95-100`); mirror both.
+  static int? parseAzimuth(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    return double.tryParse(raw)?.round();
+  }
+
   String url;
   Telco telco;
   List<MapOverlay> listOfTowersForSingleTelco = [];
@@ -61,8 +86,8 @@ class GetDevices {
       String active = values.active != null ? values.active!.value : '';
       int frequency = values.frequency != null ? int.tryParse(values.frequency!.value) ?? 0 : 0;
       int bandwidth = values.bandwidth != null ? int.tryParse(values.bandwidth!.value) ?? 0 : 0;
-      int height = values.height != null ? int.tryParse(values.height!.value) ?? 0 : 0;
-      int azimuth = values.azimuth != null ? int.tryParse(values.azimuth!.value) ?? 0 : 0;
+      int height = parseHeight(values.height?.value);
+      int? azimuth = parseAzimuth(values.azimuth?.value);
       double eirp = values.eirp != null ? double.tryParse(values.eirp!.value) ?? 0.0 : 0.0;
       int antennaId = values.antennaId != null ? int.tryParse(values.antennaId!.value) ?? 0 : 0;
 
