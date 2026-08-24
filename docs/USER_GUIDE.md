@@ -10,6 +10,33 @@ datasets and draws each transmitter on a Google Map together with its estimated 
 > observation markers yet. Those features are planned but not ported (see
 > *Differences from the Android app* below).
 
+## What changed in 1.14 — the interface refresh
+
+Version 1.14 ports the Android app's interface overhaul:
+
+- **Toolbar** — four buttons: the **filter funnel** (with a badge counting active filters),
+  **Follow GPS** (a real toggle; a *Driving · following GPS* chip appears under the bar while
+  active), **Map Layers**, and **Search**. Everything else lives in the slim overflow menu
+  (Refresh Data, Export Data, Settings, Remove Ads, Donate).
+- **Filters** — the old slide-out drawer is replaced by a full-width **filter sheet** of tappable
+  chips (carriers, generations, frequencies, city density, signal strength, transmitter types,
+  and Multiplex under *Advanced*), with a live "N sites shown" count. Your saved selections carry
+  over unchanged.
+- **Map Layers sheet** — map mode, terrain-aware coverage, polygon borders, coverage-on-tap,
+  multi-tower coverage, lock map and polygon precision in one place.
+- **Settings sheet** — map rotation, frequency refarming, Developer Mode, the User Guide, Report
+  a Problem, links, and Rate the App.
+- **Tower details** — tapping a tower opens a **bottom sheet** (name, carrier chip, address line,
+  site properties and the transmitter table) instead of a centre-screen dialog, with
+  **Directions** and **ACMA** buttons.
+- **Search that answers** — searching now opens a **results list ranked nearest-first** (name,
+  state/postcode, distance). Tap a result to fly there and open its details; your last 10
+  searches are remembered. The map no longer clears or zooms out to all of Australia.
+- **Map legend** — the persistent **ⓘ Legend** chip (top-left) explains pin colours, coverage
+  shading and ring labels.
+- **Dark mode** — the app now follows your system light/dark setting, including a dark map style
+  on the Normal map type.
+
 ## 1. The map
 
 - **Tower markers** — one marker per transmitter. Instead of plain coloured pins, each tower is

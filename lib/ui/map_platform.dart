@@ -54,23 +54,8 @@ abstract class AbstractMapBodyState extends State<MapBody> {
   }
 
   void handleSearchQuery(dynamic mapController, String query) {
-    if (!MapBodyState.lockMap) {
-      // Centre the map on Australia
-      mapController.animateCamera(
-        CameraUpdate.newLatLngBounds(
-          LatLngBounds(
-            southwest: LatLng(-44, 113),
-            northeast: LatLng(-10, 154),
-          ),
-          10.0,
-        ),
-      );
-    }
-
-    //Clear the map
-    SiteHelper()
-        .clearMap(onCameraMoveFromLastLocation: onCameraMoveFromLastLocation);
-
+    // F6 (UI overhaul port): no more flying the camera to all of Australia or clearing the
+    // map — results appear in the SearchSheet ranked by distance, and the user chooses.
     SearchHelper(showSnackBar: showSnackbar, mapController: mapController)
         .executeSiteSearch(query, downloadTowers);
   }

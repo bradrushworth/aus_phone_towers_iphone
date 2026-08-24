@@ -8,6 +8,7 @@ import 'package:phonetowers/helpers/export_helper.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/ui/map_common.dart';
+import 'package:phonetowers/ui/widgets/layers_settings_sheets.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
@@ -33,21 +34,16 @@ typedef void ShowSnackBar({
 /// neighbour (rotatingMap, exportData) rather than breaking the shared ordering.
 /// Using an enum (rather than an index into a list) guarantees the label shown always
 /// maps to the correct behaviour — fixing the old "labels don't match the action" bug.
+/// F5 (UI overhaul port): the overflow slims to match the Android Phase 5 bar — Follow GPS,
+/// Search and the funnel live on the toolbar; map-surface options moved to the Layers sheet;
+/// rotation, refarming, Developer Mode, help links and Rate App moved to the Settings sheet.
+/// Declaration order is on-screen order (kept aligned with the Java app's popup_menu.xml).
 enum OptionMenuItem {
   reloadEverything,
-  followGPS,
-  hideBorders,
-  searchSites,
-  mapMode,
-  rotatingMap,
-  lockMap,
-  hidingMenu,
   exportData,
-  polygonPrecision,
+  settings,
   removeAds,
   donate,
-  problemsMenu,
-  rateApp,
   closeApp,
 }
 
@@ -117,9 +113,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 if (item == OptionMenuItem.donate) return !kIsWeb;
                 // Remove Ads is the same store-purchase machinery — also absent on Web.
                 if (item == OptionMenuItem.removeAds) return !kIsWeb;
-                // There is no store listing to rate from a browser; the Links section still
-                // offers both store pages on Web for anyone wanting the mobile app.
-                if (item == OptionMenuItem.rateApp) return !kIsWeb;
                 // Only Android permits an app to programmatically exit -- iOS and Web have no
                 // equivalent, so the menu item is irrelevant there rather than just a no-op.
                 if (item == OptionMenuItem.closeApp) {
@@ -136,24 +129,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
                   Text(_topLevelTitle(item)),
                   if (_hasSubmenu(item)) ...[
                     Icon(Icons.play_arrow, color: Colors.black54, size: 12)
-                  ] else if (item == OptionMenuItem.hideBorders ||
-                      item == OptionMenuItem.followGPS ||
-                      item == OptionMenuItem.lockMap) ...[
-                    Icon(
-                      item == OptionMenuItem.hideBorders
-                          ? (PolygonHelper.showPolygonBorders
-                              ? Icons.check_box_outline_blank
-                              : Icons.check_box)
-                          : (item == OptionMenuItem.followGPS
-                              ? (MapHelper.followGPS
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank)
-                              : (MapBodyState.lockMap
-                                  ? Icons.check_box
-                                  : Icons.check_box_outline_blank)),
-                      color: Colors.black54,
-                      size: 14,
-                    )
                   ]
                 ],
               ),
@@ -169,69 +144,18 @@ class _OptionsMenuState extends State<OptionsMenu> {
                         widget.onCameraMoveFromLastLocation);
                 break;
               }
-            case OptionMenuItem.followGPS:
-              {
-                await MapBodyState.toggleFollowGPS();
-                break;
-              }
-            case OptionMenuItem.lockMap:
-              {
-                MapBodyState.lockMap = !MapBodyState.lockMap;
-                widget.showSnackBar(
-                    message: MapBodyState.lockMap
-                        ? 'Map locked — all camera movement (gestures, my location, Follow GPS, search) disabled for screenshots.'
-                        : 'Map unlocked — camera movement enabled again.');
-                // MapBodyState (not this widget) owns the GoogleMap and reads lockMap to
-                // configure its gesture flags, so it must be the one to rebuild.
-                MapBodyState.currentInstance?.setState(() {});
-                setState(() {});
-                break;
-              }
-            case OptionMenuItem.rotatingMap:
-              {
-                showRotatingMapMenu();
-                break;
-              }
-            case OptionMenuItem.hideBorders:
-              {
-                PolygonHelper.showPolygonBorders = !PolygonHelper.showPolygonBorders;
-                widget.showSnackBar(
-                    message:
-                        '${PolygonHelper.showPolygonBorders ? 'Showing' : 'Hiding'} polygon radiation borders!');
-                Provider.of<PolygonHelper>(context, listen: false)
-                    .refreshPolygons(true);
-                SharedPreferencesHelper.saveBoolean(
-                    key: SharedPreferencesHelper.kshowPolygonBorders,
-                    value: PolygonHelper.showPolygonBorders,
-                    prefs: prefs);
-                setState(() {});
-                break;
-              }
-            case OptionMenuItem.searchSites:
-              {
-                logger.d('search sites');
-                Provider.of<SearchHelper>(context, listen: false)
-                    .setSearchStatus(true);
-                break;
-              }
-            case OptionMenuItem.mapMode:
-              {
-                showRadioOptionMenu();
-                break;
-              }
-            case OptionMenuItem.hidingMenu:
-              {
-                showHidingMenu();
-                break;
-              }
             case OptionMenuItem.exportData:
               {
                 showExportMenu();
                 break;
               }
-            case OptionMenuItem.polygonPrecision:
+            case OptionMenuItem.settings:
               {
-                showPolygonPrecisionMenu();
+                SettingsSheet.show(context,
+                    prefs: prefs,
+                    showSnackBar: widget.showSnackBar,
+                    onCameraMoveFromLastLocation: widget.onCameraMoveFromLastLocation,
+                    takeScreenshot: widget.takeScreenshot);
                 break;
               }
             case OptionMenuItem.removeAds:
@@ -282,29 +206,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
                 showSingleRowOptionMenu(listDonateItem, kDonate);
                 break;
               }
-            case OptionMenuItem.problemsMenu:
-              {
-                showProblemsMenu();
-                break;
-              }
-            case OptionMenuItem.rateApp:
-              {
-                // Best-effort native prompt. Apple disables this entirely outside a real App
-                // Store install (TestFlight, sandbox, debug builds) -- and isAvailable() only
-                // reports whether the API exists, not whether the prompt will actually appear
-                // -- so it can't be trusted to gate the only working path. Always also open the
-                // store listing directly so tapping this reliably does something visible --
-                // the listing for THIS platform's store: this Flutter app ships on Android
-                // too, where the Apple link was simply wrong. (Hidden entirely on Web.)
-                final InAppReview inAppReview = InAppReview.instance;
-                if (await inAppReview.isAvailable()) {
-                  inAppReview.requestReview();
-                }
-                Utils.launchURL(!kIsWeb && Platform.isAndroid
-                    ? 'https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers.flutter'
-                    : 'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
-                break;
-              }
             case OptionMenuItem.closeApp:
               {
                 // iOS (and Web) do not permit an app to programmatically exit, so we just
@@ -325,143 +226,24 @@ class _OptionsMenuState extends State<OptionsMenu> {
     switch (item) {
       case OptionMenuItem.reloadEverything:
         return Strings.reload_everything;
-      case OptionMenuItem.followGPS:
-        return MapHelper.followGPS ? Strings.follow_gps_on : Strings.follow_gps_off;
-      case OptionMenuItem.lockMap:
-        return MapBodyState.lockMap ? Strings.unlock_map : Strings.lock_map;
-      case OptionMenuItem.rotatingMap:
-        return Strings.rotating_map;
-      case OptionMenuItem.hideBorders:
-        return PolygonHelper.showPolygonBorders ? Strings.hide_border : Strings.show_border;
-      case OptionMenuItem.searchSites:
-        return Strings.search_sites;
-      case OptionMenuItem.mapMode:
-        return Strings.map_mode;
-      case OptionMenuItem.hidingMenu:
-        return Strings.hiding_menu;
       case OptionMenuItem.exportData:
         return Strings.export_data;
-      case OptionMenuItem.polygonPrecision:
-        return Strings.polygon_precision;
+      case OptionMenuItem.settings:
+        return 'Settings';
       case OptionMenuItem.removeAds:
         return Strings.remove_ads;
       case OptionMenuItem.donate:
         return Strings.donate;
-      case OptionMenuItem.problemsMenu:
-        return Strings.problems_menu;
-      case OptionMenuItem.rateApp:
-        return Strings.rateApp;
       case OptionMenuItem.closeApp:
         return Strings.closeApp;
     }
   }
 
   bool _hasSubmenu(OptionMenuItem item) =>
-      item == OptionMenuItem.rotatingMap ||
-      item == OptionMenuItem.mapMode ||
-      item == OptionMenuItem.hidingMenu ||
       item == OptionMenuItem.exportData ||
-      item == OptionMenuItem.polygonPrecision ||
-      item == OptionMenuItem.problemsMenu;
-
-  // ----- Rotating Map (mirrors Android: Travel Direction / Phone Orientation / Disable
-  //       Rotation, mutually-exclusive rotatingMapGroup radio group) -----
-  Future showRotatingMapMenu() async {
-    final SingleRowItem travelDirection = SingleRowItem(
-        title: Strings.rotating_map_travel_direction,
-        isEnabled: true,
-        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.travelDirection);
-    final SingleRowItem phoneOrientation = SingleRowItem(
-        title: Strings.rotating_map_phone_orientation,
-        isEnabled: true,
-        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.phoneOrientation);
-    final SingleRowItem disableRotation = SingleRowItem(
-        title: Strings.rotating_map_disable,
-        isEnabled: true,
-        isChecked: MapBodyState.rotatingMapMode == RotatingMapMode.disableRotation);
-    final List<SingleRowItem> items = <SingleRowItem>[
-      SingleRowItem(isTitle: true, title: Strings.rotating_map, isEnabled: false),
-      travelDirection,
-      phoneOrientation,
-      disableRotation,
-    ];
-    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kRotatingMapMenu);
-    if (chosen == null) return;
-    if (chosen == travelDirection) {
-      await MapBodyState.setRotatingMapMode(RotatingMapMode.travelDirection);
-    } else if (chosen == phoneOrientation) {
-      await MapBodyState.setRotatingMapMode(RotatingMapMode.phoneOrientation);
-    } else if (chosen == disableRotation) {
-      await MapBodyState.setRotatingMapMode(RotatingMapMode.disableRotation);
-    }
-    setState(() {});
-  }
-
-  // ----- Hiding Menu (mirrors Android: Hide Radiation on Click + Disable frequency refarming) -----
-  Future showHidingMenu() async {
-    final SingleRowItem hideRadiation = SingleRowItem(
-      title: PolygonHelper.drawPolygonsOnClick
-          ? Strings.hiding_menu_hide_radiation
-          : Strings.hiding_menu_draw_radiation,
-      isEnabled: true,
-    );
-    final SingleRowItem disableRefarm = SingleRowItem(
-      title: Strings.disable_refarming,
-      isEnabled: true,
-      isChecked: !DeviceDetails.refarmEnabled,
-    );
-    final List<SingleRowItem> items = <SingleRowItem>[
-      SingleRowItem(isTitle: true, title: Strings.hiding_menu, isEnabled: false),
-      hideRadiation,
-      disableRefarm,
-      SingleRowItem(
-        title: Strings.hiding_menu_multi_tower,
-        isEnabled: true,
-        isChecked: PolygonHelper.multiTowerCoverage,
-      ),
-    ];
-    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kHidingMenu);
-    if (chosen == null) return;
-    if (chosen == hideRadiation) {
-      PolygonHelper.drawPolygonsOnClick = !PolygonHelper.drawPolygonsOnClick;
-      SharedPreferencesHelper.saveBoolean(
-          key: SharedPreferencesHelper.kdrawPolygonsOnClick,
-          value: PolygonHelper.drawPolygonsOnClick,
-          prefs: prefs);
-      if (!PolygonHelper.drawPolygonsOnClick) {
-        PolygonHelper().clearSitePatterns(false);
-      }
-      setState(() {});
-    } else if (chosen == disableRefarm) {
-      DeviceDetails.refarmEnabled = !DeviceDetails.refarmEnabled;
-      SharedPreferencesHelper.saveBoolean(
-          key: SharedPreferencesHelper.krefarmEnabled,
-          value: DeviceDetails.refarmEnabled,
-          prefs: prefs);
-      // Re-classify licences: reload sites + polygons with the new refarm setting.
-      SiteHelper().clearMap(
-          onCameraMoveFromLastLocation: widget.onCameraMoveFromLastLocation);
-      setState(() {});
-      widget.showSnackBar(
-          message: DeviceDetails.refarmEnabled
-              ? 'Refarming on: legacy 3G licences in 4G/5G bands shown at their current reuse (4G LTE).'
-              : 'Refarming off: showing the literal licence type (e.g. 3G UMTS).');
-    } else if (chosen.title == Strings.hiding_menu_multi_tower) {
-      PolygonHelper.multiTowerCoverage = !PolygonHelper.multiTowerCoverage;
-      SharedPreferencesHelper.saveBoolean(
-          key: SharedPreferencesHelper.kmultiTowerCoverage,
-          value: PolygonHelper.multiTowerCoverage,
-          prefs: prefs);
-      if (!PolygonHelper.multiTowerCoverage) {
-        PolygonHelper().clearSitePatterns(false);
-      }
-      setState(() {});
-      widget.showSnackBar(
-          message: PolygonHelper.multiTowerCoverage
-              ? 'Multi-Tower Coverage on: tapping towers adds their coverage to the map.'
-              : 'Multi-Tower Coverage off: tapping a tower replaces the previous coverage.');
-    }
-  }
+      item == OptionMenuItem.settings ||
+      item == OptionMenuItem.removeAds ||
+      item == OptionMenuItem.donate;
 
   // ----- Export Data (mirrors Android: Export Towers GeoJSON/CSV + Export Coverage GeoJSON) -----
   Future showExportMenu() async {
@@ -499,99 +281,6 @@ class _OptionsMenuState extends State<OptionsMenu> {
         message.write('$path\n');
       }
       widget.showSnackBar(message: message.toString(), duration: const Duration(seconds: 10));
-    }
-  }
-
-  // ----- Polygon Precision (number of points per ring) -----
-  Future showPolygonPrecisionMenu() async {
-    final int current = _OptionsMenuState._precisionIndex(PolygonHelper.polygonBearingIncrement);
-    final List<SingleRowItem> items = <SingleRowItem>[
-      SingleRowItem(isTitle: true, title: Strings.polygon_precision, isEnabled: false),
-      SingleRowItem(
-          title: Strings.polygon_precision_low,
-          isEnabled: true,
-          isChecked: current == 0),
-      SingleRowItem(
-          title: Strings.polygon_precision_medium,
-          isEnabled: true,
-          isChecked: current == 1),
-      SingleRowItem(
-          title: Strings.polygon_precision_high,
-          isEnabled: true,
-          isChecked: current == 2),
-    ];
-    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kPolygonPrecision);
-    if (chosen == null) return;
-    int index;
-    if (chosen.title == Strings.polygon_precision_low) {
-      index = 0;
-    } else if (chosen.title == Strings.polygon_precision_high) {
-      index = 2;
-    } else {
-      index = 1;
-    }
-    PolygonHelper.polygonBearingIncrement = _precisionIncrement(index);
-    SharedPreferencesHelper.setInt(
-        key: SharedPreferencesHelper.kpolygonPrecision, value: index, prefs: prefs);
-    setState(() {});
-    widget.showSnackBar(
-        message: 'Polygon precision set to ${_topLevelPrecisionLabel(index)}. '
-            'Newly drawn coverage will use this.');
-  }
-
-  String _topLevelPrecisionLabel(int index) {
-    switch (index) {
-      case 0:
-        return 'Low';
-      case 2:
-        return 'High';
-      default:
-        return 'Medium';
-    }
-  }
-
-  // ----- Problems Menu (mirrors Android: Developer Mode, User Guide, Report Problem,
-  //      plus the Links items — AusPhoneTowers.com.au, iOS App Store, Source Code) -----
-  Future showProblemsMenu() async {
-    final List<SingleRowItem> items = <SingleRowItem>[
-      SingleRowItem(isTitle: true, title: Strings.problems_menu, isEnabled: false),
-      SingleRowItem(
-          title: MapHelper().developerMode ? Strings.regularMode : Strings.developerMode,
-          isEnabled: true),
-      SingleRowItem(title: Strings.userGuide, isEnabled: true),
-      SingleRowItem(title: Strings.reportProblem, isEnabled: true),
-      SingleRowItem(isTitle: true, title: Strings.links, isEnabled: false),
-      SingleRowItem(title: Strings.ausphonetowers, isEnabled: true),
-      // Store links for THIS platform's store; the Web build shows both, since a browser
-      // visitor may want the mobile app for either platform.
-      if (kIsWeb || !Platform.isAndroid)
-        SingleRowItem(title: Strings.iosAppStore, isEnabled: true),
-      if (kIsWeb || (!kIsWeb && Platform.isAndroid))
-        SingleRowItem(title: Strings.androidPlayStore, isEnabled: true),
-      SingleRowItem(title: Strings.sourceCode, isEnabled: true),
-    ];
-    final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kProblemsMenu);
-    if (chosen == null) return;
-    if (chosen.title == Strings.userGuide) {
-      Utils.launchURL(kUserGuideUrl);
-    } else if (chosen.title == Strings.reportProblem) {
-      widget.takeScreenshot();
-    } else if (chosen.title == Strings.ausphonetowers) {
-      Utils.launchURL('https://ausphonetowers.com.au/');
-    } else if (chosen.title == Strings.iosAppStore) {
-      Utils.launchURL(
-          'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
-    } else if (chosen.title == Strings.androidPlayStore) {
-      Utils.launchURL(
-          'https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers.flutter');
-    } else if (chosen.title == Strings.sourceCode) {
-      Utils.launchURL(
-          'https://github.com/bradrushworth/aus_phone_towers_iphone');
-    } else {
-      MapHelper().developerMode = !MapHelper().developerMode;
-      MapHelper().toggleDeveloperMode();
-      PolygonHelper().refreshPolygons(false);
-      setState(() {});
     }
   }
 

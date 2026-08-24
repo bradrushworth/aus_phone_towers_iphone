@@ -70,7 +70,7 @@ class Strings {
   static String search_sites = 'Search Sites';
   static String clear_map = 'Clear Map';
   static String clear_polygons = 'Clear Polygons';
-  static String reload_everything = 'Reload Everything';
+  static String reload_everything = 'Refresh Data';
 
   static String map_mode = 'Map Mode';
   static String map_mode_terrain = 'Terrain';
