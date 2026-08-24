@@ -29,13 +29,20 @@ class AdBannerContainer extends StatelessWidget {
     // height: adaptive banners vary from ~50px to 90+px with the viewport, so
     // any hardcoded height either overflows on tall ads ("BOTTOM OVERFLOWED"
     // stripe over the ad in debug builds) or reserves dead space above short
-    // ones. Width is forced to fill so the white backing strip always spans
-    // the screen behind the centred ad, and the label stays flush against the
+    // ones. Width is forced to fill so the backing strip always spans the
+    // screen behind the centred ad, and the label stays flush against the
     // ad it discloses (AdMob placement policy — no gap between them).
+    //
+    // The strip and its label take their colours from the theme rather than a
+    // hardcoded white/grey: in dark mode a white band across the bottom of a
+    // dark map is the brightest thing on screen, which is exactly wrong at
+    // night and was reported on iOS 1.14.4. The disclosure label keeps its
+    // muted-but-legible contrast in both themes via onSurfaceVariant.
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     return Container(
       key: const Key('ad-banner-outer'),
       width: double.infinity,
-      color: Colors.white,
+      color: scheme.surface,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -44,7 +51,7 @@ class AdBannerContainer extends StatelessWidget {
               "Advertisement",
               maxLines: 1,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: scheme.onSurfaceVariant),
             ),
           SizedBox(
             width: adSize == null ? 0 : adSize!.width,

@@ -59,8 +59,6 @@ class SharedPreferencesHelper {
   // end up inconsistent if the process is killed mid-flush.
   static final String kCameraPosition = 'cameraPosition';
 
-  static final String betaLaunchPopup = 'betaLaunchPopup';
-
   ///-------------------------
   ///Dedicated methods
   ///------------------------

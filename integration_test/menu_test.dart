@@ -14,8 +14,10 @@ Future<void> main() async {
 
     // Trigger a frame.
     await tester.pumpAndSettle(Duration(seconds: 3));
-    expect(find.widgetWithText(AlertDialog, Strings.betaLaunchPopupDesc),
-        findsOneWidget);
+    // The "This is a preview! / still under development" launch dialog was removed, so there is
+    // nothing to dismiss here any more — the map is interactive on first frame. Assert that
+    // directly, so this test fails again if a blocking startup modal ever comes back.
+    expect(find.byType(AlertDialog), findsNothing);
 
     await tester.pump();
     expect(

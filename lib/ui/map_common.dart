@@ -137,38 +137,11 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   * */
   @override
   void afterFirstLayout(BuildContext context) async {
-    //Show beta launch popup if not displayed.
+    // The "This is a preview! / still under development" launch dialog that used to fire here on
+    // web has been removed — the site is live, and greeting every visitor with a modal they must
+    // dismiss reads as an unfinished product. This still initialises prefs, which the toolbar
+    // toggles and the saved navigation state write through.
     prefs = await SharedPreferences.getInstance();
-    if (kIsWeb &&
-        !SharedPreferencesHelper.getBoolean(SharedPreferencesHelper.betaLaunchPopup, prefs)) {
-      _showAlertDialog();
-    }
-  }
-
-  Future<void> _showAlertDialog() async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(Strings.betaLaunchPopupTitle),
-          content: Text(Strings.betaLaunchPopupDesc),
-          actions: <Widget>[
-            TextButton(
-              child: Text(Strings.betaLaunchPopupAction),
-              onPressed: () {
-                Navigator.of(context).pop();
-                SharedPreferencesHelper.saveBoolean(
-                  key: SharedPreferencesHelper.betaLaunchPopup,
-                  value: true,
-                  prefs: prefs,
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -176,8 +149,11 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     screenWidth = MediaQuery.of(context).size.width;
     screenHeight = MediaQuery.of(context).size.height;
 
+    // This Container sits OUTSIDE the SafeArea, so it is what paints the strip behind the iPhone
+    // status bar and the home indicator. Hardcoded white left a bright band across the top of an
+    // otherwise dark screen in dark mode (reported on iOS 1.14.4) — it has to follow the theme.
     return Container(
-      color: Colors.white,
+      color: Theme.of(context).colorScheme.surface,
       child: SafeArea(
         child: Column(
           children: <Widget>[

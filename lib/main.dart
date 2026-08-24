@@ -147,11 +147,16 @@ class AusPhoneTowers extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = MediaQuery.platformBrightnessOf(context);
-    SystemChrome.setSystemUIOverlayStyle(brightness == Brightness.dark
-        ? SystemUiOverlayStyle.light.copyWith(
-            statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.light)
-        : SystemUiOverlayStyle.dark.copyWith(
-            statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark));
+    final bool isDark = brightness == Brightness.dark;
+    // statusBarColor and statusBarIconBrightness are ANDROID-ONLY; iOS reads statusBarBrightness,
+    // and reads it as the brightness of the BACKGROUND behind the bar (dark background => iOS
+    // draws light glyphs). Setting only the Android pair left the iPhone status bar unmanaged, so
+    // dark mode kept dark glyphs over a dark map (reported on iOS 1.14.4). Set both families.
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+    ));
 
     return MaterialApp(
       title: Strings.app_title,

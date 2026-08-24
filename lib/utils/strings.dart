@@ -149,9 +149,4 @@ class Strings {
   static String androidPlayStore = 'Google Play (Android)';
   static String sourceCode = 'Source Code';
   static String closeApp = 'Close App';
-
-  static String betaLaunchPopupTitle = 'This is a preview!';
-  static String betaLaunchPopupDesc =
-      'AusPhoneTowers.com.au is still under development. Please send feedback to bitbot@bitbot.com.au.';
-  static String betaLaunchPopupAction = 'No Problem';
 }
