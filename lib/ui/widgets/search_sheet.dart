@@ -30,6 +30,11 @@ class SearchSheet {
     recents.remove(query);
     if (!context.mounted) return;
 
+    // Drop focus before the modal opens. The search field still holds focus when results arrive,
+    // and Flutter marks the content behind a modal aria-hidden — the browser then warns
+    // "Blocked aria-hidden on an element because its descendant retained focus".
+    FocusManager.instance.primaryFocus?.unfocus();
+
     // Rank nearest-first from the current camera position.
     final LatLng? here = MapBodyState.currentInstance?.lastCameraPosition?.target;
     if (here != null) {

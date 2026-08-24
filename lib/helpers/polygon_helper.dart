@@ -22,6 +22,7 @@ import 'let_type_helper.dart';
 import 'map_helper.dart';
 import 'network_type_helper.dart';
 import 'site_helper.dart';
+import '../ui/map_common.dart';
 import 'telco_helper.dart';
 
 typedef void ShowSnackBar({
@@ -29,6 +30,26 @@ typedef void ShowSnackBar({
   Duration duration,
   bool isDismissible,
 });
+
+/// Fallback for the [ShowSnackBar] callback that most internal callers never supply.
+///
+/// [PolygonHelper.queryForSignalPolygon] takes a *nullable* callback but used to force-unwrap it
+/// (`showSnackBar!`) before handing it to GetLicenceHRP. Three internal callers — refreshPolygons,
+/// switchTerrainAwareness and clearSitePatterns — pass nothing, so any signal-strength / filter /
+/// terrain change threw "Null check operator used on a null value" as soon as a coverage polygon
+/// was on the map. That aborted the redraw loop part-way through, which is why the remaining
+/// coverage then looked wrong. Routing to the live map state keeps the user-facing messages
+/// (HRP failures and the like) rather than swallowing them.
+void defaultShowSnackBar({
+  required String message,
+  Duration duration = const Duration(seconds: 1),
+  bool isDismissible = false,
+}) {
+  final MapBodyState? state = MapBodyState.currentInstance;
+  if (state != null && state.mounted) {
+    state.showSnackbar(message: message, duration: duration, isDismissible: isDismissible);
+  }
+}
 
 class PolygonHelper with ChangeNotifier {
   static final PolygonHelper _singleton = new PolygonHelper._internal();
@@ -313,7 +334,7 @@ class PolygonHelper with ChangeNotifier {
               device: d,
               list: results,
               url: url,
-              showSnackBar: showSnackBar!,
+              showSnackBar: showSnackBar ?? defaultShowSnackBar,
               cancelToken: cancelFetchingPolygonRequestToken)
           .getLicenceHRPData();
     }
