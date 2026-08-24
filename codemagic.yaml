@@ -106,14 +106,34 @@ workflows:
       # The workflow editor's "AWS S3 Bucket" publishing step: this bucket IS
       # https://ausphonetowers.com.au, so a green build deploys the website.
       #
-      # --cache-control "no-cache" is load-bearing: the site sits behind Cloudflare, and
-      # when S3 sends no Cache-Control, Cloudflare edge-caches .js by its default TTL —
-      # after the 1.13.12 deploy, edges kept serving the OLD main.dart.js (flutter web
-      # filenames are not content-hashed, and browsers heuristic-cache them on top).
-      # no-cache means "revalidate every time": Cloudflare/browsers send the ETag and get
-      # a cheap 304 when unchanged, and the new bundle the moment one is deployed.
+      # Cache headers are load-bearing: the site sits behind Cloudflare, and when S3 sends no
+      # Cache-Control, Cloudflare edge-caches .js by its default TTL — after the 1.13.12
+      # deploy, edges kept serving the OLD main.dart.js (Flutter web entry filenames are not
+      # content-hashed, and browsers heuristic-cache them on top). The step below splits the
+      # upload so the non-hashed entry files revalidate while content-hashed assets stay
+      # cacheable; see the inline notes there.
       - name: Publish web app to S3 (ausphonetowers.com.au)
-        script: aws s3 sync build/web "s3://$AWS_S3_BUCKET" --delete --cache-control "no-cache"
+        script: |
+          set -e
+          # Two passes, because the two kinds of file want opposite caching.
+          #
+          # 1) Everything, cacheable. Flutter content-hashes the heavy assets (canvaskit wasm,
+          #    fonts, assets/*): their filenames change when their bytes change, so they can be
+          #    cached hard and are never stale. Blanket no-cache on these was making returning
+          #    visitors revalidate several MB of wasm on every load for no benefit.
+          aws s3 sync build/web "s3://$AWS_S3_BUCKET" --delete             --cache-control "public, max-age=31536000, immutable"
+          #
+          # 2) Re-upload the entry files with no-cache. These are NOT content-hashed - identical
+          #    filenames every build - and the service worker gates everything else, so if they
+          #    are cached, returning visitors and Cloudflare's edge keep serving the PREVIOUS
+          #    build until the TTL expires. "no-cache" means revalidate, not "no-store": the
+          #    multi-MB main.dart.js still gets a cheap 304 when unchanged.
+          #    aws s3 cp preserves the auto-detected Content-Type and only overrides Cache-Control.
+          for f in index.html flutter_bootstrap.js flutter.js main.dart.js                    flutter_service_worker.js version.json manifest.json; do
+            if [ -f "build/web/$f" ]; then
+              aws s3 cp "build/web/$f" "s3://$AWS_S3_BUCKET/$f" --cache-control "no-cache"
+            fi
+          done
       # Old objects cached at Cloudflare edges persist until their TTL even after the
       # headers change, so purge on deploy. No-ops until CLOUDFLARE_ZONE_ID and
       # CLOUDFLARE_API_TOKEN (a token with Zone.Cache Purge permission) are added to the
