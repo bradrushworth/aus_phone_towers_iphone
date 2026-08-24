@@ -8,6 +8,39 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.6+140] — 2026-08-25
+
+### Fixed
+- **Omnidirectional towers were drawn far too small on iOS and web** — a licence with no azimuth
+  was being read as azimuth 0 rather than "no azimuth", which is what marks an antenna as
+  omnidirectional. That made the omni branch of the power calculation unreachable: the +13.5 dB
+  omni calibration never applied, and every genuine omni was instead treated as a directional
+  antenna pointed due north, with front-to-back loss subtracted behind it. Android was never
+  affected, which is why the same site could look very different on the two apps.
+- **Tower heights with a decimal point silently became 10 m** — ACMA publishes heights like
+  "20.41", which the integer parser rejected outright; the height then fell to 0 and was floored
+  at 10 m, shifting both the intercept and the slope of the path-loss estimate.
+- **A tower's coverage could be dropped entirely because its antenna details had not arrived yet**
+  — the antenna record is fetched in the background, and reading it before it landed threw rather
+  than falling back, abandoning that transmitter's polygon. It now behaves as the Android app does
+  and simply contributes no directional gain until the record arrives.
+- **Coverage fell back to raw textbook path loss in some areas** — where no learned coefficients
+  existed for a carrier at a given density, the model dropped to uncalibrated Hata. It now borrows
+  the nearest calibrated density instead, which mostly closes the size gap that made one carrier's
+  coverage look several times larger than another's at the same site.
+- **Dark mode was wrong at the top and bottom of the screen** — the iPhone status bar and the ad
+  strip stayed light while the rest of the app went dark.
+- **The filter drawer was a narrow sliver on the web** — it was a fixed phone-width column against
+  a full desktop browser window, and now scales with the viewport.
+
+### Changed
+- **Telstra and Vodafone brand colours corrected** against each brand's published guidelines —
+  Telstra is Blue Ribbon #0D54FF and Vodafone is #E60000 (Pantone 485), kept in lockstep with the
+  Android app. Optus deliberately stays teal: their brand primary is a yellow that all but
+  disappears on a light terrain basemap.
+- **New app icon** across iOS, Android and the web, including maskable web icons.
+- The "this app is in development" dialog no longer appears at startup.
+
 ## [1.13.18+133] — 2026-08-24
 
 ### Changed
