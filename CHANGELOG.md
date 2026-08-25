@@ -8,6 +8,24 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.8+142] — 2026-08-26
+
+### Fixed
+- **Two carriers no longer disagree about the same street corner.** Coverage size depends on how
+  built-up an area is, and the app worked that out by counting how many towers *one carrier* had
+  nearby. Telstra operates far more towers than Vodafone almost everywhere, so the same place was
+  treated as a dense city for one carrier and an outer suburb for another — and the answer could
+  change as you panned the map. Measured across Australia: of 4,838 areas carrying two or more
+  carriers, **498 (10.3%) had carriers disagreeing**. That is the cause of reports that one
+  carrier's coverage looked far too small next to another's at the same site.
+
+  There is now a single published figure for every location, identical for every carrier and shared
+  with the Android app. **You will see coverage shapes change size** — that is the fix, not a
+  regression.
+
+### Changed
+- Coverage areas with no tower data at all are treated as open country, which is what they are.
+
 ## [1.14.7+141] — 2026-08-25
 
 ### Fixed
