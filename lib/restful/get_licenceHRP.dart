@@ -23,7 +23,13 @@ typedef void ShowSnackBar({
 
 class GetLicenceHRP {
   static final double EARTH_MEAN_RADIUS_KILOMETERS = 6371.009;
-  static final double HEIGHT_RECEIVER_FROM_GROUND = 1;
+  /// Metres added to the ground elevation to place the receiver for a terrain line-of-sight test.
+  ///
+  /// Renamed from HEIGHT_RECEIVER_FROM_GROUND 2026-08-26, matching the Android app. It shared that
+  /// name and the value 1 with Okumura-Hata's mobile antenna reference height, an unrelated
+  /// quantity that merely happens to be a similar size — this one is where a phone physically sits
+  /// when asking whether a hill blocks the path.
+  static final double RECEIVER_ELEVATION_OFFSET_M = 1;
   final ShowSnackBar? showSnackBar;
   // Default used only if a device has no associated site density (matches Android behaviour).
   static const CityDensity defaultRadiationModel = CityDensity.SUBURBAN;
@@ -330,7 +336,7 @@ class GetLicenceHRP {
     final LatLng receiverLatLon =
         travel(siteLatLon, bearing, transmissionDistance);
     double receiverHeight =
-        site.getElevation(receiverLatLon) + HEIGHT_RECEIVER_FROM_GROUND;
+        site.getElevation(receiverLatLon) + RECEIVER_ELEVATION_OFFSET_M;
     // Don't calculate the angle looking down because the radiation is projected over objects
     //if (receiverHeight < transmitterHeight) {
     //receiverHeight = transmitterHeight;
