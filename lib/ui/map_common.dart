@@ -483,6 +483,23 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                 // F5 (UI overhaul port): Follow GPS is a real toolbar toggle (previously buried
                 // in the overflow); Layers opens the map-surface sheet (Calculate Terrain moved
                 // there); Search gets a visible entry point in the bar.
+                //
+                // DELIBERATE DIVERGENCE FROM THE JAVA APP, decided 2026-08-26. The Android app
+                // has no Follow GPS button any more: DrivingModeDetector turns Driving Mode on
+                // after sustained travel and off after a sustained stop. This app KEEPS the
+                // button on purpose.
+                //
+                // Auto-start needs a permanently running location subscription, and this app has
+                // none - _followGpsSubscription exists only WHILE Follow GPS is on, and
+                // everything else uses one-shot getLocation() calls, whereas Android's
+                // CustomLocationListener receives fixes continuously. Adding an always-on GPS
+                // watch here would cost battery whenever the app is open, force the location
+                // permission up front, need iOS continuous-location usage strings (and the App
+                // Store review attention that draws), and do all of it for iOS and web users who
+                // are mostly not driving.
+                //
+                // So the asymmetry IS the decision, not a gap. Do not re-unify without retaking
+                // it.
                 IconButton(
                   icon: Icon(MapHelper.followGPS ? Icons.gps_fixed : Icons.gps_off,
                       color: MapHelper.followGPS
