@@ -8,6 +8,20 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.7+141] — 2026-08-25
+
+### Fixed
+- **The app title could be cut off on a narrow screen.** "Aus Phone Towers" now shrinks to fit the
+  space left beside the search and menu buttons instead of clipping.
+
+### Changed
+- **Larger text in the cell-information row along the bottom of the map**, which is the one part of
+  the app that has to be readable at a glance while driving.
+- **The app version is now shown in Settings → Help**, so you can tell which build you are running.
+  Tap it to copy it, ready to paste into a problem report.
+- **"Rate the app" is now on the Support the App page** as well as in settings. It costs nothing and
+  helps more than a small donation does.
+
 ## [1.14.6+140] — 2026-08-25
 
 ### Fixed
