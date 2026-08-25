@@ -4,8 +4,10 @@ import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platf
 
 import '../model/overlay.dart';
 import '../model/site.dart';
+import '../restful/get_geohash_density.dart';
 import '../restful/get_licenceHRP.dart';
 import '../ui/widgets/navigation_menu.dart';
+import 'density_lookup.dart';
 import 'network_type_helper.dart';
 import 'polygon_helper.dart';
 import 'telco_helper.dart';
@@ -230,6 +232,11 @@ class SiteHelper with ChangeNotifier {
     PolygonHelper().clearSitePatterns(true);
     //For markers
     downloadedGeohashes.clear();
+    // The density cache and the record of which regions have been fetched must go together:
+    // clearing one without the other either strands stale densities or silently prevents a
+    // refetch. Refresh Data exists precisely to start clean.
+    DensityLookup.clear();
+    GetGeohashDensity.reset();
     globalListMapOverlay.clear();
     //For polygons
     siteDownloadSinceLastClick.clear();

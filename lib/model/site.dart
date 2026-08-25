@@ -12,6 +12,7 @@ import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/restful/get_elevation.dart';
+import 'package:phonetowers/helpers/density_lookup.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 
 import 'height_distance_pair.dart';
@@ -281,6 +282,13 @@ class Site {
 
   // How populated is the containing geohash with sites?
   // Geohash length of SiteHelper.GEOHASH_LENGTH is currently 5.
+  /// Density from a per-telco site count.
+  ///
+  /// Retained ONLY as the startup fallback for [getCityDensity] until `geohash_density` loads.
+  /// Telstra operates far more sites than Vodafone everywhere, so this handed the same street
+  /// corner a different environment depending on which carrier was drawn — the defect the density
+  /// table exists to fix.
+  @Deprecated('Use DensityLookup.forPoint; this is the pre-load fallback only')
   static CityDensity getCityDensityStatic(int numSitesInGeohash) {
     // Calibrated against real Australian CBD site counts (per-telco per geohash-5 cell):
     // Sydney/Melbourne CBDs reach 150+; Perth/Adelaide/Brisbane/Canberra 25-149;
@@ -291,7 +299,16 @@ class Site {
     return CityDensity.OPEN;
   }
 
+  /// This site's propagation environment.
+  ///
+  /// Resolved from the authoritative `geohash_density` table by the site's OWN position, so every
+  /// carrier gets the same answer for the same place. The value passed to the constructor is only a
+  /// fallback for the window before that table has loaded — without it the first sites drawn would
+  /// all read OPEN and their coverage would be drawn far too large.
   CityDensity? getCityDensity() {
+    if (DensityLookup.size > 0 && latitude != null && longitude != null) {
+      return DensityLookup.forPoint(latitude!, longitude!);
+    }
     return cityDensity;
   }
 

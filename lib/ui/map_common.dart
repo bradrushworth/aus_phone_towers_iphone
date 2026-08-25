@@ -37,6 +37,7 @@ import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/overlay.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
+import 'package:phonetowers/restful/get_geohash_density.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/ui/map_platform.dart'
     if (dart.library.js) 'package:phonetowers/ui/map_web.dart';
@@ -1334,7 +1335,14 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       return;
     }
 
-    // What is the correct CityDensity for this Telco/GeoHash?
+    // Make sure the authoritative density cells for this region are on their way. One request per
+    // level-4 region per session; the table is static. Not awaited: sites must draw immediately,
+    // and Site.getCityDensity() prefers DensityLookup the moment it has anything.
+    unawaited(GetGeohashDensity.loadFor(geoHash));
+
+    // Fallback only, for the window before geohash_density arrives. This per-telco count is what
+    // handed the same street corner a different environment depending on which carrier was being
+    // drawn, and a different one again as the user panned.
     CityDensity cityDensity = Site.getCityDensityStatic(totalLatLong);
 
     //1) Start displaying markers
