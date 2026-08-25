@@ -124,6 +124,8 @@ class Strings {
   static String donateMedium = 'Coffee and Cake (\$14.99)';
   static String donateLarge = 'Thanks For Lunch (\$29.99)';
   static String donateSupportPrompt = 'Support the App';
+  static String supportPromptRateHeader = 'Or just leave a rating';
+  static String supportPromptRateAction = 'Rate the app';
 
   // Support the App screen (see lib/ui/widgets/support_prompt_screen.dart), ported from the
   // Java app's SupportPromptActivity.

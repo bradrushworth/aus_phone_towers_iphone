@@ -2,7 +2,9 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
@@ -329,6 +331,26 @@ class SettingsSheet {
                       'https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers.flutter')),
             _row(bc, 'Source code', '↗',
                 () => Utils.launchURL('https://github.com/bradrushworth/aus_phone_towers_iphone')),
+            // Which build am I actually running? Previously unanswerable from inside the app,
+            // which made problem reports hard to place against a release. Read from the platform
+            // package metadata rather than a hand-maintained constant, so it cannot drift from
+            // what was actually shipped.
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final PackageInfo? info = snapshot.data;
+                final String label = info == null
+                    ? 'Version …'
+                    : 'Version ${info.version} (${info.buildNumber})';
+                return _row(bc, label, '', () {
+                  if (info == null) return;
+                  Clipboard.setData(ClipboardData(
+                      text: '${info.appName} ${info.version} (${info.buildNumber})'));
+                  ScaffoldMessenger.of(bc).showSnackBar(const SnackBar(
+                      content: Text('Version copied — paste it into your problem report')));
+                });
+              },
+            ),
             if (!kIsWeb)
               _row(bc, 'Rate the app', '›', () async {
                 final InAppReview inAppReview = InAppReview.instance;

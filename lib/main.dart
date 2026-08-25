@@ -180,10 +180,15 @@ class AusPhoneTowers extends StatelessWidget {
             backgroundColor:
                 (dark ? const Color(0xFF1D1B23) : Colors.white).withValues(alpha: 0.85)),
         textTheme: TextTheme(
+            // bodySmall is the cell-info row along the bottom of the map (map_common.dart
+            // ~1690-1760). 10 sp of monospace was hard to read at a glance, which is the one
+            // moment it has to be read — while driving. Nudged to 11.5; kept modest because those
+            // rows are fixed-width and monospace, so a large jump risks clipping rather than
+            // wrapping.
             bodySmall: TextStyle(
                 fontFamily: 'RobotoMono',
                 color: dark ? Colors.grey[300] : Colors.grey[800],
-                fontSize: 10),
+                fontSize: 11.5),
             labelLarge: TextStyle(color: dark ? Colors.grey[300] : Colors.grey[700])),
         inputDecorationTheme: InputDecorationTheme(
           enabledBorder: UnderlineInputBorder(

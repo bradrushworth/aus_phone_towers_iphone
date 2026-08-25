@@ -422,7 +422,16 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                     )
                   : null,
               title: !SearchHelper.calculatingSearchResults
-                  ? AutoSizeText(Strings.app_title, style: TextStyle(color: Colors.grey))
+                  // AutoSizeText alone was not enough: with no maxLines it will wrap to a second
+                  // line inside the AppBar rather than shrink, and with no minFontSize it stops
+                  // shrinking at the 12sp default and then clips. On a narrow screen, where the
+                  // title competes with the leading icon and the action buttons, that is exactly
+                  // where "Aus Phone Towers" ran out of room.
+                  ? AutoSizeText(Strings.app_title,
+                      maxLines: 1,
+                      minFontSize: 9,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.grey))
                   : TextField(
                       cursorColor: Colors.grey[600],
                       controller: _searchTextFilter,

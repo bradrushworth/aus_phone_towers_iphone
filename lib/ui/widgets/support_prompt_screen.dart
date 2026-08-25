@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:phonetowers/utils/utils.dart';
+import 'package:in_app_review/in_app_review.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:provider/provider.dart';
 
 import '../../helpers/analytics_helper.dart';
@@ -98,6 +102,21 @@ class SupportPromptScreen extends StatelessWidget {
                         fallback: Strings.remove_ads_permanent)),
                   ),
                 ],
+                // Rating costs the user nothing and helps the app more than a small donation
+                // does, so it belongs on the page where someone has already decided they want to
+                // help. It also existed only in the settings sheet, which is not where anyone
+                // looks when they are feeling generous. Not offered on web, where there is no
+                // store to rate in.
+                if (!kIsWeb) ...[
+                  const SizedBox(height: 24),
+                  Text(Strings.supportPromptRateHeader,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: _rateTheApp,
+                    child: Text(Strings.supportPromptRateAction),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text(
                   Strings.supportPromptThanks,
@@ -115,5 +134,20 @@ class SupportPromptScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Ask the store for its in-app review sheet, falling back to the store listing.
+  ///
+  /// requestReview() is silently rate-limited by both stores and may show nothing at all, so a
+  /// user who deliberately tapped "Rate the app" could otherwise get no feedback whatsoever. The
+  /// listing is opened as well so the action always visibly does something.
+  Future<void> _rateTheApp() async {
+    final InAppReview inAppReview = InAppReview.instance;
+    if (await inAppReview.isAvailable()) {
+      await inAppReview.requestReview();
+    }
+    Utils.launchURL(Platform.isAndroid
+        ? 'https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers.flutter'
+        : 'https://apps.apple.com/us/app/aus-phone-towers-3g-4g-5g/id1488594332');
   }
 }
