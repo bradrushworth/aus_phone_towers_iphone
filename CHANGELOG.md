@@ -32,6 +32,12 @@ features and bugs are frequently fixed in both.
   arrive and fails if none do.
 - **`flutter_driver` was never declared as a dependency**, so the driver the workflow loads could
   not have compiled.
+- **The app never started at all on the screenshot simulator.** `main()` awaits the App Tracking
+  Transparency prompt on iOS. That is a system modal whose future does not complete until a human
+  taps it, and on CI nobody ever will — so `runApp()` was never reached and the app rendered
+  nothing. No crash, no exception, just a blank run that the old harness would have photographed
+  and published. The prompt is now skipped under `--dart-define=SCREENSHOT_MODE=true`, which is set
+  only by that workflow and has no effect on any released build.
 
 ## [1.14.8+142] — 2026-08-26
 

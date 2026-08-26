@@ -220,7 +220,17 @@ workflows:
         script: |
           #!/usr/bin/env bash
           set -eo pipefail
-          flutter drive             --driver=test_driver/integration_test.dart             --target=integration_test/screenshot_test.dart             -d "$SIM_UDID"
+          # SCREENSHOT_MODE stops main() awaiting the App Tracking Transparency prompt. That
+          # prompt is a SYSTEM modal whose future never completes unless a human taps it, so on
+          # this simulator it deadlocked startup before runApp() and the app rendered nothing at
+          # all - no crash, no exception, just an app that never started. The screenshot test
+          # now asserts a MaterialApp actually painted, which is what turned that from a silent
+          # placeholder screenshot into a build failure.
+          flutter drive \
+            --driver=test_driver/integration_test.dart \
+            --target=integration_test/screenshot_test.dart \
+            --dart-define=SCREENSHOT_MODE=true \
+            -d "$SIM_UDID"
           ls -la screenshots/
       - name: Verify the screenshots are a size the App Store accepts
         script: |
