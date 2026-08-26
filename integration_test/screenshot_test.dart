@@ -87,8 +87,34 @@ Future<void> main() async {
         reason: 'no towers were downloaded within 45s — the map would have been captured '
             'empty. Check REST reachability from the CI machine before trusting a green run.');
 
-    // Give the markers and coverage polygons a moment to draw now that the data is in.
-    await pumpFor(tester, const Duration(seconds: 6));
+    // "At least one tower" is enough to prove the download works, and NOT enough to make a
+    // marketing screenshot. Carriers arrive as separate REST responses, so capturing at the
+    // moment the first one lands gives a map showing a single carrier's pins — which is what
+    // happened: one run captured all four carriers, the next captured only Vodafone, and both
+    // were green. Wait for the count to stop growing instead, so the picture is of a settled
+    // map rather than of whenever the timer happened to expire.
+    int previous = -1;
+    int stableRounds = 0;
+    for (var elapsed = Duration.zero;
+        elapsed < const Duration(seconds: 40);
+        elapsed += const Duration(seconds: 2)) {
+      await pumpFor(tester, const Duration(seconds: 2));
+      final int now = SiteHelper.globalListMapOverlay.length;
+      stableRounds = (now == previous) ? stableRounds + 1 : 0;
+      previous = now;
+      if (stableRounds >= 3) break; // 6s with no new towers — the viewport is done loading.
+    }
+    debugPrint('SCREENSHOT_MODE: settled at ${SiteHelper.globalListMapOverlay.length} overlays');
+
+    // Enough towers to look like the product rather than like a bug. Deliberately an assertion
+    // and not a log line: a sparse map is exactly the kind of "technically fine" output that
+    // gets published because nobody looked.
+    expect(SiteHelper.globalListMapOverlay.length, greaterThanOrEqualTo(8),
+        reason: 'only ${SiteHelper.globalListMapOverlay.length} towers on the map — too sparse '
+            'to publish. The viewport or the REST response has changed.');
+
+    // Let the markers finish drawing now that the data has settled.
+    await pumpFor(tester, const Duration(seconds: 4));
 
     // 01 — the map as the app opens, with whatever coverage has loaded.
     await shoot('01-map');
