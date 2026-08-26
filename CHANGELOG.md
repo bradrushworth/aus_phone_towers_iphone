@@ -8,6 +8,31 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.9+143] — 2026-08-26
+
+### Changed
+- **No user-facing change.** This release exists only because the build pipeline is gated on
+  `pubspec.yaml`, and the store-screenshot harness needed a dependency declared there. Shipping a
+  build was the side effect, not the goal — 1.14.8 (142) is the version in App Store review.
+
+### Fixed (developer tooling)
+- **The screenshot workflow could publish App Store images at a size Apple rejects.** It booted
+  whichever iPhone simulator `simctl` happened to list last, on the assumption that the list is
+  ordered newest-last. It is not ordered by screen size at all, so a run could capture perfectly
+  good screenshots on a 6.1" or 6.3" device and still report success, because nothing downstream
+  ever looked at the pixels. It now picks by size class (Pro Max, else Plus, else any iPhone) and
+  a new step measures every PNG with `sips`, failing the build unless it is a 6.9" App Store size.
+- **The screenshot run could photograph the wrong thing and pass.** It slept for a fixed 12
+  seconds after launching the app. On a slow cold start that captured the integration-test
+  placeholder rather than the map. It now waits for a `MaterialApp` to actually paint, and
+  asserts it did.
+- **An empty map could be captured and shipped.** Every screenshot here is of a map, and a map
+  that renders but downloads nothing is a plausible-looking blank picture that survives every
+  other check — the widget tree is perfectly healthy either way. The run now waits for towers to
+  arrive and fails if none do.
+- **`flutter_driver` was never declared as a dependency**, so the driver the workflow loads could
+  not have compiled.
+
 ## [1.14.8+142] — 2026-08-26
 
 ### Fixed

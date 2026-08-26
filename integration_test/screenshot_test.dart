@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/main.dart' as app;
 
 /// Captures the store-listing screenshots so they can be regenerated every release instead
@@ -48,9 +49,46 @@ Future<void> main() async {
     await binding.takeScreenshot(name);
   }
 
+  /// Pump until [ready] is true, or give up after [limit]. Returns whether it became true.
+  ///
+  /// A fixed sleep is the wrong tool for both of the things this run waits on. It is either
+  /// longer than it needs to be on every run, or — the failure that actually matters — shorter
+  /// than a cold start on a slow CI machine, in which case the screenshot is taken of whatever
+  /// happened to be on screen and the build still passes.
+  Future<bool> pumpUntil(WidgetTester tester, bool Function() ready, Duration limit) async {
+    const step = Duration(milliseconds: 250);
+    for (var elapsed = Duration.zero; elapsed < limit; elapsed += step) {
+      await tester.pump(step);
+      if (ready()) return true;
+    }
+    return ready();
+  }
+
   testWidgets('store listing screenshots', (WidgetTester tester) async {
     app.main();
-    await pumpFor(tester, const Duration(seconds: 12));
+
+    // Wait for the app to actually paint before counting content time. main() calls runApp
+    // itself rather than going through pumpWidget, so until its first frame lands the tester is
+    // still showing the harness's own placeholder — which a fixed delay will happily screenshot
+    // and publish to the App Store.
+    final bool painted = await pumpUntil(tester,
+        () => find.byType(MaterialApp).evaluate().isNotEmpty, const Duration(seconds: 40));
+    expect(painted, isTrue,
+        reason: 'the app never rendered a MaterialApp — this would have captured the '
+            'integration-test placeholder instead of the map');
+
+    // Then wait for tower data to actually arrive. This is the guard that matters for THIS app:
+    // every screenshot here is of a map, and a map that rendered but downloaded nothing is a
+    // plausible-looking, totally empty picture. It is the one failure that survives every other
+    // check in this file, because the widget tree is perfectly healthy either way.
+    final bool loaded = await pumpUntil(tester,
+        () => SiteHelper.globalListMapOverlay.isNotEmpty, const Duration(seconds: 45));
+    expect(loaded, isTrue,
+        reason: 'no towers were downloaded within 45s — the map would have been captured '
+            'empty. Check REST reachability from the CI machine before trusting a green run.');
+
+    // Give the markers and coverage polygons a moment to draw now that the data is in.
+    await pumpFor(tester, const Duration(seconds: 6));
 
     // 01 — the map as the app opens, with whatever coverage has loaded.
     await shoot('01-map');

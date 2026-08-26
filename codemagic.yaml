@@ -190,26 +190,61 @@ workflows:
         script: flutter packages pub get
       - name: Boot an iPhone simulator
         script: |
-          set -e
-          # Pick the newest available iPhone runtime rather than pinning a model that Apple
-          # later drops from the image.
-          UDID=$(xcrun simctl list devices available --json \
-            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; \
-                ds=[x for k,v in d.items() if 'iOS' in k for x in v if 'iPhone' in x['name']]; \
-                print(ds[-1]['udid'] if ds else '')")
-          if [ -z "$UDID" ]; then echo "No iPhone simulator available"; exit 1; fi
-          echo "Booting $UDID"
+          #!/usr/bin/env bash
+          set -eo pipefail
+          # Pick by SIZE CLASS, never by position in the list and never by model name.
+          #
+          # This used to take the LAST iPhone simctl reported, on the assumption that the list
+          # is ordered newest-last. It is not ordered by screen size at all, so a run could land
+          # on a 6.1"/6.3" device and produce perfectly good screenshots at a resolution the App
+          # Store rejects - with the build still green, because nothing downstream ever looked
+          # at the pixels. The Stickybeak workflow hit the same trap from the other direction:
+          # it named a model ("iPhone 16 Pro Max"), missed once Xcode shipped the 17 family,
+          # fell through to the first iPhone in the list and captured a 6.3" at 1206x2622.
+          #
+          # Apple's required iPhone slot is the 6.9" class: 1320x2868 or 1290x2796.
+          PICK=""
+          for WANT in "Pro Max" "Plus" "iPhone"; do
+            PICK=$(xcrun simctl list devices available | grep -E "^ +iPhone" | grep "$WANT" | tail -1 || true)
+            [ -n "$PICK" ] && break
+          done
+          [ -n "$PICK" ] || { echo "No iPhone simulator available"; exit 1; }
+          UDID=$(echo "$PICK" | grep -oE "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}")
+          NAME=$(echo "$PICK" | sed "s/ (.*//" | sed "s/^ *//")
+          [ -n "$UDID" ] || { echo "Could not parse a simulator UDID from: $PICK"; exit 1; }
+          echo "Using simulator: $NAME ($UDID)"
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
           echo "SIM_UDID=$UDID" >> $CM_ENV
       - name: Capture screenshots
         script: |
-          set -e
-          flutter drive \
-            --driver=test_driver/integration_test.dart \
-            --target=integration_test/screenshot_test.dart \
-            -d "$SIM_UDID"
+          #!/usr/bin/env bash
+          set -eo pipefail
+          flutter drive             --driver=test_driver/integration_test.dart             --target=integration_test/screenshot_test.dart             -d "$SIM_UDID"
           ls -la screenshots/
+      - name: Verify the screenshots are a size the App Store accepts
+        script: |
+          #!/usr/bin/env bash
+          set -eo pipefail
+          # Pixel dimensions are what actually gate an upload, and until this step existed
+          # nothing in the pipeline ever looked at them. A run that captures the right content
+          # at the wrong size reads exactly like a good one in the build log.
+          shopt -s nullglob
+          FILES=(screenshots/*.png)
+          [ ${#FILES[@]} -gt 0 ] || { echo "no screenshots produced"; exit 1; }
+          BAD=0
+          for F in "${FILES[@]}"; do
+            W=$(sips -g pixelWidth "$F" | awk "/pixelWidth/{print \$2}")
+            H=$(sips -g pixelHeight "$F" | awk "/pixelHeight/{print \$2}")
+            case "${W}x${H}" in
+              1320x2868|2868x1320|1290x2796|2796x1290) NOTE="ok (6.9 inch)" ;;
+              *) NOTE="REJECTED - not a 6.9 inch App Store size"; BAD=1 ;;
+            esac
+            echo "  ${W}x${H}  $F  $NOTE"
+          done
+          # Fail loudly. Having App Store Connect refuse these by hand later is a much worse
+          # place to find out than here.
+          [ "$BAD" -eq 0 ] || { echo "One or more screenshots are the wrong size."; exit 1; }
     artifacts:
       - screenshots/*.png
       - flutter_drive.log
