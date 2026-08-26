@@ -3,8 +3,10 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/main.dart' as app;
+import 'package:phonetowers/ui/map_common.dart';
 
 /// Captures the store-listing screenshots so they can be regenerated every release instead
 /// of being hand-taken on a device.
@@ -132,9 +134,52 @@ Future<void> main() async {
     await tester.tapAt(tester.getCenter(find.byType(MaterialApp)).translate(0, -200));
     await pumpFor(tester, const Duration(seconds: 2));
 
-    // TODO(store-screenshots): capture the site-detail sheet once there is a test hook to
-    // select a site without tapping a platform-rendered marker — e.g. a `@visibleForTesting`
-    // entry point alongside the existing `PurchaseHelper.debugProducts` seam. That sheet
-    // carries the transmitter table and is the single most persuasive screenshot the app has.
-  }, timeout: const Timeout(Duration(minutes: 5)));
+    // 03 — the site-detail sheet: the transmitter table, which is the most persuasive thing
+    // the app has to show. Google Maps markers are drawn by the platform view, so tester.tap()
+    // cannot reach one; the selection is made through the same public entry point the tap
+    // handler calls, which is showCustomInfoWindowAsBottomSheet.
+    final MapBodyState mapState = tester.state<MapBodyState>(find.byType(MapBody));
+
+    // Pick the site nearest the middle of everything that loaded, so the coverage polygon lands
+    // in frame rather than half off the edge. Deterministic for a given viewport, which matters
+    // when the point is to compare one run's screenshots against the last.
+    final sites = SiteHelper.globalListMapOverlay
+        .where((o) => o.site?.latitude != null && o.site?.longitude != null)
+        .map((o) => o.site!)
+        .toList();
+    expect(sites, isNotEmpty, reason: 'no sites with coordinates to select');
+    final double midLat =
+        sites.map((s) => s.latitude!).reduce((a, b) => a + b) / sites.length;
+    final double midLon =
+        sites.map((s) => s.longitude!).reduce((a, b) => a + b) / sites.length;
+    double distanceFromMiddle(dynamic s) =>
+        (s.latitude! - midLat) * (s.latitude! - midLat) +
+        (s.longitude! - midLon) * (s.longitude! - midLon);
+    sites.sort((a, b) =>
+        distanceFromMiddle(a).compareTo(distanceFromMiddle(b)));
+    final chosen = sites.first;
+    debugPrint('SCREENSHOT_MODE: selecting ${chosen.getNameFormatted()}');
+
+    mapState.showCustomInfoWindowAsBottomSheet(mapState.context, chosen);
+    await pumpFor(tester, const Duration(seconds: 8));
+    await shoot('03-site-details');
+
+    // Dismiss the sheet so the coverage it drew is visible on the map behind it.
+    Navigator.of(mapState.context).pop();
+    await pumpFor(tester, const Duration(seconds: 3));
+
+    // Coverage is drawn from a separate REST round trip, so give it room to arrive and then
+    // insist that it did. A map with no coverage on it is the screenshot this whole exercise
+    // exists to produce, and it is indistinguishable from a working run unless something checks.
+    final bool drew = await pumpUntil(tester,
+        () => PolygonHelper.globalListPolygons.isNotEmpty, const Duration(seconds: 40));
+    expect(drew, isTrue,
+        reason: 'no coverage polygon was drawn for ${chosen.getNameFormatted()} within 40s — '
+            '04-coverage would have been an ordinary map of pins.');
+    await pumpFor(tester, const Duration(seconds: 4));
+
+    // 04 — the map showing predicted coverage, which is what the app is actually for.
+    await shoot('04-coverage');
+
+    }, timeout: const Timeout(Duration(minutes: 5)));
 }
