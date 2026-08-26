@@ -1735,6 +1735,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                       AutoSizeText(
                         ' Device data still downloading...',
                         group: sizeGroup,
+                        maxLines: 1,
                         minFontSize: 8,
                         maxFontSize: 16,
                         style: Theme.of(context).textTheme.bodySmall,
@@ -1743,16 +1744,17 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                       AutoSizeText(
                         '${TelcoHelper.getName(site.getTelco())} Services',
                         group: sizeGroup,
+                        maxLines: 1,
                         minFontSize: 8,
                         maxFontSize: 16,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       Table(
-                        columnWidths: {
-                          0: const FixedColumnWidth(80),
-                          1: const FixedColumnWidth(80),
-                          2: const FixedColumnWidth(70),
-                          3: const FixedColumnWidth(70),
+                        columnWidths: const {
+                          0: FlexColumnWidth(1.0),
+                          1: FlexColumnWidth(1.0),
+                          2: FlexColumnWidth(1.0),
+                          3: FlexColumnWidth(1.0),
                         },
                         children: [
                           TableRow(
@@ -1762,6 +1764,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                 child: AutoSizeText(
                                   'Frequency',
                                   group: sizeGroup,
+                                  maxLines: 1,
                                   minFontSize: 8,
                                   maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodySmall,
@@ -1772,6 +1775,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                 child: AutoSizeText(
                                   'Emission',
                                   group: sizeGroup,
+                                  maxLines: 1,
                                   minFontSize: 8,
                                   maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodySmall,
@@ -1782,6 +1786,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                 child: AutoSizeText(
                                   'CallSign',
                                   group: sizeGroup,
+                                  maxLines: 1,
                                   minFontSize: 8,
                                   maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodySmall,
@@ -1792,6 +1797,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                 child: AutoSizeText(
                                   'Capacity',
                                   group: sizeGroup,
+                                  maxLines: 1,
                                   minFontSize: 8,
                                   maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodySmall,
@@ -1806,6 +1812,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                       AutoSizeText(
                         '${TelcoHelper.getName(site.getTelco())} Services',
                         group: sizeGroup,
+                        maxLines: 1,
                         minFontSize: 8,
                         maxFontSize: 16,
                         style: Theme.of(context).textTheme.bodySmall,
@@ -1813,13 +1820,19 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                       SizedBox(height: 8),
                       Table(
                         //border: TableBorder.all(),
-                        columnWidths: {
-                          0: const FixedColumnWidth(30),
-                          1: const FixedColumnWidth(60),
-                          2: const FixedColumnWidth(60),
-                          3: const FixedColumnWidth(35),
-                          4: const FixedColumnWidth(30),
-                          5: const FixedColumnWidth(60),
+                        // Proportional, not fixed pixels. At 60px the frequency column could not
+                        // fit "1858 MHz", so the value wrapped onto a second line and the row grew
+                        // to two lines tall — and the headings had to be abbreviated to "Freqncy"
+                        // and "Bandwth" to fit the same squeeze. Flex widths share whatever the
+                        // sheet actually has, so the table works on a small phone and a wide
+                        // tablet without a hardcoded number that is wrong on both.
+                        columnWidths: const {
+                          0: FlexColumnWidth(0.6), // Gen
+                          1: FlexColumnWidth(1.4), // Frequency
+                          2: FlexColumnWidth(1.3), // Bandwidth
+                          3: FlexColumnWidth(0.6), // MIMO
+                          4: FlexColumnWidth(0.5), // LTE
+                          5: FlexColumnWidth(1.4), // Capacity
                         },
                         children: [
                           TableRow(
@@ -1831,6 +1844,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                   child: AutoSizeText(
                                     'Gen',
                                     group: sizeGroup,
+                                    maxLines: 1,
                                     minFontSize: 8,
                                     maxFontSize: 16,
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -1842,8 +1856,9 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                 child: Align(
                                   alignment: AlignmentDirectional.topEnd,
                                   child: AutoSizeText(
-                                    'Freqncy',
+                                    'Frequency',
                                     group: sizeGroup,
+                                    maxLines: 1,
                                     minFontSize: 8,
                                     maxFontSize: 16,
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -1855,8 +1870,9 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                 child: Align(
                                   alignment: AlignmentDirectional.topEnd,
                                   child: AutoSizeText(
-                                    'Bandwth',
+                                    'Bandwidth',
                                     group: sizeGroup,
+                                    maxLines: 1,
                                     minFontSize: 8,
                                     maxFontSize: 16,
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -1870,6 +1886,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                   child: AutoSizeText(
                                     'MIMO',
                                     group: sizeGroup,
+                                    maxLines: 1,
                                     minFontSize: 8,
                                     maxFontSize: 16,
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -1883,6 +1900,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                   child: AutoSizeText(
                                     'LTE',
                                     group: sizeGroup,
+                                    maxLines: 1,
                                     minFontSize: 8,
                                     maxFontSize: 16,
                                     style: Theme.of(context).textTheme.bodySmall,
@@ -1894,6 +1912,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                                 child: AutoSizeText(
                                   'Capacity',
                                   group: sizeGroup,
+                                  maxLines: 1,
                                   minFontSize: 8,
                                   maxFontSize: 16,
                                   style: Theme.of(context).textTheme.bodySmall,
@@ -1964,6 +1983,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               child: AutoSizeText(
                 '${NetworkTypeHelper.resolveNetworkToName(networkType)}',
                 group: sizeGroup,
+                maxLines: 1,
                 minFontSize: 8,
                 maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodySmall,
@@ -1977,6 +1997,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               child: AutoSizeText(
                 '${TranslateFrequencies.formatFrequency(d.frequency!, false)}',
                 group: sizeGroup,
+                maxLines: 1,
                 minFontSize: 8,
                 maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodySmall,
@@ -1990,6 +2011,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               child: AutoSizeText(
                 '${TranslateFrequencies.formatBandwidth(d.bandwidth!, false)}',
                 group: sizeGroup,
+                maxLines: 1,
                 minFontSize: 8,
                 maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodySmall,
@@ -2003,6 +2025,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               child: AutoSizeText(
                 '${mimoCount}x',
                 group: sizeGroup,
+                maxLines: 1,
                 minFontSize: 8,
                 maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodySmall,
@@ -2016,6 +2039,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               child: AutoSizeText(
                 '${LteTypeHelper.getFirstTwoChars(d.getLteType())}',
                 group: sizeGroup,
+                maxLines: 1,
                 minFontSize: 8,
                 maxFontSize: 16,
                 style: Theme.of(context).textTheme.bodySmall,
@@ -2027,6 +2051,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
             child: AutoSizeText(
               '${DeviceDetails.formatNetworkSpeed(site.getNetworkCapacity(d))}',
               group: sizeGroup,
+              maxLines: 1,
               minFontSize: 8,
               maxFontSize: 16,
               style: Theme.of(context).textTheme.bodySmall,
@@ -2057,6 +2082,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
             child: AutoSizeText(
               '${TranslateFrequencies.formatFrequency(d.frequency!, true)}',
               group: sizeGroup,
+              maxLines: 1,
               minFontSize: 8,
               maxFontSize: 16,
               style: Theme.of(context).textTheme.bodySmall,
@@ -2067,6 +2093,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
             child: AutoSizeText(
               '${d.emission}',
               group: sizeGroup,
+              maxLines: 1,
               minFontSize: 8,
               maxFontSize: 16,
               style: Theme.of(context).textTheme.bodySmall,
@@ -2077,6 +2104,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
             child: AutoSizeText(
               '${d.callSign}',
               group: sizeGroup,
+              maxLines: 1,
               minFontSize: 8,
               maxFontSize: 16,
               style: Theme.of(context).textTheme.bodySmall,
@@ -2087,6 +2115,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
             child: AutoSizeText(
               '${DeviceDetails.formatNetworkSpeed(site.getNetworkCapacity(d))}',
               group: sizeGroup,
+              maxLines: 1,
               minFontSize: 8,
               maxFontSize: 16,
               style: Theme.of(context).textTheme.bodySmall,
@@ -2129,6 +2158,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         AutoSizeText(
           '$line',
           group: sizeGroup,
+          maxLines: 1,
           minFontSize: 8,
           maxFontSize: 16,
           style: Theme.of(context).textTheme.bodySmall,
@@ -2173,7 +2203,13 @@ class SitePropertiesTableWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     AutoSizeGroup sizeGroup = AutoSizeGroup();
     return Table(
-      defaultColumnWidth: FixedColumnWidth(90.0),
+      // The label column was a fixed 90px, which is narrower than "City Density:" and
+      // "Tower Height:" — both wrapped onto two lines and made the block twice as tall as it
+      // needed to be. Proportional widths let the labels have the room they need on any screen.
+      columnWidths: const {
+        0: FlexColumnWidth(1.0), // label
+        1: FlexColumnWidth(1.4), // value
+      },
       children: data.entries.map((item) {
         return TableRow(
           children: [
@@ -2184,6 +2220,7 @@ class SitePropertiesTableWidget extends StatelessWidget {
                 child: AutoSizeText(
                   '${item.key}',
                   group: sizeGroup,
+                  maxLines: 1,
                   minFontSize: 8,
                   maxFontSize: 16,
                   style: Theme.of(context).textTheme.bodySmall,
@@ -2197,6 +2234,7 @@ class SitePropertiesTableWidget extends StatelessWidget {
                 child: AutoSizeText(
                   '${item.value}',
                   group: sizeGroup,
+                  maxLines: 1,
                   minFontSize: 8,
                   maxFontSize: 16,
                   style: Theme.of(context).textTheme.bodySmall,
