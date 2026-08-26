@@ -22,20 +22,10 @@ import 'package:provider/provider.dart';
 import 'helpers/ads_helper.dart';
 import 'helpers/polygon_helper.dart';
 import 'utils/secret.dart';
+import 'utils/screenshot_mode.dart';
 
 Logger logger = new Logger();
 final bool useFirebase = (kIsWeb || Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
-
-/// True when the app is running under the store-screenshot integration test
-/// (`codemagic.yaml` -> `screenshots-workflow` passes `--dart-define=SCREENSHOT_MODE=true`).
-///
-/// It exists for exactly one reason: the App Tracking Transparency prompt below is a SYSTEM
-/// modal, and its future does not complete until a human taps it. On a CI simulator nobody
-/// ever will, so `main()` never reaches `runApp()` and the app renders nothing at all — no
-/// crash, no exception, just an app that never starts. Before the screenshot test asserted
-/// that a MaterialApp had actually painted, that failure was invisible: the run captured the
-/// integration-test placeholder and reported success.
-const bool kScreenshotMode = bool.fromEnvironment('SCREENSHOT_MODE');
 
 Future<void> main() async {
   // Set `enableInDevMode` to true to see reports while in debug mode

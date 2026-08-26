@@ -57,6 +57,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/app_constants.dart';
+import '../utils/screenshot_mode.dart';
 
 /// The three Rotating Map modes, mirroring Android's mutually-exclusive `rotatingMapGroup`
 /// radio group (res/menu/popup_menu.xml) and
@@ -210,6 +211,13 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
   }
 
   Future<void> configureAds() async {
+    // Never load ads during the store-screenshot run. flutter drive builds DEBUG, so the
+    // branch below deliberately picks Google's TEST ad unit — which paints "You've loaded a
+    // test ad from AdMob. Way to go!" behind a "Test mode" badge across the bottom of every
+    // captured frame. That is not something to publish on a store listing, and no automated
+    // check in this pipeline would ever have objected: the PNG is the right size, the map is
+    // real, the towers are real. Only looking at the image catches it.
+    if (kScreenshotMode) return;
     if (!kIsWeb) {
       if (!PurchaseHelper().isSubscribed) {
         // Show ads only if user has not subscribed to any of remove ads menu item
