@@ -8,6 +8,21 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.10+145] — 2026-08-27
+
+### Fixed
+- **Suburban coverage polygons could be smaller than urban ones for the same signal, the wrong
+  way round.** Each density's learned calibration offset is regressed independently from that
+  density's own samples, and the table is sparse enough that neighbouring densities often land on
+  different fallback tiers. Nothing tied those offsets together, so a suburban site could end up
+  with a markedly smaller predicted range than a nearby urban one, inverting the
+  open > suburban > urban > metro ordering the underlying physics already guarantees. The
+  predicted range for a given density is now never allowed to fall below the next denser
+  neighbour's, whichever fallback tier either landed in. Scoped to non-NR network types: the
+  guarantee this leans on is Hata's, and the 3GPP 38.901 model NR falls back to when untrained
+  does not carry it (METRO and URBAN use genuinely different, non-monotonic curves) — ported to
+  this app alongside the equivalent Android fix in `aus_phone_towers_java` 7.7.46/7.7.48.
+
 ## [1.14.9+144] — 2026-08-27
 
 ### Fixed

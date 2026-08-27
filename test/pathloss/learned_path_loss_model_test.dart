@@ -270,6 +270,33 @@ void main() {
           reason: 'should invert MEDIUM (nearest), not METRO');
     });
 
+    /// Two densities' learned calibration offsets are regressed independently per group, with
+    /// nothing in the fitting process enforcing that a less-dense group's offset stays at least
+    /// as generous as a denser neighbour's. Here URBAN is calibrated with an identity offset
+    /// (b0=0, b1=1 — equivalent to uncorrected Hata) while SUBURBAN's composite carries a strong
+    /// negative offset, the same order of magnitude as real rows in the live table. Uncorrected,
+    /// SUBURBAN predicts a SHORTER range than URBAN, inverting the
+    /// OPEN > SUBURBAN > URBAN > METRO ordering Hata's own physics already guarantees.
+    test('suburbanCanNeverPredictLessRangeThanUrban', () {
+      PathLossCoefficients coeffs = PathLossCoefficients(
+          true, 57.0, PathLossCoefficients.formHataCalibration);
+      coeffs.setComposite(2, NetworkType.LTE, 'LOW', CityDensity.URBAN,
+          [0.0, 1.0, 0.0, 0.0], 50000, 0.30);
+      coeffs.setComposite(2, NetworkType.LTE, 'LOW', CityDensity.SUBURBAN,
+          [-3.0, 0.5, 0.0, 0.0], 50000, 0.30);
+      LearnedPathLossModel learned = LearnedPathLossModel(coeffs);
+
+      double levelInDb = 145.0, freq = 763.0, height = 30.0;
+      double urbanKm = learned.calculateDistanceWithContext(
+          2, NetworkType.LTE, CityDensity.URBAN, levelInDb, freq, height);
+      double suburbanKm = learned.calculateDistanceWithContext(
+          2, NetworkType.LTE, CityDensity.SUBURBAN, levelInDb, freq, height);
+
+      expect(suburbanKm >= urbanKm, isTrue,
+          reason: 'URBAN=${urbanKm}km, SUBURBAN=${suburbanKm}km — SUBURBAN must never be '
+              'shorter than URBAN, whichever fallback tier each landed in');
+    });
+
     test('stillFallsBackToAnalyticWhenNothingIsCalibrated', () {
       // With nothing published at all the previous behaviour must be unchanged.
       PathLossCoefficients empty = PathLossCoefficients.empty(57.0);
