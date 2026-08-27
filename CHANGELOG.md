@@ -8,6 +8,16 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.9+144] — 2026-08-27
+
+### Fixed
+- **This is the build that actually ships the site-details table fix.** 1.14.9+143 only added a
+  test dependency and never touched pubspec.yaml's version line again after it, so the table
+  layout fix, the screenshot-pipeline fixes, and everything else committed since stayed on `main`
+  without ever being built or deployed — the release pipeline is deliberately gated on a version
+  bump (`when.changeset: [pubspec.yaml]`), and nothing after 143 provided one. The live site was
+  running 143's code the whole time, not a stale cache of it.
+
 ## [1.14.9+143] — 2026-08-26
 
 ### Changed
