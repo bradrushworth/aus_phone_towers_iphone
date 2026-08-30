@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:core';
 
 import 'package:flutter/material.dart';
@@ -22,11 +23,22 @@ abstract class AbstractMapBodyState extends State<MapBody> {
   late Logger logger;
   late Api api;
 
+  // Rebuild the marker set a short while after the camera stops moving, so the
+  // viewport-bounded marker filter (issue #58 — capping markers to work around iOS
+  // texture-atlas exhaustion) keeps following the camera even when panning doesn't
+  // trigger a new tower download. Throttled rather than run on every frame since
+  // onCameraMove fires continuously during a drag.
+  Timer? _markerViewportRebuild;
+
   void onMapCreated(dynamic controllerParam);
 
   void onCameraMove(CameraPosition position) {
     //Store last camera position when map scrolled in order to make clear map option menu work.
     lastCameraPosition = position;
+    _markerViewportRebuild ??= Timer(const Duration(milliseconds: 400), () {
+      _markerViewportRebuild = null;
+      if (mounted) setState(() {});
+    });
     if (!SearchHelper.calculatingSearchResults) {
       onMapScroll(position);
     }

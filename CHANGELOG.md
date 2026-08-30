@@ -8,6 +8,24 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **iOS tower pin icons rendering cut off / corrupted** (GitHub issue #58). The Google Maps iOS
+  SDK keeps every registered marker icon in a single texture atlas and corrupts already-rendered
+  icons once too many distinct icon images accumulate (upstream flutter/flutter#172909); since
+  `SiteHelper.globalListMapOverlay` keeps every tower ever downloaded and is never pruned, the
+  app was handing the platform map view an unbounded and ever-growing marker set. The markers
+  passed to the map are now capped to those near the current viewport
+  (`selectMarkersForViewport`, `lib/helpers/marker_viewport.dart`), with the marker set refreshed
+  shortly after the camera stops moving so the cap keeps following the viewport while panning.
+- **Pinned the native Google Maps iOS SDK to 9.x** via `google_maps_flutter_ios_sdk9` (the
+  default `google_maps_flutter_ios` package leaves the pod constraint open up to `< 11.0`, and
+  with `ios/Podfile.lock` untracked every CI build silently resolved the newest 10.x). The pin
+  keeps builds reproducible on the iOS 15 deployment floor and steps the SDK back from the 10.x
+  line the corrupted-pin reports (issue #58) arrived on; upgrading deliberately to
+  `google_maps_flutter_ios_sdk10`+ is tracked as its own bead (requires an iOS 16 floor).
+
 ## [1.14.13+148] — 2026-08-30
 
 ### Fixed

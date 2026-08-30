@@ -26,6 +26,7 @@ import 'package:phonetowers/restful/get_devices.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
+import 'package:phonetowers/helpers/marker_viewport.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/problem_report_helper.dart';
@@ -2191,16 +2192,24 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   }
 
   /// Combine the tower markers with the frequency / technology labels drawn along the outer
-  /// signal rings (PolygonHelper.labelOverlays).
+  /// signal rings (PolygonHelper.labelOverlays), then bound the result to what's near the
+  /// current viewport.
+  ///
+  /// `SiteHelper.globalListMapOverlay` accumulates every site ever downloaded and is never
+  /// pruned, so without a cap this set would grow unboundedly while panning around. On iOS
+  /// that eventually exhausts the Google Maps SDK's marker texture atlas and corrupts pin
+  /// icons (issue #58, flutter/flutter#172909) — see [selectMarkersForViewport] for the
+  /// full rationale.
   Set<Marker> _buildMarkerSet() {
-    final Set<Marker> markers = <Marker>{};
-    for (final MapOverlay overlay in SiteHelper.globalListMapOverlay) {
-      if (overlay.marker != null) markers.add(overlay.marker!);
-    }
-    for (final MapOverlay overlay in PolygonHelper.labelOverlays) {
-      if (overlay.marker != null) markers.add(overlay.marker!);
-    }
-    return markers;
+    final List<Marker?> allMarkers = <Marker?>[
+      for (final MapOverlay overlay in SiteHelper.globalListMapOverlay) overlay.marker,
+      for (final MapOverlay overlay in PolygonHelper.labelOverlays) overlay.marker,
+    ];
+    return selectMarkersForViewport(
+      allMarkers,
+      center: lastCameraPosition?.target,
+      zoom: lastCameraPosition?.zoom ?? kDefaultZoom,
+    );
   }
 
   void takeScreenshot() {
