@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:after_layout/after_layout.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +28,7 @@ import 'package:phonetowers/helpers/let_type_helper.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
+import 'package:phonetowers/helpers/problem_report_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/screenshot_controller.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
@@ -1578,6 +1581,13 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   }
 
   void showCustomInfoWindowAsBottomSheet(BuildContext context, Site site) {
+    // Capture whether this site's coverage is already registered *before* anything below
+    // clears it, so a second tap on the same tower toggles its coverage off instead of
+    // immediately redrawing it. clearSitePatterns()/queryForSignalPolygon() below unregister
+    // the site from PolygonHelper.sitesPolygons as part of clearing it, so checking after
+    // clearing would always see "not shown" and redraw unconditionally on every tap.
+    final bool siteAlreadyShown = PolygonHelper.sitesPolygons.containsKey(site);
+
     setState(() {
       //Remove any existing polygons first (unless multi-tower coverage is on, in which
       //case previously-shown polygons should remain rendered alongside the new one)
@@ -1605,11 +1615,18 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     // Clear existing polygons on clicking the next one (unless multi-tower coverage is on)
     if (!PolygonHelper.multiTowerCoverage) {
       PolygonHelper().clearSitePatterns(false);
+    } else if (siteAlreadyShown) {
+      // Multi-tower coverage leaves other sites alone, but this site's own coverage still
+      // needs to be unregistered/removed so the toggle-off below actually takes effect.
+      PolygonHelper().queryForSignalPolygon(site, false, false);
     }
 
     _settingModalBottomSheet(context, site);
 
-    if (PolygonHelper.drawPolygonsOnClick) {
+    // Only (re)draw this site's coverage if it wasn't already on screen — tapping an
+    // already-shown site's marker toggles its coverage off instead of redrawing it,
+    // matching the Android app's behaviour.
+    if (PolygonHelper.drawPolygonsOnClick && !siteAlreadyShown) {
       // Draw the signal polygon for this site
       Provider.of<PolygonHelper>(
         context,
@@ -2184,13 +2201,58 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   void takeScreenshot() {
     widget.screenshotController
         .capture(pixelRatio: 1)
-        .then((File image) {
+        .then((File image) async {
           logger.d("File Saved to Gallery ${image.path}");
-          androidMethodChannel.invokeMethod('takeScreenshot', onlyPath.basename(image.path));
+          final String subject = await _buildProblemReportSubject();
+          androidMethodChannel.invokeMethod('takeScreenshot', <String, String>{
+            'path': onlyPath.basename(image.path),
+            'subject': subject,
+          });
         })
         .catchError((onError) {
           print(onError);
         });
+  }
+
+  /// Gathers the same device/installation identifier and app version this build ships (via
+  /// package_info_plus / device_info_plus) and builds the "Report a Problem" email subject with
+  /// [ProblemReportHelper.buildSubject] — matching the Java Android app's
+  /// `Screenshot.sendMail` subject shape, so a report can be correlated back to its device.
+  Future<String> _buildProblemReportSubject() async {
+    String? model;
+    String? deviceId;
+    String? version;
+    String? buildNumber;
+
+    try {
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      version = packageInfo.version;
+      buildNumber = packageInfo.buildNumber;
+    } catch (e) {
+      logger.e('Failed to read PackageInfo for problem report subject: $e');
+    }
+
+    try {
+      final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+      if (!kIsWeb && Platform.isAndroid) {
+        final AndroidDeviceInfo androidInfo = await deviceInfoPlugin.androidInfo;
+        model = androidInfo.model;
+        deviceId = androidInfo.id;
+      } else if (!kIsWeb && Platform.isIOS) {
+        final IosDeviceInfo iosInfo = await deviceInfoPlugin.iosInfo;
+        model = iosInfo.utsname.machine;
+        deviceId = iosInfo.identifierForVendor;
+      }
+    } catch (e) {
+      logger.e('Failed to read DeviceInfo for problem report subject: $e');
+    }
+
+    return ProblemReportHelper.buildSubject(
+      model: model,
+      deviceId: deviceId,
+      version: version,
+      buildNumber: buildNumber,
+    );
   }
 }
 

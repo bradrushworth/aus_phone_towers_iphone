@@ -75,6 +75,19 @@ class GetLicenceHRP {
       rawResponse =
           await api.getLicenceHRPData(url, cancelToken: cancelToken);
 
+      // Api.getLicenceHRPData swallows every DioException (network failure, timeout, 5xx,
+      // a genuinely cancelled request) and returns null rather than throwing. A null
+      // response here must NOT be treated the same as a genuine "zero rows" answer: a
+      // successful zero-row response legitimately falls back to the circular estimate
+      // below, but a failed fetch must not, or a transient network hiccup on a real
+      // directional site paints a misleading omnidirectional disc instead of just
+      // skipping that device this time. See createBasicPolygon dispatch note below.
+      final bool fetchFailed = rawResponse == null;
+      if (fetchFailed) {
+        logger.e(
+            'PolygonHelper: GetLicenceHRP: fetch failed (no response) for site ${site.siteId}, device ${device.sddId}, url=$url');
+      }
+
       int totalRows = rawResponse?.restify?.rows?.length ?? 0;
 
       // A licence can legitimately have ZERO licence_hrp rows (e.g. device 12876553,
@@ -185,7 +198,7 @@ class GetLicenceHRP {
       device.setBearingToPowerMap(bearingToPower);
 
       //onPostexecute
-      NextPage? nextPage = rawResponse!.restify!.nextPage;
+      NextPage? nextPage = fetchFailed ? null : rawResponse!.restify!.nextPage;
       if (nextPage != null) {
         // Calling new async task to get json for next page. This continuation carries
         // forward this device's contribution to the in-flight guard, so mark that we
@@ -196,6 +209,16 @@ class GetLicenceHRP {
                 device: device,
                 list: list,
                 url: nextPage.href,
+                // Carry "did any page so far have real rows" forward across pagination.
+                // dataFound defaults to false on a fresh instance, and this class only ever
+                // sets it true (never resets it), so without threading it through here, a
+                // directional site whose LAST page happens to return zero rows would lose
+                // every earlier page's real angle data and fall back to
+                // createBasicPolygon's full circle below — even though `list` already holds
+                // genuine HRP-derived points. This was the actual cause of a real Telstra
+                // site (St George QLD, issue #55) drawing an omnidirectional disc instead of
+                // its directional lobes.
+                dataFound: dataFound,
                 showSnackBar: showSnackBar,
                 cancelToken: cancelToken)
             .getLicenceHRPData();
@@ -203,9 +226,16 @@ class GetLicenceHRP {
         if (dataFound) {
           // Draw the polygon once the whole shape is downloaded
           PolygonHelper().createPolygon(list!, site, device);
-        } else {
-          // If we can't do any better, lets create a simple circular polygon
+        } else if (!fetchFailed) {
+          // Genuinely zero rows (or no registration identifier, handled earlier in
+          // PolygonHelper.queryForSignalPolygon) — draw the estimated circular pattern.
           PolygonHelper().createBasicPolygon(device, site, list!);
+        } else {
+          // The fetch failed and no earlier page (if any) found real data either. Draw
+          // nothing rather than a circular estimate that would misrepresent a directional
+          // site's real coverage as omnidirectional.
+          logger.e(
+              'PolygonHelper: GetLicenceHRP: skipping polygon for site ${site.siteId}, device ${device.sddId} - fetch failed, no fallback drawn');
         }
       }
     } finally {

@@ -380,6 +380,31 @@ class DeviceDetails {
         best = nt;
       }
     }
+
+    // GitHub issue #55 (real user report, St George QLD, Broadcast Australia site 15491):
+    // the Optus 900 MHz block classifies as a genuine dual [LTE, NR] carrier (see
+    // getNetworkTypeStatic above), but that classification is generalised from a single
+    // live-verified NR SA cell in metro Canberra (Tuggeranong ACT) across every Optus 900
+    // MHz licence in the country. LTE B8 is universally on-air on this block; NR n8 is not
+    // -- a knowledgeable local confirmed this rural site has 4G only, the 900 MHz block
+    // having only been re-authorised after the 2024 3G shutdown. Picking the newest
+    // technology by generationRank (NR) overstates confirmed capability at the vast
+    // majority of sites on this block, so for display purposes this specific band prefers
+    // the universally-present LTE instead. This does NOT touch getNetworkTypeStatic (the
+    // shared classifier, still correctly reports [LTE, NR] for anything that inspects the
+    // full list) -- only this generation-rank tie-break used to pick the single displayed
+    // transmitter. JAVA MIRROR REQUIRED: DeviceDetails.getNetworkTypeForLicence in the
+    // Java Android app must apply the identical override (telco == OPTUS, frequency in
+    // [900000000, 999000000), types containing both LTE and NR -> best = LTE) in the same
+    // release window, or the two apps will show different technology for this tower.
+    if (telco == Telco.Optus &&
+        frequency >= 900000000 &&
+        frequency < 999000000 &&
+        types.contains(NetworkType.LTE) &&
+        types.contains(NetworkType.NR)) {
+      best = NetworkType.LTE;
+    }
+
     return best;
   }
 

@@ -22,15 +22,27 @@ import MessageUI
     shareChannel.setMethodCallHandler({
         (call: FlutterMethodCall, result: FlutterResult) -> Void in
         if (call.method == "takeScreenshot") {
-            self.shareFile(sharedItems: call.arguments!,controller: controller);
+            // Dart now sends {"path": ..., "subject": ...} so the email subject (built once, in
+            // Dart, from device model/id + app version - see ProblemReportHelper) can carry useful
+            // metadata. Fall back to a sensible default subject if it's missing/null (e.g. an old
+            // Dart build, or the argument shape changes underneath us).
+            let subject: String
+            if let arguments = call.arguments as? [String: Any], let subjectArg = arguments["subject"] as? String {
+                subject = subjectArg
+            } else {
+                subject = self.defaultSubject
+            }
+            self.shareFile(sharedItems: call.arguments!, controller: controller, subject: subject);
         }
     });
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  func shareFile(sharedItems:Any, controller:UIViewController) {
-    let mailComposeViewController = configureMailComposer()
+  let defaultSubject = "Aus Phone Towers Problem Report"
+
+  func shareFile(sharedItems:Any, controller:UIViewController, subject: String) {
+    let mailComposeViewController = configureMailComposer(subject: subject)
     if MFMailComposeViewController.canSendMail() {
         controller.present(mailComposeViewController, animated: true, completion: nil)
     } else{
@@ -61,11 +73,11 @@ import MessageUI
 //        }
     }
 
-    func configureMailComposer() -> MFMailComposeViewController{
+    func configureMailComposer(subject: String) -> MFMailComposeViewController{
         let mailComposeVC = MFMailComposeViewController()
         mailComposeVC.mailComposeDelegate = self
         mailComposeVC.setToRecipients(["bitbot@bitbot.com.au"])
-        mailComposeVC.setSubject("Aus Phone Towers Problem Report")
+        mailComposeVC.setSubject(subject)
         mailComposeVC.setMessageBody("Please attach your screenshot, describe the problem and Brad will get back to you...", isHTML: false)
         return mailComposeVC
     }
