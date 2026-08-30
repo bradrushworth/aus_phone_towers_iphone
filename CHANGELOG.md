@@ -8,6 +8,29 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Tapping a tower a second time hides its coverage again** (GitHub issue #55). Every tap
+  cleared and then unconditionally redrew the tapped site, so toggle-off never stuck; and the
+  polygon-removal step cleared every site's polygons instead of just the tapped one, so with
+  Multi-Tower Coverage on a site could never be individually dismissed.
+- **Directional sites no longer draw a full omnidirectional disc** (GitHub issue #55). When a
+  tower's licence_hrp rows spanned more than one page, the "found real data" flag was lost at
+  the page boundary, so the real directional lobes were discarded in favour of the circular
+  estimate. The flag now carries across pagination, and a failed fetch draws nothing rather
+  than masquerading as omnidirectional coverage.
+- **Optus 900 MHz towers display as 4G, not 5G** (GitHub issue #55). The block classifies as a
+  dual 4G/5G carrier, but the 5G half is live-verified only in metro areas while LTE B8 is
+  universally on-air — a rural tower on this block was showing "5G" it does not have. The
+  display pick now prefers 4G for this band; the shared classifier still reports the full dual
+  list. Mirrored in the Java Android app the same day (its DeviceDetails), per the lockstep rule.
+
+### Added
+- **Problem-report emails carry device metadata in the subject** — "Aus Phone Towers Problem
+  Report: <model>, <deviceId>, v<version>+<build>", matching the Android app, so a report can be
+  told apart from every other report and correlated with its sender's device.
+
 ## [1.14.9+144] — 2026-08-27
 
 ### Fixed
