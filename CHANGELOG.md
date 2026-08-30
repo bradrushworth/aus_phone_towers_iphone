@@ -8,6 +8,16 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.13+148] — 2026-08-30
+
+### Fixed
+- **Paying users no longer see ads at cold start or after a silent restore** (GitHub issue #56).
+  The ad-free entitlement is now cached locally (`EntitlementCache`) and seeded before the store
+  responds, the "Restore purchases" menu item reports its outcome (restored / no purchase found /
+  failure) instead of doing nothing visible, and a null `purchaseID` on a restored transaction no
+  longer aborts delivery of the entitlement. The store evaluation always overwrites the cached
+  seed, so refunds and yearly expiry still re-show ads.
+
 ## [1.14.12+147] — 2026-08-30
 
 ### Changed
