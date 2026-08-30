@@ -45,43 +45,24 @@ class LearnedPathLossModel implements PathLossModel {
         : fallback.calculateDistance(density, levelInDb, freqInMHz, height);
   }
 
-  /// Each density's coefficients are regressed independently from that density's own samples,
-  /// with nothing tying one density's offset to a neighbour's — including a borrowed one, since
-  /// the borrow above picks whichever nearby group has data at all, not the most generous one.
-  /// That let a SUBURBAN site predict a SHORTER range than a nearby URBAN one for the same
-  /// signal, inverting the OPEN > SUBURBAN > URBAN > METRO ordering Hata's own physics already
-  /// guarantees. Recursing toward the next denser neighbour and taking the max restores that
-  /// ordering regardless of which fallback tier either density landed in.
+  /// Composite lookup — returns the chosen group's OWN prediction, deliberately un-adjusted.
   ///
-  /// Scoped to non-NR network types only: the guarantee this leans on is Hata's, and the 3GPP
-  /// 38.901 anchor NR falls back to is not built the same way — its per-density values are not
-  /// guaranteed monotonic (measured: at 3595 MHz/165 dB the METRO anchor is FARTHER than the
-  /// URBAN one, the wrong way round), so borrowing a "denser" NR neighbour here could inject a
-  /// worse number instead of a better one.
+  /// History: an earlier release clamped this against the next denser [CityDensity] (a
+  /// less-dense environment must never predict less range than a denser one — Hata's
+  /// OPEN > SUBURBAN > URBAN > METRO ordering), after a SUBURBAN site was observed predicting
+  /// a fraction of a nearby URBAN site's range. That clamp was later scoped away from NR (the
+  /// 3GPP 38.901 anchor is not monotonic across densities), then removed from the app entirely
+  /// (GitHub issue #49): papering over a bad fit on the handset hides which trained group
+  /// actually produced the number, making field diagnosis of tuning faults near-impossible.
+  /// The OPEN > SUBURBAN > URBAN > METRO ordering is a TRAINING-side invariant now: the
+  /// trainer/publisher must not ship coefficient sets that invert it (enforced where the
+  /// coefficients are produced — see `PathLossTrainerIT.enforceDensityMonotonicity` in the
+  /// Java app), and what this app draws is exactly what the published table says.
   ///
-  /// Bounded depth: [CityDensity] has 5 values and this only ever steps toward index 0 (METRO),
-  /// which is the base case and returns unclamped.
-  ///
-  /// Mirrors the equivalent clamp in the Java
+  /// Mirrors the equivalent method in the Java
   /// `au.com.bitbot.phonetowers.pathloss.LearnedPathLossModel.calculateDistance`.
   @override
   double calculateDistanceWithContext(int mnc, NetworkType networkType,
-      CityDensity density, double levelInDb, double freqInMHz, double height) {
-    double distanceKm = _calculateDistanceWithContextRaw(
-        mnc, networkType, density, levelInDb, freqInMHz, height);
-    int index = density.index;
-    if (index > 0 && networkType != NetworkType.NR) {
-      CityDensity denser = CityDensity.values[index - 1];
-      double denserKm = calculateDistanceWithContext(
-          mnc, networkType, denser, levelInDb, freqInMHz, height);
-      if (_isUsable(denserKm) && (!_isUsable(distanceKm) || denserKm > distanceKm)) {
-        distanceKm = denserKm;
-      }
-    }
-    return distanceKm;
-  }
-
-  double _calculateDistanceWithContextRaw(int mnc, NetworkType networkType,
       CityDensity density, double levelInDb, double freqInMHz, double height) {
     String band = PathLossKey.bandBucket(freqInMHz * 1_000_000.0);
     List<double>? beta =

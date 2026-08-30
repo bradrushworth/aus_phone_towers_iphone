@@ -8,6 +8,18 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **Removed the draw-time density monotonicity clamp from the learned path-loss model**
+  (mirrors the Android 7.7.49 change, GitHub issue #49). The OPEN ≥ SUBURBAN ≥ URBAN ≥ METRO
+  coverage-size ordering is now enforced entirely server-side, by the Java trainer refusing to
+  publish a coefficient group that predicts less range than a denser neighbour
+  (`PathLossTrainerIT.enforceDensityMonotonicity`). Clamping on the handset papered over
+  inconsistent published groups, hiding which trained group produced a bad number and making
+  field reports undiagnosable — the app now draws exactly what the published
+  `pathloss_coefficients` table says.
+
 ## [1.14.11+146] — 2026-08-30
 
 ### Fixed

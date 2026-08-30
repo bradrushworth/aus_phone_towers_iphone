@@ -6,6 +6,7 @@ import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/pathloss/analytic_path_loss_model.dart';
 import 'package:phonetowers/pathloss/learned_path_loss_model.dart';
+import 'package:phonetowers/pathloss/nr3gpp_path_loss_model.dart';
 import 'package:phonetowers/pathloss/path_loss_coefficients.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 
@@ -270,18 +271,22 @@ void main() {
           reason: 'should invert MEDIUM (nearest), not METRO');
     });
 
-    /// Two densities' learned calibration offsets are regressed independently per group, with
-    /// nothing in the fitting process enforcing that a less-dense group's offset stays at least
-    /// as generous as a denser neighbour's. Here URBAN is calibrated with an identity offset
-    /// (b0=0, b1=1 — equivalent to uncorrected Hata) while SUBURBAN's composite carries a strong
-    /// negative offset, the same order of magnitude as real rows in the live table. Uncorrected,
-    /// SUBURBAN predicts a SHORTER range than URBAN, inverting the
-    /// OPEN > SUBURBAN > URBAN > METRO ordering Hata's own physics already guarantees.
-    test('suburbanCanNeverPredictLessRangeThanUrban', () {
+    /// The monotonicity clamp (a less-dense group could never predict less range than the next
+    /// denser one) is deliberately GONE from the app — GitHub issue #49: adjusting predictions on
+    /// the handset hid which trained group actually produced a bad number, making tuning faults
+    /// impossible to diagnose in the field. The OPEN > SUBURBAN > URBAN > METRO ordering is a
+    /// training-side invariant now (enforced by the Java trainer's
+    /// `PathLossTrainerIT.enforceDensityMonotonicity`). This pins the removal: each density
+    /// returns its OWN group's calibration verbatim, even when the fits are mutually
+    /// inconsistent. Here URBAN is calibrated with an identity offset (b0=0, b1=1 — equivalent to
+    /// uncorrected Hata) while SUBURBAN's composite carries a strong negative offset, the same
+    /// order of magnitude as real rows in the live table.
+    test('eachDensityReturnsItsOwnFitEvenWhenInverted', () {
       PathLossCoefficients coeffs = PathLossCoefficients(
           true, 57.0, PathLossCoefficients.formHataCalibration);
       coeffs.setComposite(2, NetworkType.LTE, 'LOW', CityDensity.URBAN,
           [0.0, 1.0, 0.0, 0.0], 50000, 0.30);
+      // A deliberately inconsistent (shorter-range) SUBURBAN fit, like the live 2026-08-27 rows.
       coeffs.setComposite(2, NetworkType.LTE, 'LOW', CityDensity.SUBURBAN,
           [-3.0, 0.5, 0.0, 0.0], 50000, 0.30);
       LearnedPathLossModel learned = LearnedPathLossModel(coeffs);
@@ -292,9 +297,36 @@ void main() {
       double suburbanKm = learned.calculateDistanceWithContext(
           2, NetworkType.LTE, CityDensity.SUBURBAN, levelInDb, freq, height);
 
-      expect(suburbanKm >= urbanKm, isTrue,
-          reason: 'URBAN=${urbanKm}km, SUBURBAN=${suburbanKm}km — SUBURBAN must never be '
-              'shorter than URBAN, whichever fallback tier each landed in');
+      // SUBURBAN's own (bad) fit must come straight through — no borrowing from URBAN.
+      expect(urbanKm > suburbanKm, isTrue,
+          reason: 'URBAN=${urbanKm}km must exceed the deliberately-shrunk '
+              'SUBURBAN=${suburbanKm}km — the app no longer clamps, so the inversion must be '
+              'visible');
+    });
+
+    /// NR with no trained NR groups must return its own 3GPP 38.901 anchor distance, never a
+    /// value borrowed from another density's differently-shaped curve (METRO uses UMi-StreetCanyon,
+    /// URBAN uses UMa — their per-density values are not even monotonic). Originally added when
+    /// the clamp was scoped away from NR; still load-bearing now the clamp is gone entirely, as it
+    /// pins the untrained-NR fallback path.
+    test('nrReturnsItsOwnAnchorNeverABorrowedDensityValue', () {
+      PathLossCoefficients coeffs = PathLossCoefficients(
+          true, 57.0, PathLossCoefficients.formHataCalibration);
+      // Trained, but no NR groups at all - mirrors the live server shape.
+      coeffs.setComposite(1, NetworkType.LTE, 'LOW', CityDensity.URBAN,
+          [-0.36, 0.82, 0.0, 0.0], 1000, 0.19);
+      LearnedPathLossModel learned = LearnedPathLossModel(coeffs);
+      Nr3gppPathLossModel nrAnchor = Nr3gppPathLossModel();
+
+      double levelInDb = 165.0, freq = 3595.0, height = 30.0;
+      double expected = nrAnchor.calculateDistance(
+          CityDensity.URBAN, levelInDb, freq, height);
+      double actual = learned.calculateDistanceWithContext(
+          1, NetworkType.NR, CityDensity.URBAN, levelInDb, freq, height);
+
+      expect(actual, closeTo(expected, 1e-9),
+          reason: 'NR must return its own 3GPP anchor distance, not a value borrowed from '
+              'a denser neighbour\'s differently-shaped anchor curve');
     });
 
     test('stillFallsBackToAnalyticWhenNothingIsCalibrated', () {
