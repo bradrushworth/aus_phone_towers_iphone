@@ -146,13 +146,15 @@ class PolygonHelper with ChangeNotifier {
         Map<DeviceDetails, Set<PolygonContainer>>();
 
     if (sitesPolygons.containsKey(site)) {
-      //Remove any existing polygons first (unless multi-tower coverage is on, in which case
-      //other previously-shown towers' polygons should be left alone - see #27)
-      if (!multiTowerCoverage) {
-        globalListPolygons.removeWhere((mapOverlay) {
-          return !mapOverlay.polygon!.polygonId.value.contains('developer');
-        });
-      }
+      // Remove this site's own existing polygons first. Only this site's polygons are
+      // targeted here (matched by mapOverlay.site) so that toggling one site off doesn't
+      // blast every other displayed site's polygons when multi-tower coverage is on (#27) —
+      // callers that want *every* site cleared (multiTowerCoverage off) already loop over
+      // every site via clearSitePatterns(), which ends up calling this per site anyway.
+      globalListPolygons.removeWhere((mapOverlay) {
+        return mapOverlay.site == site &&
+            !mapOverlay.polygon!.polygonId.value.contains('developer');
+      });
       // Remove this site's labels too, so they don't linger once the polygon is gone.
       labelOverlays.removeWhere((mapOverlay) => mapOverlay.site == site);
 

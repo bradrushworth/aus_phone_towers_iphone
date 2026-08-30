@@ -168,6 +168,39 @@ void main() {
           NetworkType.LTE);
     });
 
+    test('licence: Optus 900 MHz dual carrier displays as LTE, not NR (GitHub #55)', () {
+      // St George QLD, Broadcast Australia site 15491: the Optus 900 MHz block classifies
+      // as a genuine dual [LTE, NR] carrier (see getNetworkTypeStatic tests above), but
+      // that NR indication is generalised from a single live-verified metro cell
+      // (Tuggeranong ACT), not confirmed at this rural site. A knowledgeable local
+      // reported this tower has 4G only. Unlike the Optus 2100 / Telstra 850 / Vodafone
+      // 700 dual carriers (widely verified NR deployments), the Optus 900 band prefers the
+      // universally-present LTE for its single displayed technology.
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "25M0W7D", 947500000, 25000000, Telco.Optus, 0),
+          NetworkType.LTE);
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "25M0W7W", 947500000, 25000000, Telco.Optus, 0),
+          NetworkType.LTE);
+      // The underlying classifier is untouched: it still reports the full dual list.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "25M0W7D", 947500000, 25000000, Telco.Optus, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+    });
+
+    test('licence: Optus 2100 MHz dual carrier still displays as NR (not affected by #55 fix)',
+        () {
+      // Confirms the Optus 900 MHz override above is scoped to that band only -- the
+      // widely-verified Optus 2100 MHz dual carrier keeps showing the newest technology.
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "20M0W7D", 2140000000, 20000000, Telco.Optus, 0),
+          NetworkType.NR);
+    });
+
     test('licence: a UMTS emission outside any refarm band stays UMTS', () {
       expect(
           DeviceDetails.getNetworkTypeForLicence("10M0W7W", 0, 10000000, Telco.Vodafone, 0),
