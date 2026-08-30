@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.14.11+146] — 2026-08-30
 
 ### Fixed
 - **Tapping a tower a second time hides its coverage again** (GitHub issue #55). Every tap
