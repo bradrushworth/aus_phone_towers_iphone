@@ -376,7 +376,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
               }
             case 4: //Restore purchases
               {
-                PurchaseHelper().restorePurchases();
+                PurchaseHelper().restorePurchases(userInitiated: true);
                 break;
               }
           }

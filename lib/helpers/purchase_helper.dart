@@ -7,6 +7,9 @@ import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/billing/consumable_store.dart';
+import 'package:phonetowers/billing/entitlement_cache.dart';
+import 'package:phonetowers/billing/restore_outcome.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'analytics_helper.dart';
 import 'entitlement_evaluator.dart';
@@ -83,6 +86,26 @@ class PurchaseHelper with ChangeNotifier {
 
   bool hasPurchaseProcessed = false;
 
+  /// Seeds [isSubscribed]/[isSubscribedPermanently] from the locally cached
+  /// entitlement (see [EntitlementCache]) so a paying user doesn't see ads at
+  /// cold start while the store is still being queried. Call this before/
+  /// alongside [initStoreInfo] at app startup.
+  ///
+  /// This is a seed only — the next successful [_hasPurchase] evaluation
+  /// (triggered by [initStoreInfo]'s store round-trip) always overwrites both
+  /// these flags and the cache itself, so a refunded/expired purchase still
+  /// re-shows ads once the store responds.
+  Future<void> loadCachedEntitlement({int? nowMillis}) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final CachedEntitlement cached = EntitlementCache.read(
+      prefs,
+      nowMillis: nowMillis ?? DateTime.now().millisecondsSinceEpoch,
+    );
+    isSubscribed = cached.isSubscribed;
+    isSubscribedPermanently = cached.isSubscribedPermanently;
+    notifyListeners();
+  }
+
   void initStoreInfo({required ShowSnackBar showSnackBar}) async {
     this.showSnackBar = showSnackBar;
 
@@ -126,7 +149,7 @@ class PurchaseHelper with ChangeNotifier {
     // );
 
     if (available) {
-      restorePurchases();
+      await restorePurchases();
       await _getProducts();
       //await _hasPurchase();
     } else {
@@ -146,15 +169,42 @@ class PurchaseHelper with ChangeNotifier {
     }
   }
 
-  /// Restore all purchases from the store
-  void restorePurchases() async {
-    await _inAppPurchase.restorePurchases();
+  /// Restore all purchases from the store.
+  ///
+  /// Pass [userInitiated] true when called from a user-visible action (e.g. the
+  /// "Restore purchases" menu item) to show a snackbar reporting the outcome —
+  /// previously this method gave no feedback at all, leaving a tap on Restore
+  /// looking like nothing happened. Note that restored transactions are
+  /// delivered asynchronously via [_listenToPurchaseUpdated]/[purchaseStream]
+  /// and may arrive slightly after this await completes; the outcome snackbar
+  /// is based on best-effort current state and kept simple rather than
+  /// awaiting the stream as well.
+  Future<void> restorePurchases({bool userInitiated = false}) async {
+    try {
+      await _inAppPurchase.restorePurchases();
+    } catch (error) {
+      String message = 'Failed to restore purchases: $error';
+      logger.e('PurchaseHelper: ' + message);
+      AnalyticsHelper().log(message);
+      showSnackBar(message: message);
+      return;
+    }
+
+    if (userInitiated) {
+      showSnackBar(message: restoreOutcomeMessage(isSubscribed: isSubscribed));
+    }
   }
 
   /// Test-only seam for injecting fake product details without a real store connection — see
   /// test/ui/widgets/support_prompt_screen_test.dart.
   @visibleForTesting
   set debugProducts(List<ProductDetails?> products) => _products = products;
+
+  /// Test-only seam for resetting/injecting the in-memory purchase list —
+  /// PurchaseHelper is a singleton, so tests that call deliverProduct/_hasPurchase
+  /// must be able to reset this between cases to avoid leaking state.
+  @visibleForTesting
+  set debugPurchases(List<PurchaseDetails?> purchases) => _purchases = purchases;
 
   /// The store's localized price string for [sku] (e.g. "$5.99", "A$5.99", "€5.49" — already
   /// formatted for the user's storefront/locale), or null if product details haven't loaded
@@ -363,6 +413,19 @@ class PurchaseHelper with ChangeNotifier {
       eventMap['yearly_expiry'] = entitlement.yearlyExpiryEpoch;
     }
 
+    // Persist the freshly evaluated entitlement so a cold start before the
+    // next store round-trip still knows this device is ad-free (see
+    // EntitlementCache / loadCachedEntitlement). This always overwrites any
+    // previously cached value, so a refund/expiry correctly clears it.
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    if (entitlement.isSubscribedPermanently) {
+      await EntitlementCache.savePermanent(prefs);
+    } else if (entitlement.isSubscribed) {
+      await EntitlementCache.saveYearly(prefs, yearlyExpiryEpoch: entitlement.yearlyExpiryEpoch);
+    } else {
+      await EntitlementCache.clear(prefs);
+    }
+
     // Remove or display the ads
     hasPurchaseProcessed = true;
     notifyListeners();
@@ -509,8 +572,16 @@ class PurchaseHelper with ChangeNotifier {
   }
 
   Future<void> deliverProduct(PurchaseDetails purchaseDetails, Map<String, Object> eventMap) async {
-    // Use the prototype that stores consumables in the shared preferences
-    await ConsumableStore.save(purchaseDetails.purchaseID!);
+    // A null purchaseID must NOT prevent the ad-free entitlement below from
+    // being applied — it has been observed on some restore paths. Only
+    // record the consumable when we actually have an ID to record.
+    if (purchaseDetails.purchaseID != null) {
+      // Use the prototype that stores consumables in the shared preferences
+      await ConsumableStore.save(purchaseDetails.purchaseID!);
+    } else {
+      logger.w(
+          'PurchaseHelper: deliverProduct: purchaseID is null for ${purchaseDetails.productID}, skipping ConsumableStore.save');
+    }
 
     switch (purchaseDetails.productID) {
       case SKU_DONATION_SMALL:

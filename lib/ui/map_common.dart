@@ -335,6 +335,11 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     if (!kIsWeb) {
+      // Seed the ad-free entitlement from the local cache immediately so a
+      // paying user doesn't see ads while the store is still being queried,
+      // then kick off the real store round-trip (which always overwrites the
+      // seed once it responds).
+      PurchaseHelper().loadCachedEntitlement();
       PurchaseHelper().initStoreInfo(showSnackBar: showSnackbar);
       WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSupportPrompt());
     }
