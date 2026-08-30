@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.14.12+147] — 2026-08-30
 
 ### Changed
 - **Removed the draw-time density monotonicity clamp from the learned path-loss model**
