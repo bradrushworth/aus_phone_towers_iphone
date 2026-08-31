@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
+import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
+import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
 import 'package:phonetowers/utils/strings.dart';
 import 'package:phonetowers/utils/utils.dart';
 import 'package:provider/provider.dart';
@@ -313,6 +315,21 @@ class SettingsSheet {
                 },
               ),
             ]),
+            // Android's Settings sheet is where Remove Ads and Donate live (subscribeMenu /
+            // donateMenu are hidden backing items it drives). This is that entry point — but a
+            // single row into SupportPromptScreen rather than a second copy of the five product
+            // buttons, so there is exactly one place in the app where anything is sold.
+            if (!kIsWeb) ...[
+              _sectionTitle(bc, 'Support'),
+              _row(bc, 'Remove ads & donate', '›', () {
+                Navigator.of(bc).pop();
+                Navigator.of(context)
+                    .push(MaterialPageRoute(builder: (_) => const SupportPromptScreen()));
+              }),
+              _row(bc, Strings.restore_purchases, '›', () {
+                PurchaseHelper().restorePurchases(userInitiated: true);
+              }),
+            ],
             _sectionTitle(bc, 'Help'),
             _row(bc, 'User Guide', '›', () => Utils.launchURL(kUserGuideUrl)),
             _row(bc, 'Report a problem', '›', () {

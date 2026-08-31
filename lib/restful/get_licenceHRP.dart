@@ -171,16 +171,22 @@ class GetLicenceHRP {
           // (mnc + networkType + density + band) lookup — see hrpDistanceKm.
           CityDensity model =
               device.getRadiationModel() ?? defaultRadiationModel;
-          double distanceKm = hrpDistanceKm(
+          // The path-loss model with this transmitter's context bound, so
+          // calculateTerrainLosses can re-solve the distance after charging terrain to the
+          // link budget.
+          double solver(double budgetDb) => hrpDistanceKm(
               TelcoHelper.getMnc(site.getTelco()),
               device.getNetworkType(),
               model,
-              freeSpaceLoss_dBi,
+              budgetDb,
               freqInMHz,
               towerHeight.toDouble());
+          double distanceKm;
           if (PolygonHelper.calculateTerrain) {
             distanceKm = calculateTerrainLosses(site, heightToDistance,
-                distanceKm, bearing, freqInMHz.toDouble(), towerHeight);
+                freeSpaceLoss_dBi, solver, bearing, freqInMHz.toDouble(), towerHeight);
+          } else {
+            distanceKm = solver(freeSpaceLoss_dBi);
           }
 
           if (distanceKm > 100) {
@@ -348,143 +354,168 @@ class GetLicenceHRP {
     return angrad * 180.0 / (math.pi);
   }
 
+  /// How many times the terrain loss is fed back into the link budget before giving up.
+  static const int MAX_TERRAIN_ITERATIONS = 6;
+
+  /// Convergence tolerance for the fed-back terrain loss, in dB.
+  static const double TERRAIN_LOSS_TOLERANCE_DB = 0.5;
+
+  /// The Earth's effective refractive index used for the bulge term.
+  static const double EARTH_REFRACTIVE_INDEX = 0.8;
+
+  /// The coverage distance along [bearing] once terrain is taken into account.
+  ///
+  /// **Terrain is charged to the link budget as diffraction loss, not applied as a hard
+  /// cut-off** (GitHub issue #56, fixed in the Android app first). Until now an obstructed
+  /// bearing was walked down [GetElevation.SAMPLE_DISTANCES] until it reached a rung whose path
+  /// was clear, and the answer was always one of those rungs. Because that ladder does not depend
+  /// on the signal level being drawn, every contour of a site - MAX through WEAK - collapsed onto
+  /// the SAME rung the moment anything blocked the path: in hilly country (the report came from
+  /// Tasmania) all four coverage rings landed on top of each other, so the chosen signal strength
+  /// made no visible difference. It also cut coverage dead at the first ridge, with no allowance
+  /// for the diffraction that in reality carries a signal well past it - which is why the drawn
+  /// range fell far short of what the reporter measured in the field.
+  ///
+  /// Now the worst knife-edge obstruction along the path is converted to a loss in dB
+  /// ([knifeEdgeLossDb]), subtracted from the link budget, and the distance re-solved through the
+  /// caller's own path-loss model. A weaker receiver threshold starts with more budget, so it
+  /// still reaches further after paying the same terrain penalty - the ordering the contours are
+  /// supposed to show. The loss is recomputed at the new (shorter) distance and fed back until it
+  /// settles, because shortening the path changes which obstacles matter.
+  ///
+  /// [linkBudgetDb] is the path loss this contour can afford, i.e. the transmitted power minus
+  /// the receiver threshold, before terrain. [solver] resolves a link budget to a distance with
+  /// no terrain applied.
+  ///
+  /// Keep in lockstep with the Android app's GetLicenceHRP.calculateTerrainLosses.
   static double calculateTerrainLosses(
       final Site site,
       final Set<HeightDistancePair> heightToDistance,
-      final double transmissionDistance,
+      final double linkBudgetDb,
+      final double Function(double linkBudgetDb) solver,
       final double bearing,
       final double freqInMHz,
       final int towerHeight) {
-    //Log.d("GetLicenceHRP", "\n\n");
-    //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: transmissionDistance="+transmissionDistance);
-    // The Earth's Refractive Index
-    final double K = 0.8; //1.33;
+    double distanceKm = solver(linkBudgetDb);
+    if (!_isUsableDistance(distanceKm)) {
+      return distanceKm;
+    }
+
+    double appliedLossDb = 0;
+    for (int iteration = 0; iteration < MAX_TERRAIN_ITERATIONS; iteration++) {
+      double lossDb = terrainExcessLossDb(
+          site, heightToDistance, distanceKm, bearing, freqInMHz, towerHeight);
+      if (lossDb <= appliedLossDb + TERRAIN_LOSS_TOLERANCE_DB) {
+        // Settled: this distance already pays for the terrain in its way.
+        break;
+      }
+      appliedLossDb = lossDb;
+
+      double shorter = solver(linkBudgetDb - appliedLossDb);
+      if (!_isUsableDistance(shorter) || shorter >= distanceKm) {
+        // The model cannot answer, or refuses to shrink: keep the last usable distance rather
+        // than replacing it with something worse than what we already have.
+        break;
+      }
+      distanceKm = shorter;
+    }
+    return distanceKm;
+  }
+
+  static bool _isUsableDistance(double distanceKm) {
+    return distanceKm.isFinite && distanceKm > 0;
+  }
+
+  /// The worst knife-edge diffraction loss, in dB, imposed by the terrain between the site and a
+  /// receiver [distanceKm] away along [bearing]. Zero when the path is clear.
+  ///
+  /// Only the highest quarter of the elevation samples are examined, as before: they are the only
+  /// ones that can dominate, and the profile is sampled sparsely enough that testing all of them
+  /// costs more than it buys.
+  static double terrainExcessLossDb(
+      final Site site,
+      final Set<HeightDistancePair> heightToDistance,
+      final double distanceKm,
+      final double bearing,
+      final double freqInMHz,
+      final int towerHeight) {
+    if (!_isUsableDistance(distanceKm) || heightToDistance.isEmpty) {
+      return 0;
+    }
 
     final LatLng siteLatLon = site.getLatLng();
-    double transmitterHeight = site.getElevation(siteLatLon) + towerHeight;
+    final double transmitterHeight = site.getElevation(siteLatLon) + towerHeight;
 
-    final LatLng receiverLatLon =
-        travel(siteLatLon, bearing, transmissionDistance);
-    double receiverHeight =
+    final LatLng receiverLatLon = travel(siteLatLon, bearing, distanceKm);
+    final double receiverHeight =
         site.getElevation(receiverLatLon) + RECEIVER_ELEVATION_OFFSET_M;
-    // Don't calculate the angle looking down because the radiation is projected over objects
-    //if (receiverHeight < transmitterHeight) {
-    //receiverHeight = transmitterHeight;
-    //}
 
-    // The tan gradient of LOS
-    final double MM =
-        (transmitterHeight - receiverHeight) / (transmissionDistance * 1000);
+    // The tan gradient of the line of sight, transmitter down to receiver.
+    final double gradient =
+        (transmitterHeight - receiverHeight) / (distanceKm * 1000);
 
     // Only calculate the highest obstacles to save CPU cycles
     final int limitSamples = (heightToDistance.length / 4).round() + 1;
     int samples = 0;
+    double worstLossDb = 0;
+
     var sortedHeightToDistance = heightToDistance.toList();
     sortedHeightToDistance.sort();
     sortedHeightToDistance = sortedHeightToDistance.reversed.toList();
+
     for (HeightDistancePair pair in sortedHeightToDistance) {
       samples++;
       if (samples > limitSamples) break;
 
       // Height of sample above mean sea level
-      double sampleHeight = pair.height;
+      final double sampleHeight = pair.height;
       // Distance before obstacle
-      double distanceBefore = pair.distance;
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: sampleHeight="+sampleHeight+", distanceBefore="+distanceBefore);
+      final double distanceBefore = pair.distance;
       // Distance after obstacle
-      double distanceAfter = transmissionDistance - distanceBefore;
-      // Don't sample distances beyond the receiver
-      if (distanceAfter < 0) continue;
+      final double distanceAfter = distanceKm - distanceBefore;
+      // Don't sample the site itself, or distances beyond the receiver
+      if (distanceAfter <= 0 || distanceBefore <= 0) continue;
+
       // The Earth bulge in metres
-      double h = (distanceBefore * distanceAfter) / (12.75 * K);
-      // Height of the LOS (ASL) at distanceAfter
-      double LL = (MM * (distanceAfter * 1000)) + receiverHeight;
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: distanceAfter=" + distanceAfter + " h=" + h + " LL=" + LL);
-      // Fresnel Radius at LL
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: F1...=" + (distanceBefore * distanceAfter));
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: F1...=" + (transmissionDistance * freqInMHz));
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: F1...=" + ((distanceBefore * distanceAfter) / (transmissionDistance * freqInMHz)));
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: F1...=" + Math.sqrt((distanceBefore * distanceAfter) / (transmissionDistance * freqInMHz)));
-      double F1 = 548 *
-          math.sqrt((distanceBefore * distanceAfter) /
-              (transmissionDistance * freqInMHz));
+      final double bulge =
+          (distanceBefore * distanceAfter) / (12.75 * EARTH_REFRACTIVE_INDEX);
+      // Height of the line of sight (ASL) above the obstacle
+      final double lineOfSight =
+          (gradient * (distanceAfter * 1000)) + receiverHeight;
+      // First Fresnel zone radius at the obstacle, in metres
+      final double fresnelRadius = 548 *
+          math.sqrt(
+              (distanceBefore * distanceAfter) / (distanceKm * freqInMHz));
+      if (!(fresnelRadius > 0)) continue;
 
-      // Clearance between F1 and Mean Sea Level
-      double C1 = LL - h - F1;
+      // Positive when the line of sight passes above the obstacle.
+      final double clearance = lineOfSight - bulge - sampleHeight;
+      // Only obstacles that actually break the line of sight are charged for. An obstacle that
+      // merely intrudes into the Fresnel zone without blocking it is left alone: the trained
+      // path-loss coefficients were fitted against real observations over real ground, so that
+      // loss is already in them and charging it again would double-count.
+      if (clearance >= 0) continue;
+      // ITU-R P.526 diffraction parameter: positive when the obstacle intrudes.
+      final double v = -clearance * math.sqrt(2) / fresnelRadius;
 
-      // If the signal is not blocked at all, move to the next point
-      if (LL - h >= sampleHeight) {
-        //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: decision: Clear: sampleHeight="+sampleHeight+" < C1="+C1);
-        continue;
-      }
-
-      // If the signal is blocked completely, return the distance to this point
-      if (C1 < sampleHeight) {
-        //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: Blocked completely: LL="+LL+" - h="+h+" <= sampleHeight="+sampleHeight);
-        //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: Blocked completely: C1="+C1+" <= sampleHeight="+sampleHeight);
-        //return distanceBefore;
-        int i = getClosestSampleDistanceIndex(transmissionDistance);
-        //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: decision: Blocked completely: i="+i+" GetElevation.SAMPLE_DISTANCES[i]="+GetElevation.SAMPLE_DISTANCES[i]);
-        return calculateTerrainLosses(site, heightToDistance,
-            GetElevation.SAMPLE_DISTANCES[i], bearing, freqInMHz, towerHeight);
-      }
-
-      // If the signal is partially blocked...
-
-      // Obstacle intrusion into F1
-      double H = MM * (distanceAfter * 1000) + (receiverHeight - sampleHeight);
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: H=" + H);
-      // Ratio of signal loss
-      double n = (H / F1);
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: n=" + n);
-
-      double v = n * math.sqrt(2) * -1;
-      // dB measurement of signal loss
-      double Jv = 0;
-      if (n > 0.6) {
-        //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: n is greater than 0.6 !!!");
-        int i = getClosestSampleDistanceIndex(transmissionDistance);
-        //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: decision: n > 0.6: i="+i+" GetElevation.SAMPLE_DISTANCES[i]="+GetElevation.SAMPLE_DISTANCES[i]);
-        return calculateTerrainLosses(site, heightToDistance,
-            GetElevation.SAMPLE_DISTANCES[i], bearing, freqInMHz, towerHeight);
-      } else if (n > -1.4) {
-        Jv = 6.4 + 20 * (math.log(math.sqrt(v * v + 1 + v) / math.log(10)));
-      } else {
-        Jv = 13 + 20 * (math.log(v) / math.log(10));
-      }
-      //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: Jv=" + Jv);
-
-      // If a significant loss was incurred on the transmission
-      if (Jv > 6) {
-        // Recalculate the distance factoring in the terrain
-        //double tempDistance = transmissionDistance - calculateFreeSpaceDistance(Jv, freqInMHz);
-        ////Log.d("GetLicenceHRP",  "elevation: calculateTerrainLosses: Jv="+Jv+", transmissionDistance="+transmissionDistance);
-        //if (tempDistance < newDistance) {
-        //    newDistance = tempDistance;
-        //}
-        ////Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: Jv="+Jv+", distanceBefore="+distanceBefore+", transmissionDistance="+transmissionDistance);
-        //newDistance = distanceBefore;
-        //continue;
-        int i = getClosestSampleDistanceIndex(transmissionDistance);
-        //Log.d("GetLicenceHRP", "elevation: calculateTerrainLosses: decision: Jv: i="+i+" GetElevation.SAMPLE_DISTANCES[i]="+GetElevation.SAMPLE_DISTANCES[i]);
-        return calculateTerrainLosses(site, heightToDistance,
-            GetElevation.SAMPLE_DISTANCES[i], bearing, freqInMHz, towerHeight);
-      }
+      final double lossDb = knifeEdgeLossDb(v);
+      if (lossDb > worstLossDb) worstLossDb = lossDb;
     }
-    return transmissionDistance;
+
+    return worstLossDb;
   }
 
-  static int getClosestSampleDistanceIndex(double transmissionDistance) {
-    //Arrays.binarySearch(GetElevation.SAMPLE_DISTANCES, 0, GetElevation.SAMPLE_DISTANCES.length, transmissionDistance) - 1
-    for (int i = 0; i < GetElevation.SAMPLE_DISTANCES.length; i++) {
-      if (GetElevation.SAMPLE_DISTANCES[i] < transmissionDistance) {
-        if (i + 1 == GetElevation.SAMPLE_DISTANCES.length ||
-            GetElevation.SAMPLE_DISTANCES[i + 1] >= transmissionDistance) {
-          return i;
-        }
-      }
+  /// Single knife-edge diffraction loss in dB for the ITU-R P.526 diffraction parameter [v].
+  /// Zero below v = -0.78, where the obstacle is clear of the first Fresnel zone and costs
+  /// nothing.
+  static double knifeEdgeLossDb(double v) {
+    if (v <= -0.78) {
+      return 0;
     }
-    return 0;
+    return 6.9 +
+        20 *
+            (math.log(math.sqrt((v - 0.1) * (v - 0.1) + 1) + v - 0.1) /
+                math.ln10);
   }
 }
 

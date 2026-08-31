@@ -8,6 +8,54 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.15+150] — 2026-08-31
+
+### Fixed
+- **With Calculate Terrain on, every signal-strength contour drew at the same radius** (GitHub
+  issue #56, reported against the Android app and fixed there in 7.7.51; this app carries the
+  same ported code). An obstructed bearing was walked down a fixed ladder of sample distances
+  until the path was clear, and that ladder takes no account of the signal level — so Maximum,
+  Strong, Good and Weak all snapped onto the same rung wherever terrain blocked the path, which
+  in hilly country is most bearings. Coverage also stopped dead at the first ridge with no
+  diffraction allowance, drawing far less range than users measure in the field. Terrain is now
+  charged to the link budget as knife-edge diffraction loss (ITU-R P.526) and the distance
+  re-solved through the trained path-loss model, so a weaker threshold still reaches further
+  after paying the same terrain penalty, and signals carry past a ridge instead of stopping at
+  it.
+
+  The Android app's other issue #56 fix — the hypothetical-location pin surviving Refresh Data
+  as a dead handle — does not apply here: this app has no long-press hypothetical-location pin.
+
+- **In-app purchase prices did not match the App Store.** The live-price plumbing was correct,
+  but every label passed a hardcoded `Name ($X.XX)` fallback that was shown verbatim whenever a
+  SKU was missing from the store response — so a product id that had drifted from App Store
+  Connect, or any repricing, left the app quoting a price the store would never charge. The
+  price-bearing fallbacks are gone: a label with no live price now shows the product name alone.
+  `queryProductDetails().notFoundIDs` was being captured and discarded, and is now logged and
+  reported, so a SKU mismatch is visible rather than silently degrading to a wrong price.
+- **An empty blue bar appeared after cancelling a purchase.** `PurchaseStatus.canceled` had no
+  branch in the purchase listener, so backing out of the store sheet left an empty snackbar on
+  screen. Cancelling is now handled explicitly and silently, and the snackbar helper refuses a
+  blank message outright. Developer-debug snackbars fired at users along the way (`Purchase
+  status is PurchaseStatus.pending`, `Selected to buy true: productDetails=…`, `_hasPurchase: 3`)
+  are log lines now, and a failed purchase shows the store's own message instead of a dump of
+  every `PurchaseDetails` field.
+
+### Changed
+- **The overflow menu follows the Android app's conventions again.** It is now Refresh Data,
+  Export Data, Settings, User Guide, Report a Problem, Support the App — `popup_menu.xml`'s
+  order. Remove Ads and Donate submenus are gone from it: the app was offering the same five
+  products from three different places, and `SupportPromptScreen` is now the only place anything
+  is sold, reached from the Support the App row and from one row in the Settings sheet (where
+  Android keeps Remove Ads and Donate). User Guide and Report a Problem were previously buried in
+  the Settings sheet; Report a Problem in particular belongs in the overflow, since the report
+  screenshots the window as it stands and firing it from inside a sheet captures the sheet. Close
+  App is dropped — Android has no such item, and on iOS it only ever displayed a snackbar saying
+  it does nothing. "Report Problem" is now "Report a Problem", matching the Android wording.
+
+  The Flutter app still has no Leaderboard, which Android carries in the same menu. That is a
+  missing feature rather than a missing menu row, and is not addressed here.
+
 ## [1.14.14+149] — 2026-08-31
 
 ### Fixed

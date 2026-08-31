@@ -664,21 +664,25 @@ class PolygonHelper with ChangeNotifier {
         // (composite -> density-only -> analytic Hata), identical to the mapping path.
         CityDensity model = device.getRadiationModel() ??
             GetLicenceHRP.defaultRadiationModel;
-        double distanceKm = GetLicenceHRP.calculateDistanceWithContext(
-            TelcoHelper.getMnc(site.getTelco()),
-            device.getNetworkType(),
-            model,
-            freeSpaceLoss_dBi,
-            freqInMHz.toDouble(),
-            (towerHeight + hillHeight).toDouble());
-        //Log.d("PolygonHelper", "distanceKm="+distanceKm);
-
-//    TreeSet<HeightDistancePair> heightToDistance = site.getHeightsAlongBearing(distanceKm, bearing);//TODO later on
-//    distanceKm = GetLicenceHRP.calculateTerrainLosses(site, heightToDistance, distanceKm, bearing, freqInMHz, towerHeight);
+        // The path-loss model with this transmitter's context bound, so
+        // calculateTerrainLosses can re-solve the distance after charging terrain to the
+        // link budget.
+        double solver(double budgetDb) =>
+            GetLicenceHRP.calculateDistanceWithContext(
+                TelcoHelper.getMnc(site.getTelco()),
+                device.getNetworkType(),
+                model,
+                budgetDb,
+                freqInMHz.toDouble(),
+                (towerHeight + hillHeight).toDouble());
+        double distanceKm;
         if (calculateTerrain) {
-          distanceKm = GetLicenceHRP.calculateTerrainLosses(
-              site, heightToDistance, distanceKm, bearing, freqInMHz.toDouble(), towerHeight);
+          distanceKm = GetLicenceHRP.calculateTerrainLosses(site, heightToDistance,
+              freeSpaceLoss_dBi, solver, bearing, freqInMHz.toDouble(), towerHeight);
+        } else {
+          distanceKm = solver(freeSpaceLoss_dBi);
         }
+        //Log.d("PolygonHelper", "distanceKm="+distanceKm);
 
         if (distanceKm > 100) {
           distanceKm = 100;

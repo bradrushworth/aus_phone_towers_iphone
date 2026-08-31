@@ -1566,6 +1566,14 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     Duration duration = const Duration(seconds: 1),
     bool isDismissible = false,
   }) {
+    // A blank message renders as a bare blue bar with nothing in it, which reads as a glitch
+    // rather than as feedback. Whatever the caller meant to say, saying nothing is better done by
+    // not showing the bar at all. (Seen after cancelling a purchase — see PurchaseHelper's
+    // PurchaseStatus.canceled branch, which is the specific case that produced it.)
+    if (message.trim().isEmpty) {
+      return;
+    }
+
     final SnackBar snackBar = SnackBar(
       content: Text(message),
       duration: duration,

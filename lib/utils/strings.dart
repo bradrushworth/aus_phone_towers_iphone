@@ -92,6 +92,9 @@ class Strings {
   static String polygon_precision_high = 'High (smoother)';
 
   static String export_data = 'Export Data';
+  // Overflow row shared with the Android app's popup_menu.xml. (userGuide and reportProblem are
+  // declared further down, alongside the other Help strings.)
+  static String settings = 'Settings';
   static String export_towers_geojson = 'Export Towers (GeoJSON)';
   static String export_towers_csv = 'Export Towers (CSV)';
   static String export_coverage_geojson = 'Export Coverage (GeoJSON)';
@@ -101,14 +104,16 @@ class Strings {
   static String remove_ads = 'Remove Ads';
   static String remove_ads_subscribe_previous =
       'You are subscribed! Thanking you.';
-  // Product names, with no price baked in — the live price is pulled from the store via
+  // Product names, with NO price baked in — the live price is pulled from the store via
   // PurchaseHelper.priceLabel (see PriceLabelHelper) and appended at display time.
+  //
+  // There are deliberately no hardcoded-price fallback strings here any more. They used to read
+  // 'One Year Ad Free (\$9.99)' and were shown verbatim whenever a SKU was missing from the store
+  // response — so a product id that no longer matched App Store Connect, or a repricing, left the
+  // app quoting a price the store would never charge. A name with no price is always honest; a
+  // stale price is not. See PriceLabelHelper.buildLabel, which now falls back to the bare name.
   static String remove_ads_year_name = 'One Year Ad Free';
   static String remove_ads_permanent_name = 'Permanent Ad Free';
-  // Fallback labels (with a hardcoded price) used only until the store's product details have
-  // loaded — see PurchaseHelper.priceLabel.
-  static String remove_ads_year = 'One Year Ad Free (\$9.99)';
-  static String remove_ads_permanent = 'Permanent Ad Free (\$24.99)';
   static String subscribed_permanently = 'Permanently subscribed.';
   static String restore_purchases = 'Restore Purchases';
 
@@ -118,11 +123,6 @@ class Strings {
   static String donateSmallName = 'Morning Coffee';
   static String donateMediumName = 'Coffee and Cake';
   static String donateLargeName = 'Thanks For Lunch';
-  // Fallback labels (with a hardcoded price) used only until the store's product details have
-  // loaded — see PurchaseHelper.priceLabel.
-  static String donateSmall = 'Morning Coffee (\$5.99)';
-  static String donateMedium = 'Coffee and Cake (\$14.99)';
-  static String donateLarge = 'Thanks For Lunch (\$29.99)';
   static String donateSupportPrompt = 'Support the App';
   static String supportPromptRateHeader = 'Or just leave a rating';
   static String supportPromptRateAction = 'Rate the app';
@@ -141,7 +141,7 @@ class Strings {
   static String developerMode = 'Developer Mode';
   static String regularMode = 'Regular Mode';
 
-  static String reportProblem = 'Report Problem';
+  static String reportProblem = 'Report a Problem';
   static String exportPolygons = 'Export Coverage';
   static String userGuide = 'User Guide';
   static String rateApp = 'Rate App';
