@@ -19,16 +19,25 @@ class PriceLabelHelper {
   }
 
   /// Combines [name] with the live price for [sku] within [products] if known — e.g.
-  /// `buildLabel(products: products, sku: sku, name: 'Morning Coffee', fallback: fallback)` ->
-  /// `"Morning Coffee ($5.99)"`. Falls back to [fallback] (typically a hardcoded "Name ($X.XX)"
-  /// string) when pricing hasn't loaded yet, so the menu never shows a broken/blank price.
+  /// `buildLabel(products: products, sku: sku, name: 'Morning Coffee')` ->
+  /// `"Morning Coffee ($5.99)"`.
+  ///
+  /// When the price isn't known — the store query is still in flight, failed, or the SKU is not
+  /// in the storefront at all — the label is just [name], with no price. It deliberately does NOT
+  /// substitute a hardcoded price: the fallbacks used to carry one (e.g. 'Morning Coffee
+  /// ($5.99)'), so any drift between the app's product ids and App Store Connect, or any
+  /// repricing, made the app quote a price the store would never charge. Showing no price is
+  /// always truthful; showing a stale one is not.
+  ///
+  /// [fallback] remains available for a caller that genuinely has a better string than the bare
+  /// name, but it must never be a hardcoded price.
   static String buildLabel({
     required List<ProductDetails?> products,
     required String sku,
     required String name,
-    required String fallback,
+    String? fallback,
   }) {
     final String? price = findPrice(products, sku);
-    return price != null ? '$name ($price)' : fallback;
+    return price != null ? '$name ($price)' : (fallback ?? name);
   }
 }

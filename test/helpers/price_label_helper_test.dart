@@ -63,5 +63,26 @@ void main() {
       );
       expect(label, 'Morning Coffee (\$5.99 - fallback)');
     });
+
+    test('with no fallback, shows the bare name rather than inventing a price', () {
+      // The app used to pass a hardcoded "Name (\$X.XX)" fallback here, so a SKU missing from
+      // the storefront quoted a price the store would never charge. No price is always truthful.
+      final label = PriceLabelHelper.buildLabel(
+        products: [],
+        sku: 'sku_a',
+        name: 'Morning Coffee',
+      );
+      expect(label, 'Morning Coffee');
+      expect(label.contains('\$'), isFalse);
+    });
+
+    test('an unknown SKU does not borrow another product price', () {
+      final label = PriceLabelHelper.buildLabel(
+        products: [_product('sku_a', '\$5.99')],
+        sku: 'sku_b',
+        name: 'Coffee and Cake',
+      );
+      expect(label, 'Coffee and Cake');
+    });
   });
 }

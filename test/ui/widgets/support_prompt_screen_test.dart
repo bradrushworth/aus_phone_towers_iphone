@@ -39,9 +39,9 @@ void main() {
       await pump(tester);
       expect(find.text(Strings.supportPromptTitle), findsOneWidget);
       expect(find.text(Strings.supportPromptMessage), findsOneWidget);
-      expect(find.text(Strings.donateSmall), findsOneWidget);
-      expect(find.text(Strings.donateMedium), findsOneWidget);
-      expect(find.text(Strings.donateLarge), findsOneWidget);
+      expect(find.text(Strings.donateSmallName), findsOneWidget);
+      expect(find.text(Strings.donateMediumName), findsOneWidget);
+      expect(find.text(Strings.donateLargeName), findsOneWidget);
       expect(find.text(Strings.supportPromptMaybeLater), findsOneWidget);
     });
 
@@ -49,8 +49,8 @@ void main() {
       PurchaseHelper().isSubscribed = false;
       await pump(tester);
       expect(find.text(Strings.supportPromptAdfreeHeader), findsOneWidget);
-      expect(find.text(Strings.remove_ads_year), findsOneWidget);
-      expect(find.text(Strings.remove_ads_permanent), findsOneWidget);
+      expect(find.text(Strings.remove_ads_year_name), findsOneWidget);
+      expect(find.text(Strings.remove_ads_permanent_name), findsOneWidget);
     });
 
     testWidgets('hides the ad-free section once the user already has ads removed',
@@ -58,8 +58,8 @@ void main() {
       PurchaseHelper().isSubscribed = true;
       await pump(tester);
       expect(find.text(Strings.supportPromptAdfreeHeader), findsNothing);
-      expect(find.text(Strings.remove_ads_year), findsNothing);
-      expect(find.text(Strings.remove_ads_permanent), findsNothing);
+      expect(find.text(Strings.remove_ads_year_name), findsNothing);
+      expect(find.text(Strings.remove_ads_permanent_name), findsNothing);
     });
 
     testWidgets('shows live store pricing once product details have loaded, not the hardcoded fallback',
@@ -70,11 +70,11 @@ void main() {
       ];
       await pump(tester);
       expect(find.text('${Strings.donateSmallName} (\$1.23)'), findsOneWidget);
-      expect(find.text(Strings.donateSmall), findsNothing);
+      expect(find.text(Strings.donateSmallName), findsNothing);
       expect(find.text('${Strings.remove_ads_year_name} (\$4.56)'), findsOneWidget);
-      expect(find.text(Strings.remove_ads_year), findsNothing);
+      expect(find.text(Strings.remove_ads_year_name), findsNothing);
       // Products with no matching entry in the store response still fall back.
-      expect(find.text(Strings.donateMedium), findsOneWidget);
+      expect(find.text(Strings.donateMediumName), findsOneWidget);
     });
   });
 }

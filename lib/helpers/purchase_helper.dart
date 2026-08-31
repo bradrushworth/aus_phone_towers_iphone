@@ -214,7 +214,7 @@ class PurchaseHelper with ChangeNotifier {
   /// Builds a menu/screen label combining [name] with the live store price for [sku], falling
   /// back to [fallback] (typically a hardcoded "Name ($X.XX)" string) while pricing hasn't
   /// loaded yet, so menus never show a broken/blank price.
-  String priceLabel({required String sku, required String name, required String fallback}) =>
+  String priceLabel({required String sku, required String name, String? fallback}) =>
       PriceLabelHelper.buildLabel(products: _products, sku: sku, name: name, fallback: fallback);
 
   /// Get all products available for sale
@@ -317,6 +317,20 @@ class PurchaseHelper with ChangeNotifier {
     }
 
     List<String> consumables = await ConsumableStore.load();
+    // A SKU the storefront does not recognise is the single most likely reason a price goes
+    // missing from the menu (the label then shows the bare product name). It used to be swallowed
+    // here, so a product id that had drifted from App Store Connect looked identical to a slow
+    // network. Report it.
+    if (productDetailResponse.notFoundIDs.isNotEmpty) {
+      final String error =
+          'Store does not know these product ids: ${productDetailResponse.notFoundIDs.join(', ')}';
+      logger.e('PurchaseHelper: ' + error);
+      AnalyticsHelper().log(error);
+      AnalyticsHelper().sendCustomAnalyticsEvent(
+        eventName: 'products_not_found',
+        eventParameters: <String, Object>{'ids': productDetailResponse.notFoundIDs.join(',')},
+      );
+    }
     _products = productDetailResponse.productDetails;
     _notFoundIds = productDetailResponse.notFoundIDs;
     _consumables = consumables;
@@ -430,10 +444,11 @@ class PurchaseHelper with ChangeNotifier {
     hasPurchaseProcessed = true;
     notifyListeners();
 
-    showSnackBar(message: "_hasPurchase: ${listAllOwnedSkus.length}");
+    // Debug-only inventory dump. These were snackbars ("_hasPurchase: 3", "purchased item is
+    // donation_small") fired at real users on every entitlement evaluation.
+    logger.d('PurchaseHelper: _hasPurchase: ${listAllOwnedSkus.length} owned SKUs');
     for (PurchaseDetails? purchase in _purchases) {
       logger.d('purchased item is ${purchase!.productID}');
-      showSnackBar(message: 'purchased item is ${purchase.productID}');
     }
 
     AnalyticsHelper().sendCustomAnalyticsEvent(
@@ -498,9 +513,14 @@ class PurchaseHelper with ChangeNotifier {
               autoConsume: false,
             );
           }
-        showSnackBar(
-          message: 'Selected to buy ${bought}: productDetails=${purchaseParam.productDetails.title}',
-        );
+          // No snackbar on the way in: buyConsumable/buyNonConsumable returning true only means
+          // the request reached the store, and the store's own sheet is about to appear over the
+          // top of it. The outcome is reported from _listenToPurchaseUpdated instead.
+          logger.i(
+              'PurchaseHelper: requested purchase (accepted=$bought) of ${purchaseParam.productDetails.id}');
+          if (!bought) {
+            showSnackBar(message: 'The store could not start that purchase. Please try again.');
+          }
       } else {
         String error =
             'The product being bought does not match the inventory... _products = ${_products.length}';
@@ -536,12 +556,25 @@ class PurchaseHelper with ChangeNotifier {
     for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
       Map<String, Object> eventMap = Map<String, Object>();
       if (purchaseDetails.status == PurchaseStatus.pending) {
+        // No snackbar: the store's own sheet is on screen and is already telling the user what
+        // is happening. Announcing 'Purchase status is PurchaseStatus.pending' over the top of
+        // it said nothing a user could act on.
         logger.w('Purchase status is ${purchaseDetails.status}');
-        showSnackBar(message: 'Purchase status is ${purchaseDetails.status}');
+      } else if (purchaseDetails.status == PurchaseStatus.canceled) {
+        // Backing out of the store sheet is a normal, deliberate act and needs no announcement.
+        // This branch used to be missing entirely, so a cancel fell through to the catch-all
+        // below and left the UI showing an empty snackbar — a blue bar with no text in it.
+        logger.i('PurchaseHelper: purchase of ${purchaseDetails.productID} was cancelled');
       } else {
         if (purchaseDetails.status == PurchaseStatus.error) {
           String error = 'Failed purchase of ${purchaseDetails.productID} ${purchaseDetails.purchaseID} ${purchaseDetails.error} ${purchaseDetails.transactionDate} ${purchaseDetails.verificationData} ${purchaseDetails.pendingCompletePurchase} ';
-          showSnackBar(message: error);
+          // The user gets the store's own message where there is one; the full dump above stays
+          // in the log and analytics, where it is of some use.
+          final String? storeMessage = purchaseDetails.error?.message;
+          showSnackBar(
+              message: (storeMessage != null && storeMessage.trim().isNotEmpty)
+                  ? 'Purchase failed: $storeMessage'
+                  : 'That purchase could not be completed.');
           logger.e("PurchaseHelper: " + error);
           eventMap['failure'] = error;
           AnalyticsHelper().log(error);
@@ -552,8 +585,9 @@ class PurchaseHelper with ChangeNotifier {
           );
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
+          // deliverProduct() below says something the user actually cares about ("Thanks so much
+          // for the coffee") — this raw status line only got in its way.
           logger.i('Purchase status is ${purchaseDetails.status}');
-          showSnackBar(message: 'Purchase status is ${purchaseDetails.status}');
           bool valid = await _verifyPurchase(purchaseDetails);
           if (valid) {
             await deliverProduct(purchaseDetails, eventMap);

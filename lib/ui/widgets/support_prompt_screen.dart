@@ -58,8 +58,7 @@ class SupportPromptScreen extends StatelessWidget {
                       context, 'donate_small', PurchaseHelper.SKU_DONATION_SMALL),
                   child: Text(purchaseHelper.priceLabel(
                       sku: PurchaseHelper.SKU_DONATION_SMALL,
-                      name: Strings.donateSmallName,
-                      fallback: Strings.donateSmall)),
+                      name: Strings.donateSmallName)),
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton(
@@ -67,8 +66,7 @@ class SupportPromptScreen extends StatelessWidget {
                       context, 'donate_medium', PurchaseHelper.SKU_DONATION_MEDIUM),
                   child: Text(purchaseHelper.priceLabel(
                       sku: PurchaseHelper.SKU_DONATION_MEDIUM,
-                      name: Strings.donateMediumName,
-                      fallback: Strings.donateMedium)),
+                      name: Strings.donateMediumName)),
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton(
@@ -76,8 +74,7 @@ class SupportPromptScreen extends StatelessWidget {
                       context, 'donate_large', PurchaseHelper.SKU_DONATION_LARGE),
                   child: Text(purchaseHelper.priceLabel(
                       sku: PurchaseHelper.SKU_DONATION_LARGE,
-                      name: Strings.donateLargeName,
-                      fallback: Strings.donateLarge)),
+                      name: Strings.donateLargeName)),
                 ),
                 if (!purchaseHelper.isSubscribed) ...[
                   const SizedBox(height: 24),
@@ -89,8 +86,7 @@ class SupportPromptScreen extends StatelessWidget {
                         PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR),
                     child: Text(purchaseHelper.priceLabel(
                         sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
-                        name: Strings.remove_ads_year_name,
-                        fallback: Strings.remove_ads_year)),
+                        name: Strings.remove_ads_year_name)),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton(
@@ -98,8 +94,7 @@ class SupportPromptScreen extends StatelessWidget {
                         PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY),
                     child: Text(purchaseHelper.priceLabel(
                         sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY,
-                        name: Strings.remove_ads_permanent_name,
-                        fallback: Strings.remove_ads_permanent)),
+                        name: Strings.remove_ads_permanent_name)),
                   ),
                 ],
                 // Rating costs the user nothing and helps the app more than a small donation
