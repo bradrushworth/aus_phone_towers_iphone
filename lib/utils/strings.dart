@@ -92,6 +92,9 @@ class Strings {
   static String polygon_precision_high = 'High (smoother)';
 
   static String export_data = 'Export Data';
+  // Overflow row shared with the Android app's popup_menu.xml. (userGuide and reportProblem are
+  // declared further down, alongside the other Help strings.)
+  static String settings = 'Settings';
   static String export_towers_geojson = 'Export Towers (GeoJSON)';
   static String export_towers_csv = 'Export Towers (CSV)';
   static String export_coverage_geojson = 'Export Coverage (GeoJSON)';
@@ -138,7 +141,7 @@ class Strings {
   static String developerMode = 'Developer Mode';
   static String regularMode = 'Regular Mode';
 
-  static String reportProblem = 'Report Problem';
+  static String reportProblem = 'Report a Problem';
   static String exportPolygons = 'Export Coverage';
   static String userGuide = 'User Guide';
   static String rateApp = 'Rate App';

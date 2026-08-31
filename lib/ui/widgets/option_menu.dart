@@ -1,23 +1,15 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:in_app_review/in_app_review.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/export_helper.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
-import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/ui/widgets/layers_settings_sheets.dart';
-import 'package:phonetowers/helpers/purchase_helper.dart';
-import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
 import 'package:phonetowers/utils/strings.dart';
 import 'package:phonetowers/utils/utils.dart';
-import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:phonetowers/model/device_detail.dart';
 
@@ -27,24 +19,34 @@ typedef void ShowSnackBar({
   bool isDismissible,
 });
 
-/// Top-level option-menu items, ordered to mirror the Android app's popup menu (Reload
-/// Everything, Follow GPS, Hide Borders, Search, Map Mode, Hiding Menu, Export Data, Remove
-/// Ads, Donate, Problems Menu, Rate App, Close App). `lockMap` and `polygonPrecision` have no
-/// Android equivalent (iOS-only features) and are placed next to their closest thematic
-/// neighbour (rotatingMap, exportData) rather than breaking the shared ordering.
-/// Using an enum (rather than an index into a list) guarantees the label shown always
-/// maps to the correct behaviour — fixing the old "labels don't match the action" bug.
-/// F5 (UI overhaul port): the overflow slims to match the Android Phase 5 bar — Follow GPS,
-/// Search and the funnel live on the toolbar; map-surface options moved to the Layers sheet;
-/// rotation, refarming, Developer Mode, help links and Rate App moved to the Settings sheet.
-/// Declaration order is on-screen order (kept aligned with the Java app's popup_menu.xml).
+/// Top-level overflow items, in the same order as the Android app's `popup_menu.xml`:
+/// Refresh Data, Export Data, Settings, User Guide, Report a Problem, Support the App.
+///
+/// Android's overflow deliberately stays slim — the funnel, Follow GPS, Layers and Search live on
+/// the toolbar, and everything that is a *setting* lives in the Layers/Settings sheets. This menu
+/// had drifted from that: it still carried Remove Ads and Donate submenus of its own, so the app
+/// sold the same five products from three different places (here, the Settings sheet's
+/// neighbourhood, and the Support the App screen). Those submenus are gone; `SupportPromptScreen`
+/// is now the single place anything is sold, reached from the Support the App row here and from
+/// one row in the Settings sheet — matching Android, where `donateSupportPrompt` sits in the
+/// overflow and the product lists are backing items owned by the Settings sheet.
+///
+/// Two deliberate differences from `popup_menu.xml` remain:
+///  * `leaderboardMenu` has no entry here because the Flutter app has no leaderboard feature at
+///    all — a missing feature, not a missing menu item.
+///  * `closeApp` was dropped rather than ported. Android has no such item, and on iOS/Web the
+///    platform does not permit an app to exit programmatically, so it existed only to display a
+///    snackbar explaining that it does nothing.
+///
+/// Using an enum (rather than an index into a list) guarantees the label shown always maps to the
+/// correct behaviour — fixing the old "labels don't match the action" bug.
 enum OptionMenuItem {
-  reloadEverything,
+  refreshData,
   exportData,
   settings,
-  removeAds,
-  donate,
-  closeApp,
+  userGuide,
+  reportProblem,
+  supportTheApp,
 }
 
 class OptionsMenu extends StatefulWidget {
@@ -95,150 +97,91 @@ class _OptionsMenuState extends State<OptionsMenu> {
     }
   }
 
-  static int _precisionIndex(double increment) {
-    if ((increment - PolygonHelper.kPolygonPrecisionLow).abs() < 1e-9) return 0;
-    if ((increment - PolygonHelper.kPolygonPrecisionHigh).abs() < 1e-9) return 2;
-    return 1;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Consumer<PurchaseHelper>(
-      builder: (context, purchaseHelper, child) => PopupMenuButton<OptionMenuItem>(
-        icon: Icon(Icons.more_vert),
-        itemBuilder: (BuildContext context) {
-          return OptionMenuItem.values
-              .where((OptionMenuItem item) {
-                // Donations are not available on the Web build (no App Store purchases).
-                if (item == OptionMenuItem.donate) return !kIsWeb;
-                // Remove Ads is the same store-purchase machinery — also absent on Web.
-                if (item == OptionMenuItem.removeAds) return !kIsWeb;
-                // Only Android permits an app to programmatically exit -- iOS and Web have no
-                // equivalent, so the menu item is irrelevant there rather than just a no-op.
-                if (item == OptionMenuItem.closeApp) {
-                  return !kIsWeb && Platform.isAndroid;
-                }
-                return true;
-              })
-              .map<PopupMenuItem<OptionMenuItem>>((OptionMenuItem item) {
-            return PopupMenuItem<OptionMenuItem>(
-              value: item,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Text(_topLevelTitle(item)),
-                  if (_hasSubmenu(item)) ...[
-                    Icon(Icons.play_arrow, color: Colors.black54, size: 12)
-                  ]
-                ],
-              ),
-            );
-          }).toList();
-        },
-        onSelected: (OptionMenuItem item) async {
-          switch (item) {
-            case OptionMenuItem.reloadEverything:
-              {
-                SiteHelper().clearMap(
-                    onCameraMoveFromLastLocation:
-                        widget.onCameraMoveFromLastLocation);
-                break;
-              }
-            case OptionMenuItem.exportData:
-              {
-                showExportMenu();
-                break;
-              }
-            case OptionMenuItem.settings:
-              {
-                SettingsSheet.show(context,
-                    prefs: prefs,
-                    showSnackBar: widget.showSnackBar,
-                    onCameraMoveFromLastLocation: widget.onCameraMoveFromLastLocation,
-                    takeScreenshot: widget.takeScreenshot);
-                break;
-              }
-            case OptionMenuItem.removeAds:
-              {
-                listRemoveAdsItem.elementAt(2)
-                  ..title =
-                      PurchaseHelper().timeToExpireYearlySubscription.isEmpty
-                          ? PurchaseHelper().priceLabel(
-                              sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
-                              name: Strings.remove_ads_year_name)
-                          : PurchaseHelper().timeToExpireYearlySubscription
-                  ..isEnabled =
-                      PurchaseHelper().timeToExpireYearlySubscription.isEmpty;
-                listRemoveAdsItem.elementAt(3)
-                  ..title = PurchaseHelper().isSubscribedPermanently
-                      ? Strings.subscribed_permanently
-                      : PurchaseHelper().priceLabel(
-                          sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY,
-                          name: Strings.remove_ads_permanent_name)
-                  ..isEnabled = !PurchaseHelper().isSubscribedPermanently;
-                listRemoveAdsItem.elementAt(4)
-                  ..isEnabled = !PurchaseHelper().isSubscribed;
-                showSingleRowOptionMenu(listRemoveAdsItem, kRemoveAds);
-                break;
-              }
-            case OptionMenuItem.donate:
-              {
-                listDonateItem.elementAt(2)
-                  ..title = PurchaseHelper().priceLabel(
-                      sku: PurchaseHelper.SKU_DONATION_SMALL,
-                      name: Strings.donateSmallName)
-                  ..isEnabled = !purchaseHelper.isDonateSmallPurchased;
-                listDonateItem.elementAt(3)
-                  ..title = PurchaseHelper().priceLabel(
-                      sku: PurchaseHelper.SKU_DONATION_MEDIUM,
-                      name: Strings.donateMediumName)
-                  ..isEnabled = !purchaseHelper.isDonateMediumPurchased;
-                listDonateItem.elementAt(4)
-                  ..title = PurchaseHelper().priceLabel(
-                      sku: PurchaseHelper.SKU_DONATION_LARGE,
-                      name: Strings.donateLargeName)
-                  ..isEnabled = !purchaseHelper.isDonateLargePurchased;
-                showSingleRowOptionMenu(listDonateItem, kDonate);
-                break;
-              }
-            case OptionMenuItem.closeApp:
-              {
-                // iOS (and Web) do not permit an app to programmatically exit, so we just
-                // inform the user. On Android the equivalent menu item fully exits the app.
-                widget.showSnackBar(
-                    message:
-                        'Close App is not available on this platform — use the device '
-                        'switcher / home button to leave the app.');
-                break;
-              }
-          }
-        },
-      ),
+    return PopupMenuButton<OptionMenuItem>(
+      icon: Icon(Icons.more_vert),
+      itemBuilder: (BuildContext context) {
+        return OptionMenuItem.values.map<PopupMenuItem<OptionMenuItem>>((OptionMenuItem item) {
+          return PopupMenuItem<OptionMenuItem>(
+            value: item,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(_topLevelTitle(item)),
+                if (_hasSubmenu(item)) ...[
+                  Icon(Icons.play_arrow, color: Colors.black54, size: 12)
+                ]
+              ],
+            ),
+          );
+        }).toList();
+      },
+      onSelected: (OptionMenuItem item) async {
+        switch (item) {
+          case OptionMenuItem.refreshData:
+            {
+              SiteHelper().clearMap(
+                  onCameraMoveFromLastLocation: widget.onCameraMoveFromLastLocation);
+              break;
+            }
+          case OptionMenuItem.exportData:
+            {
+              showExportMenu();
+              break;
+            }
+          case OptionMenuItem.settings:
+            {
+              SettingsSheet.show(context,
+                  prefs: prefs,
+                  showSnackBar: widget.showSnackBar,
+                  onCameraMoveFromLastLocation: widget.onCameraMoveFromLastLocation,
+                  takeScreenshot: widget.takeScreenshot);
+              break;
+            }
+          case OptionMenuItem.userGuide:
+            {
+              Utils.launchURL(kUserGuideUrl);
+              break;
+            }
+          case OptionMenuItem.reportProblem:
+            {
+              // Android keeps this in the overflow rather than the Settings sheet on purpose: the
+              // report screenshots the window as it stands, and fired from inside a sheet it
+              // captured the sheet instead of the map (Java app, GitHub issue #48).
+              widget.takeScreenshot();
+              break;
+            }
+          case OptionMenuItem.supportTheApp:
+            {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const SupportPromptScreen()));
+              break;
+            }
+        }
+      },
     );
   }
 
   String _topLevelTitle(OptionMenuItem item) {
     switch (item) {
-      case OptionMenuItem.reloadEverything:
+      case OptionMenuItem.refreshData:
         return Strings.reload_everything;
       case OptionMenuItem.exportData:
         return Strings.export_data;
       case OptionMenuItem.settings:
-        return 'Settings';
-      case OptionMenuItem.removeAds:
-        return Strings.remove_ads;
-      case OptionMenuItem.donate:
-        return Strings.donate;
-      case OptionMenuItem.closeApp:
-        return Strings.closeApp;
+        return Strings.settings;
+      case OptionMenuItem.userGuide:
+        return Strings.userGuide;
+      case OptionMenuItem.reportProblem:
+        return Strings.reportProblem;
+      case OptionMenuItem.supportTheApp:
+        return Strings.donateSupportPrompt;
     }
   }
 
   bool _hasSubmenu(OptionMenuItem item) =>
-      item == OptionMenuItem.exportData ||
-      item == OptionMenuItem.settings ||
-      item == OptionMenuItem.removeAds ||
-      item == OptionMenuItem.donate;
+      item == OptionMenuItem.exportData || item == OptionMenuItem.settings;
 
   // ----- Export Data (mirrors Android: Export Towers GeoJSON/CSV + Export Coverage GeoJSON) -----
   Future showExportMenu() async {
@@ -317,97 +260,10 @@ class _OptionsMenuState extends State<OptionsMenu> {
             ],
           ),
         );
-      }).where((singleRowItem) {
-        int optionItemPosition = listSingleRowItem.indexOf(singleRowItem.value!);
-        if (menuType == kRemoveAds) {
-          return PurchaseHelper().isSubscribed
-              ? true
-              : optionItemPosition != 1;
-        } else if (menuType == kDonate) {
-          return PurchaseHelper().isDonated
-              ? true
-              : optionItemPosition != 1;
-        } else {
-          return true;
-        }
       }).toList(),
     );
 
     if (singleRowItem == null) return null;
-    int selectedOptionItem = listSingleRowItem.indexOf(singleRowItem);
-    switch (menuType) {
-      // case kClearMenu: //Clear map menu option
-      //   {
-      //     switch (selectedOptionItem) {
-      //       case 1: //Clear polygons
-      //         {
-      //           SiteHelper().clearPolygons();
-      //           break;
-      //         }
-      //       case 2: //Reload everything
-      //         {
-      //           SiteHelper().clearMap(
-      //               onCameraMoveFromLastLocation:
-      //                   widget.onCameraMoveFromLastLocation);
-      //           break;
-      //         }
-      //     }
-      //     break;
-      //   }
-      case kRemoveAds:
-        {
-          switch (selectedOptionItem) {
-            case 2: //Remove ads for one year
-              {
-                PurchaseHelper().initiatePurchase(
-                    sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR);
-                break;
-              }
-            case 3: //Remove ads permanently
-              {
-                PurchaseHelper().initiatePurchase(
-                    sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY);
-                break;
-              }
-            case 4: //Restore purchases
-              {
-                PurchaseHelper().restorePurchases(userInitiated: true);
-                break;
-              }
-          }
-          break;
-        }
-      case kDonate:
-        {
-          switch (selectedOptionItem) {
-            case 2: //Donate small
-              {
-                PurchaseHelper()
-                    .initiatePurchase(sku: PurchaseHelper.SKU_DONATION_SMALL);
-                break;
-              }
-            case 3: //Donate medium
-              {
-                PurchaseHelper()
-                    .initiatePurchase(sku: PurchaseHelper.SKU_DONATION_MEDIUM);
-                break;
-              }
-            case 4: //Donate large
-              {
-                PurchaseHelper()
-                    .initiatePurchase(sku: PurchaseHelper.SKU_DONATION_LARGE);
-                break;
-              }
-            case 5: //Support the App
-              {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SupportPromptScreen()));
-                break;
-              }
-          }
-          break;
-        }
-    }
     return singleRowItem;
   }
 
@@ -480,51 +336,10 @@ class SingleRowItem {
 //       title: Strings.reload_everything, prefix: Icon(Icons.delete_forever))
 // ];
 
-List<SingleRowItem> listRemoveAdsItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.remove_ads, isEnabled: true),
-  SingleRowItem(
-      isTitle: true,
-      title: Strings.remove_ads_subscribe_previous,
-      isEnabled: false),
-  SingleRowItem(
-      title: PurchaseHelper().timeToExpireYearlySubscription.isEmpty
-          ? PurchaseHelper().priceLabel(
-              sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
-              name: Strings.remove_ads_year_name)
-          : PurchaseHelper().timeToExpireYearlySubscription,
-      isEnabled: PurchaseHelper().timeToExpireYearlySubscription.isEmpty),
-  SingleRowItem(
-      title: PurchaseHelper().isSubscribedPermanently
-          ? Strings.subscribed_permanently
-          : PurchaseHelper().priceLabel(
-              sku: PurchaseHelper.SKU_SUBSCRIBE_PERMANENTLY,
-              name: Strings.remove_ads_permanent_name),
-      isEnabled: !PurchaseHelper().isSubscribedPermanently),
-  SingleRowItem(
-      title: Strings.restore_purchases,
-      isEnabled: true),
-];
-
-List<SingleRowItem> listDonateItem = <SingleRowItem>[
-  SingleRowItem(isTitle: true, title: Strings.donate, isEnabled: true),
-  SingleRowItem(title: Strings.donatePrevious, isEnabled: false),
-  SingleRowItem(
-      title: PurchaseHelper().priceLabel(
-          sku: PurchaseHelper.SKU_DONATION_SMALL,
-          name: Strings.donateSmallName),
-      isEnabled: !PurchaseHelper().isDonateSmallPurchased),
-  SingleRowItem(
-      title: PurchaseHelper().priceLabel(
-          sku: PurchaseHelper.SKU_DONATION_MEDIUM,
-          name: Strings.donateMediumName),
-      isEnabled: !PurchaseHelper().isDonateMediumPurchased),
-  SingleRowItem(
-      title: PurchaseHelper().priceLabel(
-          sku: PurchaseHelper.SKU_DONATION_LARGE,
-          name: Strings.donateLargeName),
-      isEnabled: !PurchaseHelper().isDonateLargePurchased),
-  SingleRowItem(title: Strings.donateSupportPrompt, isEnabled: true),
-];
+// listRemoveAdsItem / listDonateItem lived here. They were top-level globals, so their titles
+// were built once at first access — before the store had answered — and then patched in place
+// before each show. SupportPromptScreen builds its labels during build() under
+// Consumer<PurchaseHelper> instead, so it cannot show a price from before the store replied.
 
 //********************** Radio options ***************************//
 class RadioItem {
