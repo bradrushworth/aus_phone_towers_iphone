@@ -8,6 +8,24 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.15+150] — 2026-08-31
+
+### Fixed
+- **With Calculate Terrain on, every signal-strength contour drew at the same radius** (GitHub
+  issue #56, reported against the Android app and fixed there in 7.7.51; this app carries the
+  same ported code). An obstructed bearing was walked down a fixed ladder of sample distances
+  until the path was clear, and that ladder takes no account of the signal level — so Maximum,
+  Strong, Good and Weak all snapped onto the same rung wherever terrain blocked the path, which
+  in hilly country is most bearings. Coverage also stopped dead at the first ridge with no
+  diffraction allowance, drawing far less range than users measure in the field. Terrain is now
+  charged to the link budget as knife-edge diffraction loss (ITU-R P.526) and the distance
+  re-solved through the trained path-loss model, so a weaker threshold still reaches further
+  after paying the same terrain penalty, and signals carry past a ridge instead of stopping at
+  it.
+
+  The Android app's other issue #56 fix — the hypothetical-location pin surviving Refresh Data
+  as a dead handle — does not apply here: this app has no long-press hypothetical-location pin.
+
 ## [1.14.14+149] — 2026-08-31
 
 ### Fixed
