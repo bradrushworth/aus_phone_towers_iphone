@@ -144,8 +144,16 @@ void main() {
 
     test('licence: formerly-hardcoded dual-antenna IDs are not phantom 5G', () {
       // Antennas 80562/93658 used to be hardcoded into antennas3G4G5G/antennas4G5G. They carry
-      // only 2100 MHz 3G/4G 'W' rows - no genuine 5G indication - so with the sets gone they
-      // classify as LTE (refarmed from UMTS by default), never NR.
+      // only 2100 MHz 3G/4G 'W' rows - no genuine 5G indication from the ANTENNA - so the
+      // antenna id must never be what decides the type. The classifier still reports the
+      // literal licence as UMTS for both rows. The refarm of that legacy-only 2100 'W' carrier
+      // is now telco-aware (2026-09, Java app GitHub #60): Telstra has no n1 5G SA in
+      // production observed_cell, so its reuse is LTE only; Optus runs n1 SA (920 rows / 62
+      // cells / 15 regions / 29 devices since 2026-01-01 - the #60 Pixel is served on n1 at
+      // 2137 MHz from a site carrying 20M0W7W @ 2140 MHz), so its reuse is [LTE, NR] and the
+      // display pick is the newest genuine technology. With refarming OFF both fall back to
+      // UMTS (see 'refarming disabled shows the literal 3G type'). Mirrors the Java app's
+      // DeviceDetailsTest.licence_legacyDualAntennaSetsNotPhantom5g.
       expect(
           DeviceDetails.getNetworkTypeForLicence(
               "20M0W7W", 2140000000, 20000000, Telco.Telstra, 80562),
@@ -153,7 +161,11 @@ void main() {
       expect(
           DeviceDetails.getNetworkTypeForLicence(
               "20M0W7W", 2117000000, 14000000, Telco.Optus, 93658),
-          NetworkType.LTE);
+          NetworkType.NR);
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "20M0W7W", 2117000000, 14000000, Telco.Optus, 93658),
+          [NetworkType.UMTS]);
     });
 
     test('licence: every row becomes exactly one transmitter', () {
@@ -161,10 +173,15 @@ void main() {
           DeviceDetails.getNetworkTypeForLicence(
               "20M0W7D", 3565000000, 20000000, Telco.Optus, 0),
           NetworkType.NR);
-      // 2100 MHz 'W' UMTS refarmed to LTE by default (refarming ON).
+      // Optus 2100 MHz 'W' UMTS refarmed to its live [LTE, NR] reuse by default (refarming ON),
+      // shown once as its newest genuine technology; Telstra's refarms to LTE only.
       expect(
           DeviceDetails.getNetworkTypeForLicence(
               "20M0W7W", 2140000000, 20000000, Telco.Optus, 0),
+          NetworkType.NR);
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "20M0W7W", 2140000000, 20000000, Telco.Telstra, 0),
           NetworkType.LTE);
     });
 
@@ -217,6 +234,198 @@ void main() {
             NetworkType.UMTS);
       } finally {
         DeviceDetails.refarmEnabled = saved;
+      }
+    });
+
+    // --- New NR arms proven by production observed_cell (registered 5G SA rows since
+    // 2026-01-01, mcc 505; rows / distinct cells / distinct geohash-3 regions / distinct
+    // devices). Mirrors the Java app's DeviceDetailsTest (GitHub #60, 2026-09-02). A handful of
+    // rows is NOT enough (Telstra n8 = 5 rows, n18 = 13 rows are deliberately NOT added).
+
+    test('Optus 2300 D is a genuine dual 4G/5G carrier (B40 + n40)', () {
+      // Optus n40: 1,196 / 61 / 7 / 16. Home-site row for the Java app's GitHub #60:
+      // 70M0W7D @ 2365 MHz. Mirrors DeviceDetailsTest.optus2300D_isGenuineDual4g5g_n40.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "70M0W7D", 2365000000, 70000000, Telco.Optus, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "70M0W7D", 2365000000, 70000000, Telco.Optus, 0),
+          NetworkType.NR);
+    });
+
+    test('Optus 2300 W stays TD-LTE only until proven', () {
+      // The B40 'W' arm is shared by every telco and is not part of this change: the n40
+      // evidence was gathered against 'D' rows. Pinned so a future widening is deliberate.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "70M0W7W", 2365000000, 70000000, Telco.Optus, 0),
+          [NetworkType.LTE]);
+    });
+
+    test('Optus 2100 W refarms to dual 4G/5G (n1)', () {
+      // Optus n1: 920 / 62 / 15 / 29. Register rows near the #60 Pixel: 20M0W7W @ 2140 MHz,
+      // which used to refarm to LTE only while the Pixel sat on n1 SA at 2137 MHz.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "20M0W7W", 2140000000, 20000000, Telco.Optus, 0),
+          [NetworkType.UMTS]);
+      expect(
+          DeviceDetails.getCapableTypesForLicence(
+              "20M0W7W", 2140000000, 20000000, Telco.Optus, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+    });
+
+    test('Vodafone 2100 W refarms to dual 4G/5G (n1)', () {
+      // Vodafone n1: 4,759 / 375 / 12 / 68 (14M0W7WEC @ 2117.6 MHz is the real register shape).
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "14M0W7WEC", 2117600000, 14000000, Telco.Vodafone, 0),
+          [NetworkType.UMTS]);
+      expect(
+          DeviceDetails.getCapableTypesForLicence(
+              "14M0W7WEC", 2117600000, 14000000, Telco.Vodafone, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "14M0W7WEC", 2117600000, 14000000, Telco.Vodafone, 0),
+          NetworkType.NR);
+    });
+
+    test('Telstra 2100 W refarms to LTE only (no n1 evidence)', () {
+      // Telstra has no n1 5G SA in production observed_cell, so its 2100 'W' reuse stays LTE.
+      expect(
+          DeviceDetails.getCapableTypesForLicence(
+              "20M0W7W", 2140000000, 20000000, Telco.Telstra, 0),
+          [NetworkType.LTE]);
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "20M0W7W", 2140000000, 20000000, Telco.Telstra, 0),
+          NetworkType.LTE);
+    });
+
+    test('refarm is only for legacy-only rows, not for bands outside the refarm table', () {
+      // The telco-aware 2100 refarm must not leak into other 'W' UMTS bands: Vodafone 900 'W'
+      // is still classified as (and refarmed to) what the existing tables say.
+      expect(
+          DeviceDetails.getCapableTypesForLicence(
+              "4M20G7W", 956000000, 4200000, Telco.Vodafone, 0),
+          [NetworkType.LTE]);
+      // and a UMTS row outside every refarm band stays UMTS
+      expect(
+          DeviceDetails.getCapableTypesForLicence("10M0W7W", 0, 10000000, Telco.Vodafone, 0),
+          [NetworkType.UMTS]);
+    });
+
+    test('refarmed legacy carrier reports its live reuse, or the literal type when disabled', () {
+      // Mirrors DeviceDetailsTest.capability_refarmedLegacyCarrierReportsItsLiveReuse.
+      expect(
+          DeviceDetails.getCapableTypesForLicence(
+              "20M0W7W", 2140000000, 20000000, Telco.Optus, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+      expect(
+          DeviceDetails.getCapableTypesForLicence(
+              "20M0W7W", 2140000000, 20000000, Telco.Telstra, 0),
+          [NetworkType.LTE]);
+      final saved = DeviceDetails.refarmEnabled;
+      try {
+        DeviceDetails.refarmEnabled = false;
+        expect(
+            DeviceDetails.getCapableTypesForLicence(
+                "20M0W7W", 2140000000, 20000000, Telco.Optus, 0),
+            [NetworkType.UMTS]);
+      } finally {
+        DeviceDetails.refarmEnabled = saved;
+      }
+    });
+
+    test('Telstra 2600 D is a genuine dual 4G/5G carrier (B7 + n7)', () {
+      // Telstra n7: 8,794 / 567 / 13 / 128 - the arm previously said "No NR".
+      // Mirrors DeviceDetailsTest.telstra2600D_isGenuineDual4g5g_n7.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "20M0W7D", 2650000000, 20000000, Telco.Telstra, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "20M0W7D", 2650000000, 20000000, Telco.Telstra, 0),
+          NetworkType.NR);
+    });
+
+    test('Vodafone 1800 D is a genuine dual 4G/5G carrier (B3 + n3)', () {
+      // Vodafone n3: 1,586 / 123 / 9 / 51.
+      // Mirrors DeviceDetailsTest.vodafone1800D_isGenuineDual4g5g_n3.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "20M0W7D", 1840000000, 20000000, Telco.Vodafone, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "20M0W7D", 1840000000, 20000000, Telco.Vodafone, 0),
+          NetworkType.NR);
+    });
+
+    test('Vodafone 2100 D is a genuine dual 4G/5G carrier (B1 + n1)', () {
+      // Vodafone n1: 4,759 / 375 / 12 / 68.
+      // Mirrors DeviceDetailsTest.vodafone2100D_isGenuineDual4g5g_n1.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "5M00W7D", 2162400000, 5000000, Telco.Vodafone, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+    });
+
+    test('Telstra 900 and 1800 D remain LTE only (too few rows)', () {
+      // Telstra n8 (5 rows) and n18 (13 rows) are noise-level; Telstra/Optus 1800 'D' and
+      // Telstra 900 'D' keep their existing LTE-only classification.
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "20M0W7D", 1840000000, 20000000, Telco.Telstra, 0),
+          [NetworkType.LTE]);
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "20M0W7D", 1840000000, 20000000, Telco.Optus, 0),
+          [NetworkType.LTE]);
+      expect(
+          DeviceDetails.getNetworkTypeStatic(
+              "10M0W7D", 947500000, 10000000, Telco.Telstra, 0),
+          [NetworkType.LTE]);
+    });
+
+    test('licence: Optus 900 MHz LTE-display exception survives the new NR arms (GitHub #55)',
+        () {
+      // The #55 display override is untouched by the #60 arms: the block is still capable of
+      // [LTE, NR] (observed_cell since 2026-01-01: 1,682 Optus n8 SA rows / 106 cells /
+      // 18 regions) but displays as LTE by policy. Mirrors
+      // DeviceDetailsTest.capability_optus900DisplaysLteButIsCapableOfNr.
+      expect(
+          DeviceDetails.getNetworkTypeForLicence(
+              "25M0W7D", 947500000, 25000000, Telco.Optus, 0),
+          NetworkType.LTE);
+      expect(
+          DeviceDetails.getCapableTypesForLicence(
+              "25M0W7D", 947500000, 25000000, Telco.Optus, 0),
+          [NetworkType.LTE, NetworkType.NR]);
+    });
+
+    test('licence: the display type is always one of the capable types', () {
+      // Whatever the display policy picks must be something the row can actually do.
+      // Mirrors DeviceDetailsTest.capability_displayTypeIsAlwaysOneOfTheCapableTypes.
+      final rows = <List<Object>>[
+        ["25M0W7D", 947500000, 25000000, Telco.Optus],
+        ["20M0W7W", 2140000000, 20000000, Telco.Optus],
+        ["20M0W7W", 2140000000, 20000000, Telco.Telstra],
+        ["70M0W7D", 2365000000, 70000000, Telco.Optus],
+        ["20M0W7D", 3565000000, 20000000, Telco.Telstra],
+        ["8M40G7E", 939200000, 8400000, Telco.Telstra],
+      ];
+      for (final r in rows) {
+        final display = DeviceDetails.getNetworkTypeForLicence(
+            r[0] as String, r[1] as int, r[2] as int, r[3] as Telco, 0);
+        final capable = DeviceDetails.getCapableTypesForLicence(
+            r[0] as String, r[1] as int, r[2] as int, r[3] as Telco, 0);
+        expect(capable.contains(display), isTrue,
+            reason: '${r[0]} ${r[3]}: display $display not in $capable');
       }
     });
   });

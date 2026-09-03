@@ -214,8 +214,13 @@ class DeviceDetails {
             // Optus n1 2147500000
             return [NetworkType.LTE, NetworkType.NR];
           } else if (telco == Telco.Optus && frequency >= 2300000000 && frequency < 2399000000) {
-            // Optus n40, 98 MHz BW, TDD
-            return [NetworkType.LTE];
+            // Optus B40/n40 (2300 MHz), up to 98 MHz BW, TDD.
+            // Live-verified 2026-09-02 (Java app GitHub #60): Optus 5G SA n40 at 2339 MHz
+            // serves the reporting Pixel from site 100812, whose register row is 70M0W7D @
+            // 2365 MHz. Production observed_cell (registered 5G SA since 2026-01-01):
+            // 1,196 Optus n40 rows / 61 cells / 7 geohash-3 regions / 16 devices.
+            // Mirrors the Java app's DeviceDetails.networkTypesForEmission.
+            return [NetworkType.LTE, NetworkType.NR];
           } else if (telco == Telco.Vodafone && frequency >= 750000000 && frequency < 799000000) {
             // Vodafone (but not TPG) n28 (700MHz), 15 MHz BW, FDD
             return [NetworkType.LTE, NetworkType.NR];
@@ -223,14 +228,20 @@ class DeviceDetails {
             // Vodafone
             return [NetworkType.LTE];
           } else if (telco == Telco.Vodafone && frequency >= 1800000000 && frequency < 1899000000) {
-            // Vodafone
-            return [NetworkType.LTE];
+            // Vodafone B3/n3 (1800 MHz). observed_cell since 2026-01-01: 1,586 Vodafone n3 SA
+            // rows / 123 cells / 9 regions / 51 devices. Mirrors the Java app (GitHub #60).
+            return [NetworkType.LTE, NetworkType.NR];
           } else if (telco == Telco.Vodafone && frequency >= 2100000000 && frequency < 2199000000) {
-            // Vodafone n1
-            return [NetworkType.LTE];
+            // Vodafone B1/n1 (2100 MHz). observed_cell since 2026-01-01: 4,759 Vodafone n1 SA
+            // rows / 375 cells / 12 regions / 68 devices. Mirrors the Java app (GitHub #60).
+            return [NetworkType.LTE, NetworkType.NR];
           } else if (telco == Telco.Telstra && frequency >= 2600000000 && frequency < 2699000000) {
-            // Telstra
-            return [NetworkType.LTE]; // No NR
+            // Telstra B7/n7 (2600 MHz). Previously "No NR". observed_cell since 2026-01-01:
+            // 8,794 Telstra n7 SA rows / 567 cells / 13 regions / 128 devices — the
+            // most-observed sub-3 GHz NR band in production. (Telstra n8 = 5 rows and n18 =
+            // 13 rows are NOT enough to add; 900/1800 'D' stay LTE-only.) Mirrors the Java
+            // app (GitHub #60).
+            return [NetworkType.LTE, NetworkType.NR];
           }
         }
         return [NetworkType.LTE];
@@ -339,10 +350,12 @@ class DeviceDetails {
 
   /// Frequency-refarming rule (accuracy-preserving, not hiding): a licence whose only classification
   /// is legacy 3G (UMTS), sitting in a band Australia now runs as 4G/5G, is re-expressed with its
-  /// current reuse (LTE). This reflects what is actually broadcasting rather than the decommissioned
-  /// original. Genuine 2G (GSM) emissions and any licence already carrying an explicit LTE/NR/NB_IOT
-  /// classification are left untouched.
-  static List<NetworkType> applyRefarm(List<NetworkType> types, int frequency) {
+  /// current reuse. That reuse is LTE by default, and — for the one band where production proves
+  /// it — telco-aware (see [refarmedReuse]). This reflects what is actually broadcasting rather than
+  /// the decommissioned original. Genuine 2G (GSM) emissions and any licence already carrying an
+  /// explicit LTE/NR/NB_IOT classification are left untouched. Mirrors the Java app's
+  /// DeviceDetails.applyRefarm.
+  static List<NetworkType> applyRefarm(List<NetworkType> types, int frequency, Telco telco) {
     if (!isRefarmedLteBand(frequency)) {
       return types;
     }
@@ -360,8 +373,40 @@ class DeviceDetails {
       // Already modern, or not an exclusively-3G licence in a refarmed band — leave as-is.
       return types;
     }
-    // Exclusively 3G UMTS in a refarmed band: re-express at its current 4G reuse.
+    // Exclusively 3G UMTS in a refarmed band: re-express at its current reuse.
+    return refarmedReuse(frequency, telco);
+  }
+
+  /// What a legacy-only (UMTS) carrier in a refarmed band is actually used for today. The 2100 MHz
+  /// B1/n1 block is the one band where the register still carries the old 20M0W7W-style 3G row at
+  /// sites that production proves are running 5G SA on it (registered 5G SA observed_cell rows
+  /// since 2026-01-01, mcc 505: Optus n1 920 rows / 62 cells / 15 geohash-3 regions / 29 devices;
+  /// Vodafone n1 4,759 / 375 / 12 / 68 — the Java app's GitHub #60 Pixel is served by Optus n1 SA
+  /// at 2137 MHz from a site whose only 2100 MHz register row is 20M0W7W @ 2140 MHz). Telstra has
+  /// no n1 SA in that data, so its 2100 'W' rows keep the plain LTE reuse. Every other refarmed
+  /// band stays LTE. Mirrors the Java app's DeviceDetails.refarmedReuse.
+  static List<NetworkType> refarmedReuse(int frequency, Telco telco) {
+    if ((telco == Telco.Optus || telco == Telco.Vodafone) &&
+        frequency >= 2100000000 &&
+        frequency < 2199000000) {
+      return <NetworkType>[NetworkType.LTE, NetworkType.NR];
+    }
     return <NetworkType>[NetworkType.LTE];
+  }
+
+  /// Everything one ACMA licence row genuinely carries on-air today: the classifier's list
+  /// ([getNetworkTypeStatic]) with frequency refarming applied on top when [refarmEnabled] is true
+  /// (the default). [getNetworkTypeForLicence] chooses the single display type out of this list, so
+  /// the display type is always a member of it. Mirrors the Java app's
+  /// DeviceDetails.getCapableTypesForLicence.
+  static List<NetworkType> getCapableTypesForLicence(
+      String? emission, int frequency, int bandwidth, Telco telco, int antennaId) {
+    List<NetworkType> types =
+        getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId);
+    if (refarmEnabled) {
+      types = applyRefarm(types, frequency, telco);
+    }
+    return types;
   }
 
   /// Returns the single network type for one ACMA licence row, derived from the row's own emission
@@ -370,10 +415,7 @@ class DeviceDetails {
   static NetworkType getNetworkTypeForLicence(
       String? emission, int frequency, int bandwidth, Telco telco, int antennaId) {
     List<NetworkType> types =
-        getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId);
-    if (refarmEnabled) {
-      types = applyRefarm(types, frequency);
-    }
+        getCapableTypesForLicence(emission, frequency, bandwidth, telco, antennaId);
     NetworkType best = NetworkType.UNKNOWN;
     for (final NetworkType nt in types) {
       if (generationRank(nt) > generationRank(best)) {
