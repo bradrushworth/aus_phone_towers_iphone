@@ -67,6 +67,11 @@
 	<string>NO</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier is used to deliver personalized advertisements and measure ad performance within Aus Phone Towers. For example, the app may show ads relevant to your interests and track how many users interact with those ads.</string>
+	<!-- iOS 18+: list finished consumable purchases in StoreKit's Transaction.all. "One Year Ad
+	     Free" is a Consumable in App Store Connect, so without this a finished yearly pass exists
+	     nowhere the app can see it and Restore Purchases can never find it. -->
+	<key>SKIncludeConsumableInAppPurchaseHistory</key>
+	<true/>
 	<key>SKAdNetworkItems</key>
 	<array>
 	  <dict>

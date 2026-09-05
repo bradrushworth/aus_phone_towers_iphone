@@ -8,6 +8,52 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.17+152] — 2026-09-05
+
+### Fixed
+- **"I bought Remove Ads three times, Restore Purchases does nothing, and the ads are still
+  there"** (email report against 1.14.16, from the GitHub issue #56 reporter). The cause sits in
+  App Store Connect rather than in the app's screens: *One Year Ad Free* (`yearly_adfree`) is
+  configured there as a **Consumable**. The App Store sells a consumable again every time it is
+  tapped, and StoreKit 2's restore — `in_app_purchase_storekit` walks
+  `Transaction.currentEntitlements` — never returns one, so from the moment the app finished the
+  transaction the purchase existed nowhere the app could see. Every version to date had that
+  blind spot; 1.14.13's local cache only ever helped a device that had witnessed the purchase.
+  - After every restore (cold start and the Settings row) the app now also reads the StoreKit 2
+    transaction history (`Transaction.all`), keeps the newest un-refunded transaction for each
+    ad-free product and delivers it as a restore. `SKIncludeConsumableInAppPurchaseHistory` is
+    set in `Info.plist` so finished consumables appear in that history on iOS 18 and later; below
+    iOS 18 they still do not, and there the cached entitlement is deliberately left alone.
+  - **Restore Purchases** closes the Settings sheet before reporting — its snackbar was being
+    drawn behind the sheet, which is why the tap looked dead — and first asks StoreKit to sync
+    with the App Store (`AppStore.sync()`, Apple's prescribed restore, which may ask for the
+    Apple ID password). The verdict is shown once the store's answer has actually been
+    processed, not read off whatever the flags said the instant the call returned.
+  - Ad-free is no longer offered for sale to someone who already holds it. The weekly Support
+    prompt can open before the store has answered at cold start, and with a consumable-typed
+    product a second tap was a second full charge. Upgrading an active yearly pass to permanent
+    is still allowed, and donations are never blocked (within one session they were).
+- **A refund now actually brings the ads back.** The entitlement cache was written on a purchase
+  or restore event but never cleared when the store stopped returning the purchase, so a refunded
+  customer stayed ad-free indefinitely. When both the restore and the history read come back
+  empty and authoritative, the entitlement is re-evaluated and the cache cleared; a refund
+  arriving live (StoreKit 2 re-emits the transaction with a `revocationDate`, which the plugin
+  forwards as "purchased") withdraws the entitlement instead of re-granting it.
+- **A restore no longer thanks you for "making this purchase"** on every launch, nor counts as a
+  `purchase` analytics event (it is `purchase_restored` now). The
+  `_hasPurchase: … has pendingCompletePurchase=true` developer snackbar shown after every real
+  purchase is a log line.
+- **A banner ad that failed to load was never requested again**, so a cold start with the radio
+  still waking up meant no ads for the whole session. Up to three retries at 15, 30 and 60
+  seconds, cancelled if the user goes ad-free in the meantime.
+- A failed *product* query no longer wipes the list of owned purchases, and a purchase the store
+  refuses to start (StoreKit throwing) is reported to the user instead of escaping the button tap.
+
+### Changed
+- New `products_loaded` and `transaction_history` analytics events record how App Store Connect
+  types each product and what the customer's transaction history holds, so a mismatch like this
+  one is visible from Firebase rather than from a refund request.
+
 ## [1.14.15+150] — 2026-08-31
 
 ### Fixed

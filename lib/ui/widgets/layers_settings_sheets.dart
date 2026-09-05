@@ -327,6 +327,10 @@ class SettingsSheet {
                     .push(MaterialPageRoute(builder: (_) => const SupportPromptScreen()));
               }),
               _row(bc, Strings.restore_purchases, '›', () {
+                // Close the sheet first. The outcome is reported in a snackbar drawn by the
+                // Scaffold underneath, so with the sheet still up it appeared behind it and the
+                // tap looked like it did nothing — the second complaint in the 1.14.16 report.
+                Navigator.of(bc).pop();
                 PurchaseHelper().restorePurchases(userInitiated: true);
               }),
             ],

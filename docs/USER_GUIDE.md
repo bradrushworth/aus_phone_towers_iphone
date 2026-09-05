@@ -113,10 +113,12 @@ The menu is grouped the same way as the Android app:
     tower/device details) to GeoJSON, CSV and KML, timestamped, for use in QGIS / Google Earth.
 - **Polygon Precision** — how many points make up each coverage ring: **Low** (faster, blockier),
   **Medium** (default) or **High** (smoother, more points). Applies to newly drawn coverage.
-- **Remove Ads** — buy *1 Year Ad‑Free* or *Permanent Ad‑Free* to remove the banner
-  advertisement. The purchase is restored automatically on future launches (tap **Restore
-  Purchases** if needed). The yearly option reverts to showing ads after 12 months and can be
-  bought again; the permanent option never expires.
+- **Remove Ads** — buy *1 Year Ad‑Free* or *Permanent Ad‑Free* (Settings → *Remove ads &
+  donate*) to remove the banner advertisement. Purchases are restored automatically on future
+  launches. If ads are still showing, tap **Restore Purchases** in Settings: it checks with the
+  App Store (which may ask you to sign in), then tells you whether a purchase was found. The
+  yearly option reverts to showing ads after 12 months and can be bought again; the permanent
+  option never expires. While you have ads removed, the app will not sell you either option again.
 - **Donate** — support development with a one‑off in‑app purchase (small / medium / large).
   Donations are repeatable and do **not** remove ads (not shown on the Web build).
   - **Support the App** — the last item in the Donate menu; opens a full‑screen "Support Aus
