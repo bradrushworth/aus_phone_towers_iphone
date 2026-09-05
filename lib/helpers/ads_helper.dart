@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -18,6 +20,18 @@ class AdsHelper {
   // themselves from this field instead of `bannerAd!.size`, or the loaded ad
   // renders into a zero-height container and never appears on screen.
   AdSize? loadedAdSize;
+
+  // A failed load used to be the end of ads for the whole session: nothing ever asked again, so
+  // a cold start with the radio still waking up (or any transient "no fill") meant no revenue
+  // until the next launch. Retry a bounded number of times with growing gaps; the schedule is
+  // short enough to matter within a typical session and long enough not to hammer AdMob.
+  static const List<Duration> _retryDelays = <Duration>[
+    Duration(seconds: 15),
+    Duration(seconds: 30),
+    Duration(seconds: 60),
+  ];
+  Timer? _retryTimer;
+  int _failedLoads = 0;
 
   static String androidAdmobAppId = 'ca-app-pub-6156750794650893~5795736618';
   static String androidPortraitAdUnitId = 'ca-app-pub-6156750794650893/7272469813';
@@ -70,6 +84,9 @@ class AdsHelper {
         onAdLoaded: (ad) async {
           // Called when an ad is successfully received.
           debugPrint("Ads was loaded.");
+          _failedLoads = 0;
+          _retryTimer?.cancel();
+          _retryTimer = null;
           bannerAd = ad as BannerAd;
           // For inline adaptive sizes, `ad.size` is always the requested
           // placeholder (height 0) — fetch the real rendered size so the
@@ -81,12 +98,28 @@ class AdsHelper {
           // Called when an ad request failed.
           debugPrint("Ads failed to load with error: $err");
           ad.dispose();
+          _scheduleRetry(bannerAdSize, adUnitId, onAdLoaded);
         },
       ),
     ).load();
   }
 
+  void _scheduleRetry(AdSize bannerAdSize, String adUnitId, void Function()? onAdLoaded) {
+    if (_failedLoads >= _retryDelays.length) {
+      debugPrint("Ads: giving up after ${_failedLoads} failed loads this session.");
+      return;
+    }
+    final Duration delay = _retryDelays[_failedLoads++];
+    debugPrint("Ads: retrying in ${delay.inSeconds}s (attempt $_failedLoads).");
+    _retryTimer?.cancel();
+    // hideBannerAd() cancels this, so a user who goes ad-free in the meantime is never served.
+    _retryTimer = Timer(delay, () => showBannerAd(bannerAdSize, adUnitId, onAdLoaded: onAdLoaded));
+  }
+
   void hideBannerAd() async {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _failedLoads = 0;
     await bannerAd?.dispose();
     bannerAd = null;
     loadedAdSize = null;

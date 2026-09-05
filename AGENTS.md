@@ -226,6 +226,42 @@ Non-subscribed users see an inline adaptive AdMob banner at the bottom of the ma
   `notifyListeners()` once products load so already-open `Consumer<PurchaseHelper>` UI (e.g.
   `SupportPromptScreen`) picks up live pricing without needing an unrelated purchase event to
   trigger a rebuild first.
+- **App Store Connect product types (verified 2026-09-05)**: `yearly_adfree` is a **Consumable**,
+  `permanent_adfree` a Non-Consumable, the donations Consumables. This is the single most
+  important fact about iOS billing here. The App Store sells a consumable again every time (a
+  customer paid three times), and StoreKit 2's restore — the plugin walks
+  `Transaction.currentEntitlements` — never returns one. Product types cannot be changed after
+  creation; the long-term fix (bead `aptios-589`) is a new product id for the yearly pass. Until
+  then:
+  - `PurchaseHelper.restorePurchases()` follows the plugin's restore with a scan of
+    `Transaction.all` (`SK2Transaction.transactions()`), reduced by the pure
+    `adFreeRestoresFromHistory` (`lib/billing/transaction_history.dart`, tested in
+    `test/billing/transaction_history_test.dart`) to the newest un-revoked transaction per
+    ad-free SKU and delivered through the normal restore path.
+    `SKIncludeConsumableInAppPurchaseHistory` in `ios/Runner/Info.plist` is what makes finished
+    consumables appear there on iOS 18+ — do not remove it. Below iOS 18 a finished consumable is
+    in no StoreKit list at all, so the history is not treated as authoritative and
+    `EntitlementCache` is left alone.
+  - When restore *and* history come back empty and authoritative, `_hasPurchase()` runs against
+    what the session holds and clears a stale cache (refunds, another Apple ID). A failure on
+    either path leaves the cache alone. `restoreBatchTimeout` bounds the wait for the plugin's
+    asynchronous restored batch; `initStoreInfo` runs restore and `_getProducts()` concurrently
+    so prices never queue behind that wait.
+  - Refunds: StoreKit 2 re-emits a revoked transaction on `Transaction.updates` and the plugin
+    forwards it as `purchased`; `StoreKitTransactionJson.isRevoked` on
+    `verificationData.localVerificationData` is the only tell. `_listenToPurchaseUpdated`
+    withdraws it instead of delivering it.
+  - Restores are silent (`deliverProduct` thanks only on `PurchaseStatus.purchased`; analytics
+    `purchase_restored` vs `purchase`), `initiatePurchase` refuses an ad-free SKU the user already
+    holds (the weekly Support prompt can open before the store has answered), and "Restore
+    Purchases" pops the Settings sheet before its snackbar, which is drawn by the Scaffold beneath.
+  - Test seams on `PurchaseHelper`: `debugStoreRestore`, `debugTransactionHistory`,
+    `restoreBatchTimeout`, `handlePurchaseUpdates` — see
+    `test/helpers/purchase_helper_restore_test.dart`, which runs under plain `test()` because it
+    exercises real timers.
+- **Ad load retry**: `AdsHelper` retries a failed banner load up to three times (15/30/60 s);
+  `hideBannerAd()` cancels the retry, which is how a user who goes ad-free mid-wait is never
+  served.
 
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this

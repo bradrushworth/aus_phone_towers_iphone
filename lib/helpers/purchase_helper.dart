@@ -4,13 +4,16 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
+import 'package:in_app_purchase_storekit/store_kit_2_wrappers.dart' show SK2Transaction;
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/billing/consumable_store.dart';
 import 'package:phonetowers/billing/entitlement_cache.dart';
 import 'package:phonetowers/billing/restore_outcome.dart';
+import 'package:phonetowers/billing/transaction_history.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/strings.dart';
 import 'analytics_helper.dart';
 import 'entitlement_evaluator.dart';
 import 'price_label_helper.dart';
@@ -86,6 +89,27 @@ class PurchaseHelper with ChangeNotifier {
 
   bool hasPurchaseProcessed = false;
 
+  /// Test seams for [restorePurchases] — see test/helpers/purchase_helper_restore_test.dart.
+  /// [debugStoreRestore] stands in for the plugin's own restore; [debugTransactionHistory] for
+  /// the StoreKit 2 `Transaction.all` read (and forces that scan on, whatever the host platform).
+  @visibleForTesting
+  Future<void> Function()? debugStoreRestore;
+  @visibleForTesting
+  Future<List<SK2Transaction>> Function()? debugTransactionHistory;
+
+  /// How long [restorePurchases] waits for the plugin to deliver the restored transactions on
+  /// the purchase stream before concluding there were none. StoreKit 2 answers from its local
+  /// cache in well under a second; the margin covers a slow device, not the network.
+  @visibleForTesting
+  Duration restoreBatchTimeout = const Duration(seconds: 3);
+
+  /// Completes once the batch of restored transactions for the in-flight restore has been
+  /// processed (or an empty "nothing to restore" batch has arrived).
+  Completer<void>? _restoreBatch;
+
+  /// Whether the in-flight restore delivered at least one restored transaction, by either path.
+  bool _restoreDelivered = false;
+
   /// Seeds [isSubscribed]/[isSubscribedPermanently] from the locally cached
   /// entitlement (see [EntitlementCache]) so a paying user doesn't see ads at
   /// cold start while the store is still being queried. Call this before/
@@ -149,9 +173,9 @@ class PurchaseHelper with ChangeNotifier {
     // );
 
     if (available) {
-      await restorePurchases();
-      await _getProducts();
-      //await _hasPurchase();
+      // Independent round-trips, so run them together: restorePurchases() now waits briefly for
+      // the store's answer, and the prices must not queue behind that wait.
+      await Future.wait<void>(<Future<void>>[restorePurchases(), _getProducts()]);
     } else {
       // Oh no, there was a problem.
       String error = 'The Payment platform is not ready and available';
@@ -169,30 +193,149 @@ class PurchaseHelper with ChangeNotifier {
     }
   }
 
-  /// Restore all purchases from the store.
+  /// Restore all purchases from the store, then reconcile the entitlement against the answer.
   ///
-  /// Pass [userInitiated] true when called from a user-visible action (e.g. the
-  /// "Restore purchases" menu item) to show a snackbar reporting the outcome —
-  /// previously this method gave no feedback at all, leaving a tap on Restore
-  /// looking like nothing happened. Note that restored transactions are
-  /// delivered asynchronously via [_listenToPurchaseUpdated]/[purchaseStream]
-  /// and may arrive slightly after this await completes; the outcome snackbar
-  /// is based on best-effort current state and kept simple rather than
-  /// awaiting the stream as well.
+  /// Pass [userInitiated] true when called from the "Restore Purchases" row in Settings. That
+  /// first asks StoreKit to sync with the App Store — Apple's prescribed restore, which may show
+  /// a sign-in sheet, fine for an explicit tap but not for a cold start — and reports the outcome
+  /// in a snackbar once the answer is actually in.
+  ///
+  /// The plugin delivers restored transactions asynchronously on the purchase stream, usually a
+  /// beat after its own future completes, so this waits for that batch (bounded by
+  /// [restoreBatchTimeout]) before reading [isSubscribed]. The earlier version reported whatever
+  /// the flags said at that instant, which for a slow answer was "no purchase found" over the top
+  /// of a purchase that arrived a moment later.
+  ///
+  /// Two things then happen that the store's own restore does not do by itself:
+  ///   1. The StoreKit 2 transaction history is scanned for ad-free purchases the restore missed
+  ///      — see [adFreeRestoresFromHistory] for why a consumable-typed product is invisible to it.
+  ///   2. If nothing at all was restored and both answers were authoritative, the entitlement is
+  ///      re-evaluated against what this session already holds, so a cached entitlement whose
+  ///      purchase has since been refunded (or belongs to another Apple ID) is dropped instead of
+  ///      granting ad-free forever. A failure on either path leaves the cache alone: no answer is
+  ///      not the same as "no purchase".
   Future<void> restorePurchases({bool userInitiated = false}) async {
+    if (userInitiated) {
+      showSnackBar(
+        message: 'Checking the App Store for your purchases…',
+        duration: const Duration(seconds: 3),
+      );
+      await _syncWithAppStore();
+    }
+
+    _restoreDelivered = false;
+    final Completer<void> batch = Completer<void>();
+    _restoreBatch = batch;
     try {
-      await _inAppPurchase.restorePurchases();
+      if (debugStoreRestore != null) {
+        await debugStoreRestore!();
+      } else {
+        await _inAppPurchase.restorePurchases();
+      }
     } catch (error) {
+      _restoreBatch = null;
       String message = 'Failed to restore purchases: $error';
-      logger.e('PurchaseHelper: ' + message);
+      logger.e('PurchaseHelper: $message');
       AnalyticsHelper().log(message);
-      showSnackBar(message: message);
+      showSnackBar(message: message, duration: const Duration(seconds: 5), isDismissible: true);
       return;
+    }
+    await batch.future.timeout(restoreBatchTimeout, onTimeout: () {});
+    _restoreBatch = null;
+
+    final bool historyOk = await _restoreAdFreeFromTransactionHistory();
+    if (historyOk && !_restoreDelivered) {
+      await _hasPurchase();
     }
 
     if (userInitiated) {
-      showSnackBar(message: restoreOutcomeMessage(isSubscribed: isSubscribed));
+      showSnackBar(
+        message: restoreOutcomeMessage(isSubscribed: isSubscribed),
+        duration: const Duration(seconds: 5),
+        isDismissible: true,
+      );
     }
+  }
+
+  /// `AppStore.sync()` — refreshes StoreKit's local transaction cache from the App Store, which is
+  /// what makes a restore after a reinstall, or on a device the purchase was never made on, find
+  /// anything. It can prompt for the Apple ID password, so it is reserved for an explicit tap.
+  Future<void> _syncWithAppStore() async {
+    if (kIsWeb || !Platform.isIOS || !InAppPurchaseStoreKitPlatform.isStoreKit2Enabled) return;
+    try {
+      await _inAppPurchase.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>().sync();
+    } catch (error) {
+      // Declining the sign-in sheet or having no network is not fatal: the restore below still
+      // consults whatever StoreKit already holds locally.
+      logger.w('PurchaseHelper: AppStore.sync failed: $error');
+      AnalyticsHelper().log('AppStore.sync failed: $error');
+    }
+  }
+
+  /// Scans the full StoreKit 2 transaction history for ad-free purchases that the plugin's
+  /// restore (which only walks `Transaction.currentEntitlements`) cannot see, and delivers them
+  /// through the normal restore path.
+  ///
+  /// Returns whether the combined answer is *authoritative* — i.e. an empty result really means
+  /// "no purchase" and the caller may drop a cached entitlement on the strength of it. It is not
+  /// when the history could not be read, and not on iOS below 18, where a finished consumable
+  /// (which is what "One Year Ad Free" is in App Store Connect) appears in no StoreKit list at
+  /// all: there the cache is the only record of the pass and has to be left alone.
+  Future<bool> _restoreAdFreeFromTransactionHistory() async {
+    final bool injected = debugTransactionHistory != null;
+    Future<List<SK2Transaction>> Function()? fetchHistory = debugTransactionHistory;
+    if (fetchHistory == null) {
+      if (kIsWeb || !Platform.isIOS || !InAppPurchaseStoreKitPlatform.isStoreKit2Enabled) {
+        return true; // Nothing further to consult on this platform; the store's answer stands.
+      }
+      fetchHistory = SK2Transaction.transactions;
+    }
+    List<SK2Transaction> history;
+    try {
+      history = await fetchHistory();
+    } catch (error) {
+      logger.e('PurchaseHelper: could not read the StoreKit transaction history: $error');
+      AnalyticsHelper().log('StoreKit transaction history read failed: $error');
+      return false;
+    }
+    _reportTransactionHistory(history);
+    final List<PurchaseDetails> restores = adFreeRestoresFromHistory(history);
+    if (restores.isNotEmpty) {
+      await _listenToPurchaseUpdated(restores);
+    }
+    return injected || _historyIncludesConsumables();
+  }
+
+  /// True once `Transaction.all` can be trusted to list finished consumables: iOS 18 and later,
+  /// with `SKIncludeConsumableInAppPurchaseHistory` set in Info.plist (it is).
+  static bool _historyIncludesConsumables() {
+    // e.g. "Version 18.1 (Build 22B83)"
+    final RegExpMatch? match = RegExp(r'(\d+)').firstMatch(Platform.operatingSystemVersion);
+    final int major = int.tryParse(match?.group(1) ?? '') ?? 0;
+    return major >= 18;
+  }
+
+  /// Answers, from the field, how the ad-free products are actually configured in App Store
+  /// Connect: each transaction payload records the product `type`. A `Consumable` here is the
+  /// smoking gun for "restore never finds my purchase" — see [adFreeRestoresFromHistory].
+  void _reportTransactionHistory(List<SK2Transaction> history) {
+    final List<String> adFree = history
+        .where((SK2Transaction t) => kAdFreeProductIds.contains(t.productId))
+        .map((SK2Transaction t) =>
+            '${t.productId}:${StoreKitTransactionJson.productType(t.jsonRepresentation) ?? '?'}'
+            '${StoreKitTransactionJson.isRevoked(t.jsonRepresentation) ? ':revoked' : ''}')
+        .toList();
+    logger.i(
+        'PurchaseHelper: transaction history holds ${history.length} transactions; ad-free: $adFree');
+    // Firebase caps a parameter value at 100 characters.
+    final String summary = adFree.join(',');
+    AnalyticsHelper().sendCustomAnalyticsEvent(
+      eventName: 'transaction_history',
+      eventParameters: <String, Object>{
+        'count': history.length,
+        'ad_free': summary.length > 100 ? summary.substring(0, 100) : summary,
+      },
+    );
   }
 
   /// Test-only seam for injecting fake product details without a real store connection — see
@@ -236,7 +379,9 @@ class PurchaseHelper with ChangeNotifier {
 
       _queryProductError = productDetailResponse.error!.message;
       _products = productDetailResponse.productDetails;
-      _purchases = [];
+      // Deliberately not touching _purchases: a failed *product* query says nothing about what
+      // the customer owns, and wiping the list here used to let the same ad-free SKU be sold
+      // again after a flaky price fetch.
       _notFoundIds = productDetailResponse.notFoundIDs;
       _consumables = [];
       _purchasePending = false;
@@ -308,7 +453,6 @@ class PurchaseHelper with ChangeNotifier {
 
       _queryProductError = null;
       _products = productDetailResponse.productDetails;
-      _purchases = [];
       _notFoundIds = productDetailResponse.notFoundIDs;
       _consumables = [];
       _purchasePending = false;
@@ -340,6 +484,21 @@ class PurchaseHelper with ChangeNotifier {
     //showSnackBar(message: error);
     logger.i("PurchaseHelper: " + error);
 
+    // Record how App Store Connect actually types each product. The ad-free products must be
+    // non-consumable (or a subscription) for a restore to ever find them again; a consumable
+    // here can be bought repeatedly and is gone from the store's view the moment it's finished.
+    final List<String> types = _products
+        .whereType<AppStoreProduct2Details>()
+        .map((AppStoreProduct2Details p) => '${p.id}:${p.sk2Product.type.name}')
+        .toList();
+    if (types.isNotEmpty) {
+      logger.i('PurchaseHelper: store product types: $types');
+      AnalyticsHelper().sendCustomAnalyticsEvent(
+        eventName: 'products_loaded',
+        eventParameters: <String, Object>{'types': types.join(',')},
+      );
+    }
+
     // Let any already-open UI (e.g. SupportPromptScreen) pick up live store pricing —
     // see priceFor/priceLabel — without needing an unrelated purchase event to fire.
     notifyListeners();
@@ -365,11 +524,9 @@ class PurchaseHelper with ChangeNotifier {
     Map<String, PurchaseDetails> purchases = Map.fromEntries(
       _purchases.map((PurchaseDetails? purchase) {
         if (purchase!.pendingCompletePurchase) {
-          showSnackBar(
-            message:
-                "_hasPurchase: ${purchase.productID} has pendingCompletePurchase=${purchase.pendingCompletePurchase}",
-          );
-          //_inAppPurchase.completePurchase(purchase);
+          // Expected for a purchase that is still being delivered — _listenToPurchaseUpdated
+          // finishes it once delivery returns. This used to be a snackbar aimed at real users.
+          logger.d('_hasPurchase: ${purchase.productID} is awaiting completePurchase');
         }
         return MapEntry<String, PurchaseDetails>(purchase.productID, purchase);
       }),
@@ -464,20 +621,26 @@ class PurchaseHelper with ChangeNotifier {
       logger.w('products in inventory: ${product!.title}');
     });
 
-    // Only block if the exact SKU being purchased is already owned.
-    // On Apple devices restorePurchases() populates _purchases with all past
-    // purchases, so we must not block every purchase just because one exists.
-    try {
-      PurchaseDetails? purchaseDetails = _purchases.singleWhere((product) {
-        return product!.productID == sku;
-      });
-      String error =
-          'Matching product already bought... ${purchaseDetails!.productID} ${purchaseDetails.pendingCompletePurchase}';
-      logger.i(error);
-      showSnackBar(message: error);
+    // Never sell ad-free to someone who already has it. The screens hide these buttons once
+    // the entitlement is known, but the weekly Support prompt can open before the store has
+    // answered at cold start — and if the product is typed as a consumable in App Store Connect
+    // the customer is simply charged again in full, which is how one came to pay three times.
+    // Upgrading an active yearly pass to permanent is still allowed.
+    final bool alreadyHeld = (sku == SKU_SUBSCRIBE_PERMANENTLY && isSubscribedPermanently) ||
+        (sku == SKU_SUBSCRIBE_ONE_YEAR && isSubscribed);
+    // Likewise if the store has already told us this account owns the exact ad-free SKU.
+    // Donations are consumables and are meant to be bought again, so they are never blocked.
+    final bool ownedPerStore =
+        kAdFreeProductIds.contains(sku) && _purchases.any((p) => p!.productID == sku);
+    if (alreadyHeld || ownedPerStore) {
+      logger.i('PurchaseHelper: refusing to sell $sku again (held=$alreadyHeld, owned=$ownedPerStore)');
+      showSnackBar(
+        message: 'You already have ads removed on this App Store account. If ads are still '
+            'showing, tap ${Strings.restore_purchases} in Settings.',
+        duration: const Duration(seconds: 6),
+        isDismissible: true,
+      );
       return;
-    } catch (e) {
-      logger.i('No previous matching purchase found for $sku, continuing...');
     }
 
     if (_products.isNotEmpty) {
@@ -497,21 +660,35 @@ class PurchaseHelper with ChangeNotifier {
           final PurchaseParam purchaseParam = PurchaseParam(productDetails: productToBuy);
           //showSnackBar(message: 'About to buy: productDetails=${purchaseParam.productDetails.title}');
           bool bought = false;
-          if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY ||
-              productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR) {
-            // Ad-free purchases are non-consumable so they persist on the App Store and
-            // are returned by restorePurchases() on future app launches. Consumables are
-            // never restored on iOS, which would otherwise silently drop the ad-free
-            // entitlement (e.g. yearly_adfree) after the app is closed and reopened.
-            // This matches the Android app, which acknowledges but never consumes these SKUs.
-            bought = await _inAppPurchase.buyNonConsumable(
-              purchaseParam: purchaseParam,
+          try {
+            if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY ||
+                productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR) {
+              // Ad-free purchases are bought as non-consumables so that, on Android, they are
+              // acknowledged but never consumed (matching the Java app). On iOS this call makes
+              // no difference: whether the App Store treats the product as consumable or
+              // non-consumable is fixed by its type in App Store Connect, and only a
+              // non-consumable (or subscription) is ever returned by a restore.
+              bought = await _inAppPurchase.buyNonConsumable(
+                purchaseParam: purchaseParam,
+              );
+            } else {
+              bought = await _inAppPurchase.buyConsumable(
+                purchaseParam: purchaseParam,
+                autoConsume: false,
+              );
+            }
+          } catch (error) {
+            // e.g. StoreKit 2 refusing while an earlier transaction for the same product is
+            // still unfinished. Left uncaught this escaped the button tap with no feedback.
+            final String message = 'Purchase could not be started: $error';
+            logger.e('PurchaseHelper: $message');
+            AnalyticsHelper().log(message);
+            showSnackBar(
+              message: 'The store could not start that purchase. Please try again later.',
+              duration: const Duration(seconds: 5),
+              isDismissible: true,
             );
-          } else {
-            bought = await _inAppPurchase.buyConsumable(
-              purchaseParam: purchaseParam,
-              autoConsume: false,
-            );
+            return;
           }
           // No snackbar on the way in: buyConsumable/buyNonConsumable returning true only means
           // the request reached the store, and the store's own sheet is about to appear over the
@@ -551,8 +728,14 @@ class PurchaseHelper with ChangeNotifier {
     return Future<bool>.value(true);
   }
 
+  /// Test seam for the purchase stream — see test/helpers/purchase_helper_restore_test.dart.
+  @visibleForTesting
+  Future<void> handlePurchaseUpdates(List<PurchaseDetails> purchaseDetailsList) =>
+      _listenToPurchaseUpdated(purchaseDetailsList);
+
   Future<void> _listenToPurchaseUpdated(
       List<PurchaseDetails> purchaseDetailsList) async {
+    bool restoredAny = false;
     for (final PurchaseDetails purchaseDetails in purchaseDetailsList) {
       Map<String, Object> eventMap = Map<String, Object>();
       if (purchaseDetails.status == PurchaseStatus.pending) {
@@ -585,14 +768,23 @@ class PurchaseHelper with ChangeNotifier {
           );
         } else if (purchaseDetails.status == PurchaseStatus.purchased ||
             purchaseDetails.status == PurchaseStatus.restored) {
+          if (purchaseDetails.status == PurchaseStatus.restored) restoredAny = true;
           // deliverProduct() below says something the user actually cares about ("Thanks so much
           // for the coffee") — this raw status line only got in its way.
           logger.i('Purchase status is ${purchaseDetails.status}');
-          bool valid = await _verifyPurchase(purchaseDetails);
-          if (valid) {
-            await deliverProduct(purchaseDetails, eventMap);
+          if (StoreKitTransactionJson.isRevoked(
+              purchaseDetails.verificationData.localVerificationData)) {
+            // StoreKit 2 announces a refund by re-emitting the transaction with a
+            // revocationDate — and the plugin forwards it with status "purchased". Delivering it
+            // would re-grant the very entitlement Apple just withdrew.
+            await _withdrawRevokedPurchase(purchaseDetails);
           } else {
-            _handleInvalidPurchase(purchaseDetails);
+            bool valid = await _verifyPurchase(purchaseDetails);
+            if (valid) {
+              await deliverProduct(purchaseDetails, eventMap);
+            } else {
+              _handleInvalidPurchase(purchaseDetails);
+            }
           }
         }
         // Always finish the transaction so it leaves the payment queue.
@@ -603,16 +795,52 @@ class PurchaseHelper with ChangeNotifier {
         }
       }
     }
+
+    if (restoredAny) _restoreDelivered = true;
+    // Let a waiting restorePurchases() know its answer has been processed. An empty batch is
+    // StoreKit 1's (and Android's) way of saying "nothing to restore".
+    final Completer<void>? batch = _restoreBatch;
+    if (batch != null && !batch.isCompleted && (restoredAny || purchaseDetailsList.isEmpty)) {
+      batch.complete();
+    }
+  }
+
+  /// Drops a refunded/revoked transaction from the inventory and re-evaluates the entitlement.
+  /// Only the matching transaction goes: a yearly pass bought more than once keeps the copy that
+  /// still stands (the next restore re-reads the history to be sure).
+  Future<void> _withdrawRevokedPurchase(PurchaseDetails revoked) async {
+    logger.w(
+        'PurchaseHelper: ${revoked.productID} (${revoked.purchaseID}) has been revoked by the store');
+    AnalyticsHelper().sendCustomAnalyticsEvent(
+      eventName: 'purchase_revoked',
+      eventParameters: <String, Object>{'sku': revoked.productID},
+    );
+    _purchases.removeWhere((PurchaseDetails? held) =>
+        held!.productID == revoked.productID &&
+        (revoked.purchaseID == null ||
+            held.purchaseID == null ||
+            held.purchaseID == revoked.purchaseID));
+    await _hasPurchase();
   }
 
   Future<void> deliverProduct(PurchaseDetails purchaseDetails, Map<String, Object> eventMap) async {
-    // A null purchaseID must NOT prevent the ad-free entitlement below from
-    // being applied — it has been observed on some restore paths. Only
-    // record the consumable when we actually have an ID to record.
-    if (purchaseDetails.purchaseID != null) {
+    // A restore is the store re-stating something the customer already paid for, and every cold
+    // start replays it. It must apply the entitlement exactly as a purchase does — but silently:
+    // thanking someone for "making this purchase" on each launch reads as a fresh charge, and
+    // counting it as a purchase event made the purchase analytics meaningless.
+    final bool isRestore = purchaseDetails.status == PurchaseStatus.restored;
+    void thank(String message) {
+      if (!isRestore) showSnackBar(message: message, isDismissible: true);
+    }
+
+    if (isRestore) {
+      logger.i('PurchaseHelper: restored ${purchaseDetails.productID} (${purchaseDetails.purchaseID})');
+    } else if (purchaseDetails.purchaseID != null) {
       // Use the prototype that stores consumables in the shared preferences
       await ConsumableStore.save(purchaseDetails.purchaseID!);
     } else {
+      // A null purchaseID must NOT prevent the ad-free entitlement below from being applied — it
+      // has been observed on some restore paths. Only record the consumable when we have an ID.
       logger.w(
           'PurchaseHelper: deliverProduct: purchaseID is null for ${purchaseDetails.productID}, skipping ConsumableStore.save');
     }
@@ -620,7 +848,7 @@ class PurchaseHelper with ChangeNotifier {
     switch (purchaseDetails.productID) {
       case SKU_DONATION_SMALL:
         {
-          showSnackBar(message: 'Thanks so much for the coffee, you legend!', isDismissible: true);
+          thank('Thanks so much for the coffee, you legend!');
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           _purchases.add(purchaseDetails);
@@ -630,10 +858,7 @@ class PurchaseHelper with ChangeNotifier {
         }
       case SKU_DONATION_MEDIUM:
         {
-          showSnackBar(
-            message: 'Coffee and cake is the best, just like you!',
-            isDismissible: true,
-          );
+          thank('Coffee and cake is the best, just like you!');
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           _purchases.add(purchaseDetails);
@@ -643,10 +868,7 @@ class PurchaseHelper with ChangeNotifier {
         }
       case SKU_DONATION_LARGE:
         {
-          showSnackBar(
-            message: 'Thanks for buying lunch! I\'d love to hear from you.',
-            isDismissible: true,
-          );
+          thank('Thanks for buying lunch! I\'d love to hear from you.');
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           _purchases.add(purchaseDetails);
@@ -656,10 +878,7 @@ class PurchaseHelper with ChangeNotifier {
         }
       case SKU_SUBSCRIBE_ONE_YEAR:
         {
-          showSnackBar(
-            message: 'Thanks! Enjoy the app now ad free for the next year.',
-            isDismissible: true,
-          );
+          thank('Thanks! Enjoy the app now ad free for the next year.');
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           _purchases.add(purchaseDetails);
@@ -668,10 +887,7 @@ class PurchaseHelper with ChangeNotifier {
         }
       case SKU_SUBSCRIBE_PERMANENTLY:
         {
-          showSnackBar(
-            message: 'Thanks for making this purchase. Please enjoy the app ad free.',
-            isDismissible: true,
-          );
+          thank('Thanks for making this purchase. Please enjoy the app ad free.');
           logger.i("PurchaseHelper: Product purchased just now is ${purchaseDetails.productID}");
           eventMap['purchase'] = purchaseDetails.productID;
           _purchases.add(purchaseDetails);
@@ -680,17 +896,19 @@ class PurchaseHelper with ChangeNotifier {
         }
       default:
         {
-          showSnackBar(
-            message: 'This purchase condition shouldn\'t of happened! ${purchaseDetails.productID}',
-            isDismissible: true,
-          );
-          logger.e("PurchaseHelper: This purchase condition shouldn\'t of happened! ${purchaseDetails.productID}");
+          // A product this build doesn't know (a retired SKU, say). Nothing to deliver, and
+          // nothing a user could act on — so no snackbar, least of all on every restore.
+          logger.e('PurchaseHelper: unexpected product delivered: ${purchaseDetails.productID}');
+          eventMap['unexpected'] = purchaseDetails.productID;
         }
     }
 
     notifyListeners();
 
-    AnalyticsHelper().sendCustomAnalyticsEvent(eventName: 'purchase', eventParameters: eventMap);
+    AnalyticsHelper().sendCustomAnalyticsEvent(
+      eventName: isRestore ? 'purchase_restored' : 'purchase',
+      eventParameters: eventMap,
+    );
   }
 
   void _handleInvalidPurchase(PurchaseDetails purchaseDetails) {

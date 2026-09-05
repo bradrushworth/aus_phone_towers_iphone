@@ -69,11 +69,16 @@ iOS. The table below lists each one and whether it can be brought to iOS.
 
 Both apps use the platform store for entitlements:
 
-- **Remove Ads — 1 Year**: a non-consumable purchase that grants ad-free for 365 days. It is
-  restored automatically on launch (via `restorePurchases()`); after 12 months it expires, ads
-  return, and the user may buy it again.
-- **Remove Ads — Permanent**: a non-consumable purchase that removes ads forever and is restored
-  on every launch.
+- **Remove Ads — 1 Year** (`yearly_adfree`): grants ad-free for 365 days from the purchase;
+  after that ads return and it can be bought again. **On the App Store it is a Consumable**
+  (verified in App Store Connect, 2026-09-05) — the store will sell it again at any time, and a
+  consumable is never returned by StoreKit's restore. The app therefore also reads the StoreKit 2
+  transaction history on every restore (see "Ads and billing" in `AGENTS.md`), which lists
+  finished consumables on iOS 18+ thanks to `SKIncludeConsumableInAppPurchaseHistory` in
+  `Info.plist`. Re-typing it as a non-renewing subscription under a new product id is tracked as
+  bead `aptios-589`.
+- **Remove Ads — Permanent** (`permanent_adfree`): a non-consumable purchase that removes ads
+  forever and is restored on every launch.
 - **Donations** (small / medium / large): one-off consumable purchases that support development.
   They are repeatable and do **not** remove ads.
 
