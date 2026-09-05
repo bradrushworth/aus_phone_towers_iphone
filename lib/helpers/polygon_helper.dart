@@ -14,10 +14,12 @@ import '../model/device_detail.dart';
 import '../model/height_distance_pair.dart';
 import '../model/overlay.dart';
 import '../model/site.dart';
+import '../pathloss/terrain_coverage.dart';
 import '../restful/get_elevation.dart';
 import '../restful/get_licenceHRP.dart';
 import '../utils/app_constants.dart';
 import '../utils/polygon_container.dart';
+import 'shadow_holes.dart';
 import 'let_type_helper.dart';
 import 'map_helper.dart';
 import 'network_type_helper.dart';
@@ -291,7 +293,17 @@ class PolygonHelper with ChangeNotifier {
         // again because the input parameters may have changed (like user settings).
         List<List<LatLng>> data = [];
         for (PolygonContainer? polygonContainer in polygonCache[d]!) {
-          data.add(polygonContainer!.getPolygon().points);
+          final Polygon existingPolygon = polygonContainer!.getPolygon();
+          data.add(existingPolygon.points);
+          // Keep this ring's already-computed shadow holes when redrawing from cached points.
+          // `d` is looked up in polygonCache by == (deviceRegistrationIdentifier), not
+          // necessarily the same instance createPolygon last populated, so its own
+          // _terrainHoles may be empty even though the cached Polygon still carries the right
+          // holes. Without this, toggling terrain off and back on would redraw this cached
+          // shape with no holes at all.
+          if (existingPolygon.holes.isNotEmpty) {
+            d.setTerrainHoles(polygonContainer.order, existingPolygon.holes);
+          }
         }
         createPolygon(
           data,
@@ -387,6 +399,12 @@ class PolygonHelper with ChangeNotifier {
         strokeWidth: 6,
         fillColor: TelcoHelper.getColor(telco, alpha),
         points: data[i],
+        // Shadow-hole rings behind ridges, terrain mode only (I3: a non-terrain pass must not
+        // clear the stored holes, so a later terrain toggle-back redraws them from cache).
+        // google_maps_flutter silently drops any hole with fewer than 3 points.
+        holes: PolygonHelper.calculateTerrain
+            ? device.terrainHoles(i).where((h) => h.length >= 3).toList()
+            : const <List<LatLng>>[],
       );
 
       if (PolygonHelper.sitesPolygons.containsKey(site)) {
@@ -480,6 +498,30 @@ class PolygonHelper with ChangeNotifier {
 
   static int getPolygonSignalStrengthPosition() {
     return polygonSignalStrengthPos;
+  }
+
+  /// Rebuilds [device]'s per-rung shadow-hole rings from one signal-strength sweep's terrain
+  /// coverage results (I3). Callers must only invoke this in terrain mode: clearing/rebuilding
+  /// unconditionally wiped out a previous terrain pass's holes the moment terrain mode was
+  /// toggled off, and toggling it back on then redraws the cached terrain polygon shapes (see the
+  /// cache path in [queryForSignalPolygon]) with no recomputation, so it would draw them with no
+  /// holes at all.
+  ///
+  /// Pure (no Flutter widget or network dependency) so it is unit-testable directly; shared by
+  /// both [createBasicPolygon] and [GetLicenceHRP.getLicenceHRPData].
+  static void applyTerrainHoles(
+    LatLng siteLatLng,
+    DeviceDetails device,
+    List<double> bearingsUsed,
+    List<List<TerrainCoverageResult>> coverageByRung,
+    PointAt pointAt,
+  ) {
+    device.clearTerrainHoles();
+    final List<List<List<LatLng>>> holesByRung =
+        ShadowHoles.buildAllRungs(siteLatLng, bearingsUsed, coverageByRung, pointAt);
+    for (int p = 0; p < holesByRung.length; p++) {
+      device.setTerrainHoles(p, holesByRung[p]);
+    }
   }
 
   /// Draw frequency + technology labels along the outer signal-strength ring, mirroring the
@@ -636,49 +678,64 @@ class PolygonHelper with ChangeNotifier {
     }
     //Log.d("PolygonHelper", "power_dBm="+power_dBm+" freeSpaceLoss_dBi="+freeSpaceLoss_dBi+" towerHeight="+towerHeight);
 
+    // Terrain-mode per-rung coverage results, aligned 1:1 with bearingsUsed below, so
+    // ShadowHoles can rebuild the shadow rings once every bearing has been walked.
+    final List<double> bearingsUsed = [];
+    final List<List<TerrainCoverageResult>> coverageByRung = [
+      for (int p = 0; p <= PolygonHelper.getPolygonSignalStrengthPosition(); p++)
+        <TerrainCoverageResult>[]
+    ];
+
     for (double bearing = BEARING_START; bearing < 360; bearing += polygonBearingIncrement) {
-      //TODO calculare Terrain
-      Set<HeightDistancePair> heightToDistance = {};
-      int hillHeight = 0;
-      if (PolygonHelper.calculateTerrain) {
-        // Is the tower on top of a hill?
-        heightToDistance = site.getHeightsAlongBearing(bearing);
-        hillHeight = site.getSiteHillElevation(heightToDistance);
-        if (hillHeight < 0) {
-          hillHeight = 0;
-        }
-        //Log.d("PolygonHelper", "hillHeight="+hillHeight);
-      }
+      bearingsUsed.add(bearing);
+
+      Set<HeightDistancePair> heightToDistance =
+          PolygonHelper.calculateTerrain ? site.getHeightsAlongBearing(bearing) : {};
 
       double power_dBm = device.getPowerAtBearing(bearing);
+
+      // Antenna height above the average terrain toward this bearing (TerrainHeight) - the same
+      // quantity the trainer fitted the coefficients against, used in BOTH modes. Terrain mode
+      // used to add the site's height above the median profile here on top of coefficients that
+      // already averaged hilltop sites into the stratum (counted twice).
+      final double effectiveHeight = site.effectiveHeightM(towerHeight.toDouble(), bearing);
+
+      // Use the composite (mnc + networkType + density + frequency-band) overload so the
+      // estimate is tuned to the SAME trained coefficients as the connected-tower path
+      // (learned from observed signal strengths), instead of only the density-only
+      // coefficients. The composite lookup degrades gracefully
+      // (composite -> density-only -> analytic Hata), identical to the mapping path.
+      CityDensity model = device.getRadiationModel() ??
+          GetLicenceHRP.defaultRadiationModel;
+      // The path-loss model with this transmitter's context bound, so calculateTerrainCoverage
+      // can re-solve the distance after charging terrain to the link budget.
+      double solver(double budgetDb) =>
+          GetLicenceHRP.calculateDistanceWithContext(
+              TelcoHelper.getMnc(site.getTelco()),
+              device.getNetworkType(),
+              model,
+              budgetDb,
+              freqInMHz.toDouble(),
+              effectiveHeight);
+
+      // I2: one memoising terrain loss per bearing, shared by every rung below - see the
+      // comment on GetLicenceHRP.terrainExcessLossForBearing.
+      final ExcessLoss? terrainLoss = PolygonHelper.calculateTerrain
+          ? GetLicenceHRP.terrainExcessLossForBearing(
+              site, heightToDistance, bearing, freqInMHz.toDouble(), towerHeight)
+          : null;
 
       int pos = 0;
       for (int p = 0; p <= PolygonHelper.getPolygonSignalStrengthPosition(); p++) {
         int receiver_dBm = polygons[p];
         double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
-        // Use the composite (mnc + networkType + density + frequency-band) overload so the
-        // estimate is tuned to the SAME trained coefficients as the connected-tower path
-        // (learned from observed signal strengths), instead of only the density-only
-        // coefficients. The composite lookup degrades gracefully
-        // (composite -> density-only -> analytic Hata), identical to the mapping path.
-        CityDensity model = device.getRadiationModel() ??
-            GetLicenceHRP.defaultRadiationModel;
-        // The path-loss model with this transmitter's context bound, so
-        // calculateTerrainLosses can re-solve the distance after charging terrain to the
-        // link budget.
-        double solver(double budgetDb) =>
-            GetLicenceHRP.calculateDistanceWithContext(
-                TelcoHelper.getMnc(site.getTelco()),
-                device.getNetworkType(),
-                model,
-                budgetDb,
-                freqInMHz.toDouble(),
-                (towerHeight + hillHeight).toDouble());
         double distanceKm;
         if (calculateTerrain) {
-          distanceKm = GetLicenceHRP.calculateTerrainLosses(site, heightToDistance,
-              freeSpaceLoss_dBi, solver, bearing, freqInMHz.toDouble(), towerHeight);
+          final TerrainCoverageResult coverage = TerrainCoverage.evaluate(
+              freeSpaceLoss_dBi, solver, terrainLoss!, GetElevation.SAMPLE_DISTANCES);
+          distanceKm = coverage.outerKm;
+          coverageByRung[p].add(coverage);
         } else {
           distanceKm = solver(freeSpaceLoss_dBi);
         }
@@ -693,6 +750,19 @@ class PolygonHelper with ChangeNotifier {
         pos++;
       }
     }
+
+    // I3: only clear/rebuild shadow holes in terrain mode - see the matching comment in
+    // GetLicenceHRP.getLicenceHRPData.
+    if (calculateTerrain) {
+      applyTerrainHoles(
+        site.getLatLng(),
+        device,
+        bearingsUsed,
+        coverageByRung,
+        (b, km) => GetLicenceHRP.travel(site.getLatLng(), b, km),
+      );
+    }
+
     createPolygon(results, site, device);
   }
 

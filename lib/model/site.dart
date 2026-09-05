@@ -15,6 +15,7 @@ import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/density_lookup.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 
+import '../pathloss/terrain_height.dart';
 import 'height_distance_pair.dart';
 
 class Site {
@@ -26,6 +27,18 @@ class Site {
 
   bool startedDownloadingElevations = false;
   bool finishedDownloadingElevations = false;
+
+  /// site_terrain.ground_m, once the terrain row has loaded; null until then / when absent.
+  int? terrainGroundM;
+  /// site_terrain.bearing_median_m parsed (24 bearings at 15 degrees); null until loaded / when
+  /// absent.
+  List<int>? terrainMedians;
+  bool terrainRequested = false;
+  bool terrainLoaded = false;
+
+  /// The height the path-loss model is given toward this bearing; see [TerrainHeight].
+  double effectiveHeightM(double antennaHeightM, double bearing) =>
+      TerrainHeight.effectiveHeightM(antennaHeightM, terrainGroundM, terrainMedians, bearing);
 
   // We split sites per telco
   Telco telco;
@@ -376,18 +389,6 @@ class Site {
       }
     }
     return elevation;
-  }
-
-  int getSiteHillElevation(Set<HeightDistancePair> heightToDistance) {
-    int i = 0;
-    for (HeightDistancePair pair in heightToDistance) {
-      if (i == heightToDistance.length / 2) {
-        // Return the difference in height between tower and median heights
-        return (getElevation(getLatLng()) - pair.height).round();
-      }
-      i++;
-    }
-    return 0;
   }
 
   @override

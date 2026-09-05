@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
@@ -58,6 +59,20 @@ class DeviceDetails {
   late Logger logger;
   late Map<double, double> bearingToPowerMap;
   Antenna? antenna;
+
+  /// Terrain-mode shadow holes per rung index (0 = strongest), rebuilt whenever polygons are
+  /// computed. Mirrors the Java app's DeviceDetails.terrainHoles.
+  final Map<int, List<List<LatLng>>> _terrainHoles = {};
+
+  void setTerrainHoles(int rung, List<List<LatLng>> holes) {
+    _terrainHoles[rung] = holes;
+  }
+
+  List<List<LatLng>> terrainHoles(int rung) => _terrainHoles[rung] ?? const <List<LatLng>>[];
+
+  void clearTerrainHoles() {
+    _terrainHoles.clear();
+  }
 
   DeviceDetails(
       {this.sddId,
