@@ -40,6 +40,37 @@ class Site {
   double effectiveHeightM(double antennaHeightM, double bearing) =>
       TerrainHeight.effectiveHeightM(antennaHeightM, terrainGroundM, terrainMedians, bearing);
 
+  /// Installs a `site_terrain` row (see `GetSiteTerrain`). With a full 24-group profile the
+  /// 24 x 19 samples are fed into [elevations] at the exact points the app would otherwise have
+  /// asked Google for, so terrain mode needs no Elevation API call for this site and
+  /// GetLicenceHRP's elevation wait is released immediately. Elevations are written directly
+  /// (`elevations[latLng] = value`), NOT via [addElevation]'s `putIfAbsent`, so a fresh row
+  /// always overwrites whatever a previous Google download (or an earlier row) left behind.
+  /// Always sets [terrainLoaded], even with no usable profile (or no row at all — see
+  /// GetSiteTerrain.fetch's finally block).
+  void applyTerrain(int groundM, List<int> bearingMedianM, List<List<int>>? profileM) {
+    terrainGroundM = groundM;
+    terrainMedians = bearingMedianM;
+    if (profileM != null && profileM.length == TerrainHeight.bearings) {
+      final LatLng here = getLatLng();
+      elevations[here] = groundM.toDouble();
+      for (int b = 0; b < TerrainHeight.bearings; b++) {
+        final double bearing = b * TerrainHeight.bearingStepDegrees;
+        final List<int> samples = profileM[b];
+        for (int k = 0;
+            k < GetElevation.SAMPLE_DISTANCES.length && k < samples.length;
+            k++) {
+          final LatLng point =
+              GetLicenceHRP.travel(here, bearing, GetElevation.SAMPLE_DISTANCES[k]);
+          elevations[point] = samples[k].toDouble();
+        }
+      }
+      startedDownloadingElevations = true;
+      finishedDownloadingElevations = true;
+    }
+    terrainLoaded = true;
+  }
+
   // We split sites per telco
   Telco telco;
 

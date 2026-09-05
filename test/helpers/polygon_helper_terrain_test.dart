@@ -119,4 +119,28 @@ void main() {
           reason: 'applyTerrainHoles must clear the whole device, not just the rungs it rebuilds');
     });
   });
+
+  group('PolygonHelper.needsGoogleElevation', () {
+    // Task F6: the site_terrain request now fires in both modes, so a row can finish loading
+    // while terrain mode is off (the default at every app start). If the user then turns terrain
+    // mode on, site.terrainRequested is already true and the request-guard in
+    // queryForSignalPolygon never re-fires — this pure truth table is what notices that case and
+    // starts the Google Elevation fallback instead of leaving GetLicenceHRP's wait spinning.
+    test('terrain mode off -> never needed, regardless of load state', () {
+      expect(PolygonHelper.needsGoogleElevation(false, false, false), isFalse);
+      expect(PolygonHelper.needsGoogleElevation(false, true, false), isFalse);
+    });
+
+    test('terrain mode on but the row has not finished loading -> not yet', () {
+      expect(PolygonHelper.needsGoogleElevation(true, false, false), isFalse);
+    });
+
+    test('terrain mode on, row loaded, elevations already finished -> not needed', () {
+      expect(PolygonHelper.needsGoogleElevation(true, true, true), isFalse);
+    });
+
+    test('terrain mode on, row loaded, elevations not finished -> needed', () {
+      expect(PolygonHelper.needsGoogleElevation(true, true, false), isTrue);
+    });
+  });
 }

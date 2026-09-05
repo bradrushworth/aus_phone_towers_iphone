@@ -134,6 +134,29 @@ Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.r
     }
   }
 
+  /// Get the nightly site_terrain row (Task F6). Returns the raw decoded JSON map — unlike the
+  /// other calls above, GetSiteTerrain reads `restify.rows[0].values.<col>.value` off it
+  /// directly rather than through a typed SiteResponse, since site_terrain's columns
+  /// (ground_m, bearing_median_m, profile_m) aren't part of that model. `null` on any Dio
+  /// error (network failure, non-2xx, timeout), logged like the other calls, so a missing or
+  /// unreachable row degrades the same way a genuine empty-rows response does.
+  Future<Map<String, dynamic>?> getSiteTerrainData(String path) async {
+    try {
+      Response response = await dio.get(path, options: Options());
+      final dynamic data = response.data;
+      if (data is Map<String, dynamic>) return data;
+      if (data is Map) return Map<String, dynamic>.from(data);
+      return null;
+    } on DioException catch (e) {
+      logger.e('''Error message is ${e.message}
+Error type is ${e.type}
+Error is ${e.error}
+For request ${e.requestOptions.path}
+Response is ${e.response != null ? 'data => ${e.response!.data} headers => ${e.response!.headers}' : 'empty'}''');
+      return null;
+    }
+  }
+
   /// Get elevation data. [headers] carries the key-restriction identity the platform
   /// needs (X-Ios-Bundle-Identifier on iOS, the site Referer on Android, nothing on web).
   Future<ElevationResponse?> getElevationDataApi(String path,

@@ -14,9 +14,11 @@ import '../model/device_detail.dart';
 import '../model/height_distance_pair.dart';
 import '../model/overlay.dart';
 import '../model/site.dart';
+import '../networking/api.dart';
 import '../pathloss/terrain_coverage.dart';
 import '../restful/get_elevation.dart';
 import '../restful/get_licenceHRP.dart';
+import '../restful/get_site_terrain.dart';
 import '../utils/app_constants.dart';
 import '../utils/polygon_container.dart';
 import 'shadow_holes.dart';
@@ -99,6 +101,7 @@ class PolygonHelper with ChangeNotifier {
   // towers' coverage can be shown together. Requested in issue #27.
   static bool multiTowerCoverage = false;
   static Logger logger = Logger();
+  static Api api = Api.initialize();
 
   //static Set<Polygon> globalPolygons = Set<Polygon>();
   static List<MapOverlay> globalListPolygons = [];
@@ -121,6 +124,66 @@ class PolygonHelper with ChangeNotifier {
   /// Frequency / technology labels drawn along the outer signal ring (replaces the Android
   /// GroundOverlay text, since google_maps_flutter's Polygon has no text support).
   static List<MapOverlay> labelOverlays = [];
+
+  /// Starts the Google Elevation download for a site once; used only when no site_terrain
+  /// profile is served (GetSiteTerrain finished without a usable profile, or the site_terrain
+  /// request itself could not be started). Extracted from the terrain trigger in
+  /// [queryForSignalPolygon] so GetSiteTerrain's fallback path can start it too. Idempotent via
+  /// [Site.startedDownloadingElevations]. On any failure to start, marks the site as finished
+  /// (not merely not-started) so GetLicenceHRP's bounded elevation wait cannot spin forever
+  /// waiting for a download that will never begin.
+  static void startGoogleElevation(Site site, {ShowSnackBar? showSnackBar}) {
+    if (site.startedDownloadingElevations) {
+      return;
+    }
+    site.startedDownloadingElevations = true;
+    try {
+      String positionsString = GetElevation.getPositionsString(site.getLatLng());
+      // Each platform uses the key whose restriction it can satisfy, and sends the
+      // identity that restriction is checked against — see GetElevation.
+      final bool isIOS = !kIsWeb && Platform.isIOS;
+      final bool hasAndroidKey = !kIsWeb &&
+          !isIOS &&
+          Platform.isAndroid &&
+          terrainAwarenessKeyAndroid.isNotEmpty;
+      final String key = GetElevation.selectTerrainKey(
+          isWeb: kIsWeb,
+          isIOS: isIOS,
+          defaultKey: terrainAwarenessKey,
+          iosKey: terrainAwarenessKeyIos,
+          androidKey: hasAndroidKey ? terrainAwarenessKeyAndroid : '');
+      String url = (kIsWeb ? 'https://api.bitbot.com.au/cors/' : '') +
+          'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$key';
+      GetElevation(
+              site: site,
+              url: url,
+              headers: GetElevation.elevationRequestHeaders(
+                  isWeb: kIsWeb, isIOS: isIOS, hasAndroidKey: hasAndroidKey),
+              showSnackBar: showSnackBar)
+          .getElevationData();
+    } catch (e, stack) {
+      site.startedDownloadingElevations = false;
+      // Without this, GetLicenceHRP's bounded terrain-mode wait would simply burn its full
+      // deadline on every single request for this site, since nothing else was ever going to
+      // flip finishedDownloadingElevations. Give up on terrain for this site instead.
+      site.finishedDownloadingElevations = true;
+      logger.e('PolygonHelper: startGoogleElevation: failed to start for site ${site.siteId}: $e\n$stack');
+    }
+  }
+
+  /// Whether [startGoogleElevation] must be (re)started now: terrain mode is on and the
+  /// site_terrain row has finished loading, but nothing ever finished the elevation download.
+  ///
+  /// The site_terrain request fires in both modes, so a row answered while terrain mode was off
+  /// (the default at every app start) reaches GetSiteTerrain.fetch's finally block while
+  /// calculateTerrain is still false; without a profile, that decides not to start the Google
+  /// fallback. If the user then turns terrain mode on, site.terrainRequested is already true, so
+  /// the request-guard in [queryForSignalPolygon] never re-fires and nothing else would start
+  /// the download — leaving GetLicenceHRP's terrain wait spinning forever. Extracted as a pure
+  /// function so the truth table is unit-testable.
+  static bool needsGoogleElevation(
+          bool calculateTerrain, bool terrainLoaded, bool finishedDownloadingElevations) =>
+      calculateTerrain && terrainLoaded && !finishedDownloadingElevations;
 
   void queryForSignalPolygon(Site site, bool refreshingPolygons, bool cachingPolygons,
       {Set<DeviceDetails>? specificDevices, ShowSnackBar? showSnackBar}) {
@@ -191,40 +254,23 @@ class PolygonHelper with ChangeNotifier {
       }
     }
 
-    if (calculateTerrain) {
-      // Get elevation data from Google
-      try {
-        if (!site.startedDownloadingElevations) {
-          site.startedDownloadingElevations = true;
-          String positionsString = GetElevation.getPositionsString(site.getLatLng());
-          // Each platform uses the key whose restriction it can satisfy, and sends the
-          // identity that restriction is checked against — see GetElevation.
-          final bool isIOS = !kIsWeb && Platform.isIOS;
-          final bool hasAndroidKey = !kIsWeb &&
-              !isIOS &&
-              Platform.isAndroid &&
-              terrainAwarenessKeyAndroid.isNotEmpty;
-          final String key = GetElevation.selectTerrainKey(
-              isWeb: kIsWeb,
-              isIOS: isIOS,
-              defaultKey: terrainAwarenessKey,
-              iosKey: terrainAwarenessKeyIos,
-              androidKey: hasAndroidKey ? terrainAwarenessKeyAndroid : '');
-          String url = (kIsWeb ? 'https://api.bitbot.com.au/cors/' : '') +
-              'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$key';
-          GetElevation(
-                  site: site,
-                  url: url,
-                  headers: GetElevation.elevationRequestHeaders(
-                      isWeb: kIsWeb, isIOS: isIOS, hasAndroidKey: hasAndroidKey),
-                  showSnackBar: showSnackBar)
-              .getElevationData();
-        }
-      } catch (e, stack) {
-        site.startedDownloadingElevations = false;
-        print(stack);
-        return;
-      }
+    // Request the nightly site_terrain row (ground elevation, per-bearing median terrain and,
+    // when present, the full elevation profile) in BOTH modes: the effective antenna height it
+    // feeds (Site.effectiveHeightM / TerrainHeight) is used everywhere now, not only when
+    // "Calculate Terrain" is on. A served profile also means terrain mode never has to fall
+    // back to the Google Elevation download for this site — see GetSiteTerrain and
+    // Site.applyTerrain.
+    if (!site.terrainRequested) {
+      site.terrainRequested = true;
+      GetSiteTerrain(site: site, api: api).fetch();
+    }
+
+    // The row may have been answered while terrain mode was off (the default at start-up), in
+    // which case GetSiteTerrain.fetch's finally block decided not to start the Google download.
+    // Catches that case here too, the moment terrain mode is switched on for an already-loaded
+    // site.
+    if (needsGoogleElevation(calculateTerrain, site.terrainLoaded, site.finishedDownloadingElevations)) {
+      startGoogleElevation(site, showSnackBar: showSnackBar);
     }
 
     // Prepare for the download

@@ -105,10 +105,31 @@ class GetLicenceHRP {
 
       int towerHeight = device.getTowerHeight();
 
+      // The nightly site_terrain row (Task F6) feeds the effective antenna height in BOTH
+      // modes, so give it a short bounded wait here regardless of calculateTerrain: most rows
+      // answer well within this, and a genuinely absent/slow row must never stall a
+      // non-terrain polygon draw. Bounded (not "wait until terrainLoaded") so a request that
+      // never even starts (see PolygonHelper.needsGoogleElevation's comment) can't hang this
+      // device's polygon forever.
+      final DateTime terrainRowDeadline = DateTime.now().add(const Duration(seconds: 2));
+      while (site.terrainRequested &&
+          !site.terrainLoaded &&
+          DateTime.now().isBefore(terrainRowDeadline)) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+
       if (PolygonHelper.calculateTerrain) {
-        // Wait for the site elevation data to be downloaded
-        while (!site.finishedDownloadingElevations) {
+        // Wait for the site elevation data to be downloaded (via the served site_terrain
+        // profile, or the Google Elevation fallback it starts when no profile arrives).
+        // Bounded to 30 seconds so a stuck or never-started download cannot hang this
+        // device's polygon forever.
+        final DateTime elevationDeadline = DateTime.now().add(const Duration(seconds: 30));
+        while (shouldKeepWaitingForElevation(site, DateTime.now(), elevationDeadline)) {
           await Future.delayed(Duration(milliseconds: 500));
+        }
+        if (!site.finishedDownloadingElevations) {
+          logger.w(
+              'PolygonHelper: GetLicenceHRP: timed out after 30s waiting for elevation data for site ${site.siteId}, device ${device.sddId} — proceeding without terrain');
         }
       }
 
@@ -360,6 +381,14 @@ class GetLicenceHRP {
       CityDensity density, double levelInDb, double freqInMHz, double height) {
     return calculateDistanceWithContext(
         mnc, networkType, density, levelInDb, freqInMHz, height);
+  }
+
+  /// Whether the terrain-mode elevation wait in [getLicenceHRPData] should keep looping: the
+  /// download hasn't finished yet, and the bounded [deadline] hasn't passed. Extracted as a
+  /// pure, static function (rather than inlining `DateTime.now()` into the while condition) so
+  /// the 30-second timeout boundary is unit-testable without an actual 30-second wait.
+  static bool shouldKeepWaitingForElevation(Site site, DateTime now, DateTime deadline) {
+    return !site.finishedDownloadingElevations && now.isBefore(deadline);
   }
 
   // Distance in km
