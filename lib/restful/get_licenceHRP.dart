@@ -429,9 +429,8 @@ class GetLicenceHRP {
   /// The worst knife-edge diffraction loss, in dB, imposed by the terrain between the site and a
   /// receiver [distanceKm] away along [bearing]. Zero when the path is clear.
   ///
-  /// Every elevation sample is examined: [heightToDistance] is now ordered by distance (see
-  /// [HeightDistancePair]), so there is no longer a cheap "highest samples first" prefix to
-  /// truncate at. 19 samples per bearing is cheap enough to check in full.
+  /// Every sample is examined because obstacles are not the highest samples on a rising profile;
+  /// 19 per bearing is cheap.
   static double terrainExcessLossDb(
       final Site site,
       final Set<HeightDistancePair> heightToDistance,
