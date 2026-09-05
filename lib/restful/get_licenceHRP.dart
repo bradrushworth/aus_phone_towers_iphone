@@ -429,9 +429,9 @@ class GetLicenceHRP {
   /// The worst knife-edge diffraction loss, in dB, imposed by the terrain between the site and a
   /// receiver [distanceKm] away along [bearing]. Zero when the path is clear.
   ///
-  /// Only the highest quarter of the elevation samples are examined, as before: they are the only
-  /// ones that can dominate, and the profile is sampled sparsely enough that testing all of them
-  /// costs more than it buys.
+  /// Every elevation sample is examined: [heightToDistance] is now ordered by distance (see
+  /// [HeightDistancePair]), so there is no longer a cheap "highest samples first" prefix to
+  /// truncate at. 19 samples per bearing is cheap enough to check in full.
   static double terrainExcessLossDb(
       final Site site,
       final Set<HeightDistancePair> heightToDistance,
@@ -454,19 +454,9 @@ class GetLicenceHRP {
     final double gradient =
         (transmitterHeight - receiverHeight) / (distanceKm * 1000);
 
-    // Only calculate the highest obstacles to save CPU cycles
-    final int limitSamples = (heightToDistance.length / 4).round() + 1;
-    int samples = 0;
     double worstLossDb = 0;
 
-    var sortedHeightToDistance = heightToDistance.toList();
-    sortedHeightToDistance.sort();
-    sortedHeightToDistance = sortedHeightToDistance.reversed.toList();
-
-    for (HeightDistancePair pair in sortedHeightToDistance) {
-      samples++;
-      if (samples > limitSamples) break;
-
+    for (HeightDistancePair pair in heightToDistance) {
       // Height of sample above mean sea level
       final double sampleHeight = pair.height;
       // Distance before obstacle
