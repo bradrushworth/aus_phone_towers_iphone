@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
@@ -240,9 +241,12 @@ class GetLicenceHRP {
 
       // I3: only clear/rebuild shadow holes in terrain mode. Clearing them unconditionally, as
       // before, wiped out a previous terrain pass's holes the moment terrain mode was toggled
-      // off; toggling it back on then redraws the cached terrain polygon shapes (the cache path
-      // in PolygonHelper.queryForSignalPolygon) with no recomputation, so it would draw them with
-      // no holes at all.
+      // off. A terrain toggle itself never redraws from the polygon cache —
+      // switchTerrainAwareness() always calls refreshPolygons(false) — but a later same-mode
+      // refresh with cachingPolygons true (a signal-strength position or precision change from
+      // the layers sheet / option menu) redraws this device's polygon from cache (the cache
+      // path in PolygonHelper.queryForSignalPolygon) with no recomputation, so it would draw it
+      // with no holes at all.
       if (PolygonHelper.calculateTerrain) {
         PolygonHelper.applyTerrainHoles(
           site.getLatLng(),
@@ -436,6 +440,11 @@ class GetLicenceHRP {
   /// [linkBudgetDb] is the path loss this contour can afford, i.e. the transmitted power minus
   /// the receiver threshold, before terrain. [solver] resolves a link budget to a distance with
   /// no terrain applied.
+  ///
+  /// Minor 9: no production caller remains (superseded by [TerrainCoverage.evaluate] via
+  /// [calculateTerrainCoverage]/[terrainExcessLossForBearing]); kept only for its existing unit
+  /// tests, hence [visibleForTesting].
+  @visibleForTesting
   static double calculateTerrainLosses(
       final Site site,
       final Set<HeightDistancePair> heightToDistance,
@@ -457,6 +466,11 @@ class GetLicenceHRP {
   /// the SAME bearing should build one loss with that method and call [TerrainCoverage.evaluate]
   /// for each rung instead (I2), so the ~19-22 knife-edge questions per rung are asked once per
   /// bearing rather than once per rung.
+  ///
+  /// Minor 9: no production caller remains — [PolygonHelper] and [GetLicenceHRP] itself now go
+  /// straight through [terrainExcessLossForBearing] + [TerrainCoverage.evaluate] per rung. Kept
+  /// only for [calculateTerrainLosses] and its existing unit tests, hence [visibleForTesting].
+  @visibleForTesting
   static TerrainCoverageResult calculateTerrainCoverage(
       final Site site,
       final Set<HeightDistancePair> heightToDistance,

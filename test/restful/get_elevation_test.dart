@@ -1,5 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phonetowers/helpers/telco_helper.dart';
+import 'package:phonetowers/model/site.dart';
+import 'package:phonetowers/networking/api.dart';
+import 'package:phonetowers/networking/response/elevation_response.dart';
 import 'package:phonetowers/restful/get_elevation.dart';
+import 'package:phonetowers/restful/get_licenceHRP.dart' show CityDensity;
+
+/// A fake [Api] that hands back a canned [ElevationResponse] (or null, mimicking a Dio error)
+/// instead of making a network call. [Api.getSiteTerrainData] and friends are plain instance
+/// methods with no interface, so overriding one on a subclass is the direct way to stub it;
+/// `super.initialize()` runs the real constructor, which only builds an unused Dio client
+/// (gated on AppConstants.isDebug, false by default) and is otherwise side-effect-free.
+class _FakeApi extends Api {
+  _FakeApi(this._response) : super.initialize();
+
+  final ElevationResponse? _response;
+
+  @override
+  Future<ElevationResponse?> getElevationDataApi(String path,
+          {Map<String, String> headers = const {}}) async =>
+      _response;
+}
 
 /// Regression tests for the elevation key selection and response status check.
 ///
@@ -152,6 +173,68 @@ void main() {
         GetElevation.elevationRequestHeaders(isWeb: true, isIOS: false),
         isEmpty,
       );
+    });
+  });
+
+  group('GetElevation._warnTerrainUnavailableOnce (I1)', () {
+    // _warnedTerrainUnavailable is a static, once-per-session flag, so this whole scenario runs
+    // as ONE sequential test rather than several independent ones — that pins the order the
+    // three calls below must happen in, regardless of how the test runner schedules tests
+    // within a file. (Different test *files* each get their own isolate, so this does not leak
+    // into other test files.)
+    test(
+        'a callback-less call does not consume the budget; a real callback then fires once, '
+        'and only once, for the rest of the session', () async {
+      final Site site = Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN);
+      final ElevationResponse failing = ElevationResponse(
+          results: [], status: 'REQUEST_DENIED', errorMessage: 'not authorized');
+
+      // Before I1: startGoogleElevation always called this with no showSnackBar, which used to
+      // set _warnedTerrainUnavailable = true via `showSnackBar?.call(...)` even though nothing
+      // was ever shown — burning the one warning the user could have seen for the rest of the
+      // session. Must not crash, and must still release the caller's wait via the finally block.
+      final GetElevation silent =
+          GetElevation(site: site, url: 'https://example.invalid', showSnackBar: null)
+            ..api = _FakeApi(failing);
+      await silent.getElevationData();
+      expect(site.finishedDownloadingElevations, isTrue);
+
+      // A real callback, still within the same session: if the silent call above had wrongly
+      // consumed the budget, this would never fire.
+      int calls = 0;
+      final GetElevation loud = GetElevation(
+          site: site,
+          url: 'https://example.invalid',
+          showSnackBar: ({
+            required String message,
+            Duration duration = const Duration(seconds: 1),
+            bool isDismissible = false,
+          }) {
+            calls++;
+          })
+        ..api = _FakeApi(failing);
+      await loud.getElevationData();
+      expect(calls, 1,
+          reason: 'the earlier callback-less call must not have burned the once-per-session '
+              'budget');
+
+      // A second real callback: now that one callback has genuinely run, the once-per-session
+      // guard must suppress any further warning for the rest of the session.
+      int callsAgain = 0;
+      final GetElevation loudAgain = GetElevation(
+          site: site,
+          url: 'https://example.invalid',
+          showSnackBar: ({
+            required String message,
+            Duration duration = const Duration(seconds: 1),
+            bool isDismissible = false,
+          }) {
+            callsAgain++;
+          })
+        ..api = _FakeApi(failing);
+      await loudAgain.getElevationData();
+      expect(callsAgain, 0,
+          reason: 'still once per session now that a callback has actually run');
     });
   });
 }

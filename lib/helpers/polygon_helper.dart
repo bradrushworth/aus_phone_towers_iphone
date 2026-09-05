@@ -159,7 +159,12 @@ class PolygonHelper with ChangeNotifier {
               url: url,
               headers: GetElevation.elevationRequestHeaders(
                   isWeb: kIsWeb, isIOS: isIOS, hasAndroidKey: hasAndroidKey),
-              showSnackBar: showSnackBar)
+              // I1: a bare `showSnackBar` forwards null for every internal caller of
+              // startGoogleElevation (this method takes no showSnackBar itself), which makes
+              // GetElevation._warnTerrainUnavailableOnce a silent no-op on the main path —
+              // exactly where the warning matters. Fall back to defaultShowSnackBar, the same
+              // way getLicenceHRPData does.
+              showSnackBar: showSnackBar ?? defaultShowSnackBar)
           .getElevationData();
     } catch (e, stack) {
       site.startedDownloadingElevations = false;
@@ -345,8 +350,11 @@ class PolygonHelper with ChangeNotifier {
           // `d` is looked up in polygonCache by == (deviceRegistrationIdentifier), not
           // necessarily the same instance createPolygon last populated, so its own
           // _terrainHoles may be empty even though the cached Polygon still carries the right
-          // holes. Without this, toggling terrain off and back on would redraw this cached
-          // shape with no holes at all.
+          // holes. This branch only runs on a same-mode refresh with cachingPolygons true (a
+          // signal-strength position or precision change from the layers sheet / option menu):
+          // switchTerrainAwareness() always calls refreshPolygons(false), so toggling terrain
+          // itself never reaches this cache path. Without this, that same-mode refresh would
+          // redraw this cached shape with no holes at all.
           if (existingPolygon.holes.isNotEmpty) {
             d.setTerrainHoles(polygonContainer.order, existingPolygon.holes);
           }
@@ -446,8 +454,10 @@ class PolygonHelper with ChangeNotifier {
         fillColor: TelcoHelper.getColor(telco, alpha),
         points: data[i],
         // Shadow-hole rings behind ridges, terrain mode only (I3: a non-terrain pass must not
-        // clear the stored holes, so a later terrain toggle-back redraws them from cache).
-        // google_maps_flutter silently drops any hole with fewer than 3 points.
+        // clear the stored holes, so they still exist for a later same-mode refresh that
+        // redraws this device from polygonCache — see the cache path in
+        // queryForSignalPolygon). google_maps_flutter silently drops any hole with fewer than
+        // 3 points.
         holes: PolygonHelper.calculateTerrain
             ? device.terrainHoles(i).where((h) => h.length >= 3).toList()
             : const <List<LatLng>>[],
@@ -549,9 +559,12 @@ class PolygonHelper with ChangeNotifier {
   /// Rebuilds [device]'s per-rung shadow-hole rings from one signal-strength sweep's terrain
   /// coverage results (I3). Callers must only invoke this in terrain mode: clearing/rebuilding
   /// unconditionally wiped out a previous terrain pass's holes the moment terrain mode was
-  /// toggled off, and toggling it back on then redraws the cached terrain polygon shapes (see the
-  /// cache path in [queryForSignalPolygon]) with no recomputation, so it would draw them with no
-  /// holes at all.
+  /// toggled off. A terrain toggle itself never redraws from the polygon cache —
+  /// switchTerrainAwareness() always calls refreshPolygons(false) — but a later same-mode
+  /// refresh with cachingPolygons true (a signal-strength position or precision change from the
+  /// layers sheet / option menu) redraws this device's polygon from cache (see the cache path
+  /// in [queryForSignalPolygon]) with no recomputation, so it would draw it with no holes at
+  /// all.
   ///
   /// Pure (no Flutter widget or network dependency) so it is unit-testable directly; shared by
   /// both [createBasicPolygon] and [GetLicenceHRP.getLicenceHRPData].

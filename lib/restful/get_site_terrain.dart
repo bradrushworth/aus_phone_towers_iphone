@@ -28,7 +28,11 @@ class GetSiteTerrain {
   /// encoded "==" and %2C an encoded comma, matching the pattern the other REST calls in this
   /// file's package use (e.g. PolygonHelper's licence_hrp filter/fields).
   static String urlFor(Site site) {
-    final String filter = 'site_id%3D%3D${site.siteId}';
+    // Minor 4: percent-encode the site id rather than interpolating it raw, matching the
+    // Android app's intent. site_id is numeric in practice so this is a no-op today, but a
+    // server-side change should not be trusted to only ever hand back URL-safe characters.
+    final String encodedSiteId = Uri.encodeComponent('${site.siteId}');
+    final String filter = 'site_id%3D%3D$encodedSiteId';
     final String encodedFields = fields.replaceAll(',', '%2C');
     return '/towers/site_terrain/?_view=json&_expand=no&_count=1&_filter=$filter&_fields=$encodedFields';
   }
@@ -59,13 +63,17 @@ class GetSiteTerrain {
 
   /// Reads a RESTify `values.<key>.value` string out of a decoded row's `values` map, or null
   /// when the field/column/value is absent — see the RESTify JSON shape in the Global
-  /// Constraints (`{"values": {"col": {"value": "..."}}}`).
+  /// Constraints (`{"values": {"col": {"value": "..."}}}`). Minor 3: a JSON number (e.g. a
+  /// server-side type change that stops quoting `ground_m`) is accepted too, stringified so the
+  /// existing int.tryParse/TerrainHeight.parseCsv callers keep working unchanged — a `String`
+  /// requirement here would otherwise fail closed (silently disabling terrain) instead of
+  /// failing loudly in tests.
   static String? _value(Map<dynamic, dynamic> values, String key) {
     final dynamic field = values[key];
-    if (field is Map) {
-      final dynamic value = field['value'];
-      return value is String ? value : null;
-    }
+    if (field is! Map) return null;
+    final dynamic raw = field['value'];
+    if (raw is String) return raw;
+    if (raw is num) return '$raw';
     return null;
   }
 
