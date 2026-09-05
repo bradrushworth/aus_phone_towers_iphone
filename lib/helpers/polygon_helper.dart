@@ -14,10 +14,14 @@ import '../model/device_detail.dart';
 import '../model/height_distance_pair.dart';
 import '../model/overlay.dart';
 import '../model/site.dart';
+import '../networking/api.dart';
+import '../pathloss/terrain_coverage.dart';
 import '../restful/get_elevation.dart';
 import '../restful/get_licenceHRP.dart';
+import '../restful/get_site_terrain.dart';
 import '../utils/app_constants.dart';
 import '../utils/polygon_container.dart';
+import 'shadow_holes.dart';
 import 'let_type_helper.dart';
 import 'map_helper.dart';
 import 'network_type_helper.dart';
@@ -97,6 +101,7 @@ class PolygonHelper with ChangeNotifier {
   // towers' coverage can be shown together. Requested in issue #27.
   static bool multiTowerCoverage = false;
   static Logger logger = Logger();
+  static Api api = Api.initialize();
 
   //static Set<Polygon> globalPolygons = Set<Polygon>();
   static List<MapOverlay> globalListPolygons = [];
@@ -119,6 +124,71 @@ class PolygonHelper with ChangeNotifier {
   /// Frequency / technology labels drawn along the outer signal ring (replaces the Android
   /// GroundOverlay text, since google_maps_flutter's Polygon has no text support).
   static List<MapOverlay> labelOverlays = [];
+
+  /// Starts the Google Elevation download for a site once; used only when no site_terrain
+  /// profile is served (GetSiteTerrain finished without a usable profile, or the site_terrain
+  /// request itself could not be started). Extracted from the terrain trigger in
+  /// [queryForSignalPolygon] so GetSiteTerrain's fallback path can start it too. Idempotent via
+  /// [Site.startedDownloadingElevations]. On any failure to start, marks the site as finished
+  /// (not merely not-started) so GetLicenceHRP's bounded elevation wait cannot spin forever
+  /// waiting for a download that will never begin.
+  static void startGoogleElevation(Site site, {ShowSnackBar? showSnackBar}) {
+    if (site.startedDownloadingElevations) {
+      return;
+    }
+    site.startedDownloadingElevations = true;
+    try {
+      String positionsString = GetElevation.getPositionsString(site.getLatLng());
+      // Each platform uses the key whose restriction it can satisfy, and sends the
+      // identity that restriction is checked against — see GetElevation.
+      final bool isIOS = !kIsWeb && Platform.isIOS;
+      final bool hasAndroidKey = !kIsWeb &&
+          !isIOS &&
+          Platform.isAndroid &&
+          terrainAwarenessKeyAndroid.isNotEmpty;
+      final String key = GetElevation.selectTerrainKey(
+          isWeb: kIsWeb,
+          isIOS: isIOS,
+          defaultKey: terrainAwarenessKey,
+          iosKey: terrainAwarenessKeyIos,
+          androidKey: hasAndroidKey ? terrainAwarenessKeyAndroid : '');
+      String url = (kIsWeb ? 'https://api.bitbot.com.au/cors/' : '') +
+          'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$key';
+      GetElevation(
+              site: site,
+              url: url,
+              headers: GetElevation.elevationRequestHeaders(
+                  isWeb: kIsWeb, isIOS: isIOS, hasAndroidKey: hasAndroidKey),
+              // I1: a bare `showSnackBar` forwards null for every internal caller of
+              // startGoogleElevation (this method takes no showSnackBar itself), which makes
+              // GetElevation._warnTerrainUnavailableOnce a silent no-op on the main path —
+              // exactly where the warning matters. Fall back to defaultShowSnackBar, the same
+              // way getLicenceHRPData does.
+              showSnackBar: showSnackBar ?? defaultShowSnackBar)
+          .getElevationData();
+    } catch (e, stack) {
+      site.startedDownloadingElevations = false;
+      // Without this, GetLicenceHRP's bounded terrain-mode wait would simply burn its full
+      // deadline on every single request for this site, since nothing else was ever going to
+      // flip finishedDownloadingElevations. Give up on terrain for this site instead.
+      site.finishedDownloadingElevations = true;
+      logger.e('PolygonHelper: startGoogleElevation: failed to start for site ${site.siteId}: $e\n$stack');
+    }
+  }
+
+  /// Whether [startGoogleElevation] must be (re)started now: terrain mode is on and the
+  /// site_terrain row has finished loading, but nothing ever finished the elevation download.
+  ///
+  /// The site_terrain request fires in both modes, so a row answered while terrain mode was off
+  /// (the default at every app start) reaches GetSiteTerrain.fetch's finally block while
+  /// calculateTerrain is still false; without a profile, that decides not to start the Google
+  /// fallback. If the user then turns terrain mode on, site.terrainRequested is already true, so
+  /// the request-guard in [queryForSignalPolygon] never re-fires and nothing else would start
+  /// the download — leaving GetLicenceHRP's terrain wait spinning forever. Extracted as a pure
+  /// function so the truth table is unit-testable.
+  static bool needsGoogleElevation(
+          bool calculateTerrain, bool terrainLoaded, bool finishedDownloadingElevations) =>
+      calculateTerrain && terrainLoaded && !finishedDownloadingElevations;
 
   void queryForSignalPolygon(Site site, bool refreshingPolygons, bool cachingPolygons,
       {Set<DeviceDetails>? specificDevices, ShowSnackBar? showSnackBar}) {
@@ -189,40 +259,23 @@ class PolygonHelper with ChangeNotifier {
       }
     }
 
-    if (calculateTerrain) {
-      // Get elevation data from Google
-      try {
-        if (!site.startedDownloadingElevations) {
-          site.startedDownloadingElevations = true;
-          String positionsString = GetElevation.getPositionsString(site.getLatLng());
-          // Each platform uses the key whose restriction it can satisfy, and sends the
-          // identity that restriction is checked against — see GetElevation.
-          final bool isIOS = !kIsWeb && Platform.isIOS;
-          final bool hasAndroidKey = !kIsWeb &&
-              !isIOS &&
-              Platform.isAndroid &&
-              terrainAwarenessKeyAndroid.isNotEmpty;
-          final String key = GetElevation.selectTerrainKey(
-              isWeb: kIsWeb,
-              isIOS: isIOS,
-              defaultKey: terrainAwarenessKey,
-              iosKey: terrainAwarenessKeyIos,
-              androidKey: hasAndroidKey ? terrainAwarenessKeyAndroid : '');
-          String url = (kIsWeb ? 'https://api.bitbot.com.au/cors/' : '') +
-              'https://maps.googleapis.com/maps/api/elevation/json?locations=$positionsString&key=$key';
-          GetElevation(
-                  site: site,
-                  url: url,
-                  headers: GetElevation.elevationRequestHeaders(
-                      isWeb: kIsWeb, isIOS: isIOS, hasAndroidKey: hasAndroidKey),
-                  showSnackBar: showSnackBar)
-              .getElevationData();
-        }
-      } catch (e, stack) {
-        site.startedDownloadingElevations = false;
-        print(stack);
-        return;
-      }
+    // Request the nightly site_terrain row (ground elevation, per-bearing median terrain and,
+    // when present, the full elevation profile) in BOTH modes: the effective antenna height it
+    // feeds (Site.effectiveHeightM / TerrainHeight) is used everywhere now, not only when
+    // "Calculate Terrain" is on. A served profile also means terrain mode never has to fall
+    // back to the Google Elevation download for this site — see GetSiteTerrain and
+    // Site.applyTerrain.
+    if (!site.terrainRequested) {
+      site.terrainRequested = true;
+      GetSiteTerrain(site: site, api: api).fetch();
+    }
+
+    // The row may have been answered while terrain mode was off (the default at start-up), in
+    // which case GetSiteTerrain.fetch's finally block decided not to start the Google download.
+    // Catches that case here too, the moment terrain mode is switched on for an already-loaded
+    // site.
+    if (needsGoogleElevation(calculateTerrain, site.terrainLoaded, site.finishedDownloadingElevations)) {
+      startGoogleElevation(site, showSnackBar: showSnackBar);
     }
 
     // Prepare for the download
@@ -291,7 +344,20 @@ class PolygonHelper with ChangeNotifier {
         // again because the input parameters may have changed (like user settings).
         List<List<LatLng>> data = [];
         for (PolygonContainer? polygonContainer in polygonCache[d]!) {
-          data.add(polygonContainer!.getPolygon().points);
+          final Polygon existingPolygon = polygonContainer!.getPolygon();
+          data.add(existingPolygon.points);
+          // Keep this ring's already-computed shadow holes when redrawing from cached points.
+          // `d` is looked up in polygonCache by == (deviceRegistrationIdentifier), not
+          // necessarily the same instance createPolygon last populated, so its own
+          // _terrainHoles may be empty even though the cached Polygon still carries the right
+          // holes. This branch only runs on a same-mode refresh with cachingPolygons true (a
+          // signal-strength position or precision change from the layers sheet / option menu):
+          // switchTerrainAwareness() always calls refreshPolygons(false), so toggling terrain
+          // itself never reaches this cache path. Without this, that same-mode refresh would
+          // redraw this cached shape with no holes at all.
+          if (existingPolygon.holes.isNotEmpty) {
+            d.setTerrainHoles(polygonContainer.order, existingPolygon.holes);
+          }
         }
         createPolygon(
           data,
@@ -387,6 +453,14 @@ class PolygonHelper with ChangeNotifier {
         strokeWidth: 6,
         fillColor: TelcoHelper.getColor(telco, alpha),
         points: data[i],
+        // Shadow-hole rings behind ridges, terrain mode only (I3: a non-terrain pass must not
+        // clear the stored holes, so they still exist for a later same-mode refresh that
+        // redraws this device from polygonCache — see the cache path in
+        // queryForSignalPolygon). google_maps_flutter silently drops any hole with fewer than
+        // 3 points.
+        holes: PolygonHelper.calculateTerrain
+            ? device.terrainHoles(i).where((h) => h.length >= 3).toList()
+            : const <List<LatLng>>[],
       );
 
       if (PolygonHelper.sitesPolygons.containsKey(site)) {
@@ -480,6 +554,33 @@ class PolygonHelper with ChangeNotifier {
 
   static int getPolygonSignalStrengthPosition() {
     return polygonSignalStrengthPos;
+  }
+
+  /// Rebuilds [device]'s per-rung shadow-hole rings from one signal-strength sweep's terrain
+  /// coverage results (I3). Callers must only invoke this in terrain mode: clearing/rebuilding
+  /// unconditionally wiped out a previous terrain pass's holes the moment terrain mode was
+  /// toggled off. A terrain toggle itself never redraws from the polygon cache —
+  /// switchTerrainAwareness() always calls refreshPolygons(false) — but a later same-mode
+  /// refresh with cachingPolygons true (a signal-strength position or precision change from the
+  /// layers sheet / option menu) redraws this device's polygon from cache (see the cache path
+  /// in [queryForSignalPolygon]) with no recomputation, so it would draw it with no holes at
+  /// all.
+  ///
+  /// Pure (no Flutter widget or network dependency) so it is unit-testable directly; shared by
+  /// both [createBasicPolygon] and [GetLicenceHRP.getLicenceHRPData].
+  static void applyTerrainHoles(
+    LatLng siteLatLng,
+    DeviceDetails device,
+    List<double> bearingsUsed,
+    List<List<TerrainCoverageResult>> coverageByRung,
+    PointAt pointAt,
+  ) {
+    device.clearTerrainHoles();
+    final List<List<List<LatLng>>> holesByRung =
+        ShadowHoles.buildAllRungs(siteLatLng, bearingsUsed, coverageByRung, pointAt);
+    for (int p = 0; p < holesByRung.length; p++) {
+      device.setTerrainHoles(p, holesByRung[p]);
+    }
   }
 
   /// Draw frequency + technology labels along the outer signal-strength ring, mirroring the
@@ -636,49 +737,64 @@ class PolygonHelper with ChangeNotifier {
     }
     //Log.d("PolygonHelper", "power_dBm="+power_dBm+" freeSpaceLoss_dBi="+freeSpaceLoss_dBi+" towerHeight="+towerHeight);
 
+    // Terrain-mode per-rung coverage results, aligned 1:1 with bearingsUsed below, so
+    // ShadowHoles can rebuild the shadow rings once every bearing has been walked.
+    final List<double> bearingsUsed = [];
+    final List<List<TerrainCoverageResult>> coverageByRung = [
+      for (int p = 0; p <= PolygonHelper.getPolygonSignalStrengthPosition(); p++)
+        <TerrainCoverageResult>[]
+    ];
+
     for (double bearing = BEARING_START; bearing < 360; bearing += polygonBearingIncrement) {
-      //TODO calculare Terrain
-      Set<HeightDistancePair> heightToDistance = {};
-      int hillHeight = 0;
-      if (PolygonHelper.calculateTerrain) {
-        // Is the tower on top of a hill?
-        heightToDistance = site.getHeightsAlongBearing(bearing);
-        hillHeight = site.getSiteHillElevation(heightToDistance);
-        if (hillHeight < 0) {
-          hillHeight = 0;
-        }
-        //Log.d("PolygonHelper", "hillHeight="+hillHeight);
-      }
+      bearingsUsed.add(bearing);
+
+      Set<HeightDistancePair> heightToDistance =
+          PolygonHelper.calculateTerrain ? site.getHeightsAlongBearing(bearing) : {};
 
       double power_dBm = device.getPowerAtBearing(bearing);
+
+      // Antenna height above the average terrain toward this bearing (TerrainHeight) - the same
+      // quantity the trainer fitted the coefficients against, used in BOTH modes. Terrain mode
+      // used to add the site's height above the median profile here on top of coefficients that
+      // already averaged hilltop sites into the stratum (counted twice).
+      final double effectiveHeight = site.effectiveHeightM(towerHeight.toDouble(), bearing);
+
+      // Use the composite (mnc + networkType + density + frequency-band) overload so the
+      // estimate is tuned to the SAME trained coefficients as the connected-tower path
+      // (learned from observed signal strengths), instead of only the density-only
+      // coefficients. The composite lookup degrades gracefully
+      // (composite -> density-only -> analytic Hata), identical to the mapping path.
+      CityDensity model = device.getRadiationModel() ??
+          GetLicenceHRP.defaultRadiationModel;
+      // The path-loss model with this transmitter's context bound, so calculateTerrainCoverage
+      // can re-solve the distance after charging terrain to the link budget.
+      double solver(double budgetDb) =>
+          GetLicenceHRP.calculateDistanceWithContext(
+              TelcoHelper.getMnc(site.getTelco()),
+              device.getNetworkType(),
+              model,
+              budgetDb,
+              freqInMHz.toDouble(),
+              effectiveHeight);
+
+      // I2: one memoising terrain loss per bearing, shared by every rung below - see the
+      // comment on GetLicenceHRP.terrainExcessLossForBearing.
+      final ExcessLoss? terrainLoss = PolygonHelper.calculateTerrain
+          ? GetLicenceHRP.terrainExcessLossForBearing(
+              site, heightToDistance, bearing, freqInMHz.toDouble(), towerHeight)
+          : null;
 
       int pos = 0;
       for (int p = 0; p <= PolygonHelper.getPolygonSignalStrengthPosition(); p++) {
         int receiver_dBm = polygons[p];
         double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
-        // Use the composite (mnc + networkType + density + frequency-band) overload so the
-        // estimate is tuned to the SAME trained coefficients as the connected-tower path
-        // (learned from observed signal strengths), instead of only the density-only
-        // coefficients. The composite lookup degrades gracefully
-        // (composite -> density-only -> analytic Hata), identical to the mapping path.
-        CityDensity model = device.getRadiationModel() ??
-            GetLicenceHRP.defaultRadiationModel;
-        // The path-loss model with this transmitter's context bound, so
-        // calculateTerrainLosses can re-solve the distance after charging terrain to the
-        // link budget.
-        double solver(double budgetDb) =>
-            GetLicenceHRP.calculateDistanceWithContext(
-                TelcoHelper.getMnc(site.getTelco()),
-                device.getNetworkType(),
-                model,
-                budgetDb,
-                freqInMHz.toDouble(),
-                (towerHeight + hillHeight).toDouble());
         double distanceKm;
         if (calculateTerrain) {
-          distanceKm = GetLicenceHRP.calculateTerrainLosses(site, heightToDistance,
-              freeSpaceLoss_dBi, solver, bearing, freqInMHz.toDouble(), towerHeight);
+          final TerrainCoverageResult coverage = TerrainCoverage.evaluate(
+              freeSpaceLoss_dBi, solver, terrainLoss!, GetElevation.SAMPLE_DISTANCES);
+          distanceKm = coverage.outerKm;
+          coverageByRung[p].add(coverage);
         } else {
           distanceKm = solver(freeSpaceLoss_dBi);
         }
@@ -693,6 +809,19 @@ class PolygonHelper with ChangeNotifier {
         pos++;
       }
     }
+
+    // I3: only clear/rebuild shadow holes in terrain mode - see the matching comment in
+    // GetLicenceHRP.getLicenceHRPData.
+    if (calculateTerrain) {
+      applyTerrainHoles(
+        site.getLatLng(),
+        device,
+        bearingsUsed,
+        coverageByRung,
+        (b, km) => GetLicenceHRP.travel(site.getLatLng(), b, km),
+      );
+    }
+
     createPolygon(results, site, device);
   }
 

@@ -187,8 +187,14 @@ class GetElevation {
 
   void _warnTerrainUnavailableOnce(String failure) {
     if (_warnedTerrainUnavailable) return;
+    // I1: only consume the once-per-session budget when a callback actually runs. This used
+    // to set the flag unconditionally via `showSnackBar?.call(...)` — a silent caller (no
+    // showSnackBar supplied) still burned the flag, so the one caller that could have shown
+    // the warning next never got the chance.
+    final ShowSnackBar? callback = showSnackBar;
+    if (callback == null) return;
     _warnedTerrainUnavailable = true;
-    showSnackBar?.call(
+    callback(
       message: 'Terrain data is unavailable (${failure.split(':').first}) — '
           'drawing coverage without terrain.',
       duration: const Duration(seconds: 6),

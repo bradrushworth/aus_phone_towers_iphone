@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
+import 'package:phonetowers/helpers/telco_helper.dart';
+import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/pathloss/analytic_path_loss_model.dart';
 import 'package:phonetowers/pathloss/nr3gpp_path_loss_model.dart';
 import 'package:phonetowers/pathloss/path_loss_coefficients.dart';
@@ -111,6 +113,48 @@ void main() {
           GetLicenceHRP.rowStepForBearingIncrement(PolygonHelper.kPolygonPrecisionHigh);
       expect(highStep, lessThan(mediumStep));
       expect(mediumStep, lessThan(lowStep));
+    });
+  });
+
+  group('GetLicenceHRP.shouldKeepWaitingForElevation', () {
+    // Task F6: bounds the terrain-mode elevation wait to 30 seconds so a download that never
+    // starts (or never finishes) cannot hang a device's polygon forever. Pure and static so the
+    // deadline boundary is testable without a real 30-second wait.
+    late Site site;
+
+    setUp(() {
+      site = Site(telco: Telco.Vodafone, cityDensity: CityDensity.OPEN);
+    });
+
+    test('not finished and before the deadline -> keep waiting', () {
+      final DateTime now = DateTime(2026, 1, 1, 12, 0, 0);
+      final DateTime deadline = now.add(const Duration(seconds: 30));
+      site.finishedDownloadingElevations = false;
+
+      expect(GetLicenceHRP.shouldKeepWaitingForElevation(site, now, deadline), isTrue);
+    });
+
+    test('deadline has passed -> stop waiting even though still unfinished', () {
+      final DateTime deadline = DateTime(2026, 1, 1, 12, 0, 0);
+      final DateTime now = deadline.add(const Duration(milliseconds: 1));
+      site.finishedDownloadingElevations = false;
+
+      expect(GetLicenceHRP.shouldKeepWaitingForElevation(site, now, deadline), isFalse);
+    });
+
+    test('already finished before the deadline -> stop waiting', () {
+      final DateTime now = DateTime(2026, 1, 1, 12, 0, 0);
+      final DateTime deadline = now.add(const Duration(seconds: 30));
+      site.finishedDownloadingElevations = true;
+
+      expect(GetLicenceHRP.shouldKeepWaitingForElevation(site, now, deadline), isFalse);
+    });
+
+    test('exactly at the deadline -> stop waiting (isBefore is strict)', () {
+      final DateTime deadline = DateTime(2026, 1, 1, 12, 0, 0);
+      site.finishedDownloadingElevations = false;
+
+      expect(GetLicenceHRP.shouldKeepWaitingForElevation(site, deadline, deadline), isFalse);
     });
   });
 }

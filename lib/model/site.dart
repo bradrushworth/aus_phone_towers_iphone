@@ -15,6 +15,7 @@ import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/density_lookup.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 
+import '../pathloss/terrain_height.dart';
 import 'height_distance_pair.dart';
 
 class Site {
@@ -26,6 +27,49 @@ class Site {
 
   bool startedDownloadingElevations = false;
   bool finishedDownloadingElevations = false;
+
+  /// site_terrain.ground_m, once the terrain row has loaded; null until then / when absent.
+  int? terrainGroundM;
+  /// site_terrain.bearing_median_m parsed (24 bearings at 15 degrees); null until loaded / when
+  /// absent.
+  List<int>? terrainMedians;
+  bool terrainRequested = false;
+  bool terrainLoaded = false;
+
+  /// The height the path-loss model is given toward this bearing; see [TerrainHeight].
+  double effectiveHeightM(double antennaHeightM, double bearing) =>
+      TerrainHeight.effectiveHeightM(antennaHeightM, terrainGroundM, terrainMedians, bearing);
+
+  /// Installs a `site_terrain` row (see `GetSiteTerrain`). With a full 24-group profile the
+  /// 24 x 19 samples are fed into [elevations] at the exact points the app would otherwise have
+  /// asked Google for, so terrain mode needs no Elevation API call for this site and
+  /// GetLicenceHRP's elevation wait is released immediately. Elevations are written directly
+  /// (`elevations[latLng] = value`), NOT via [addElevation]'s `putIfAbsent`, so a fresh row
+  /// always overwrites whatever a previous Google download (or an earlier row) left behind.
+  /// Always sets [terrainLoaded], even with no usable profile (or no row at all — see
+  /// GetSiteTerrain.fetch's finally block).
+  void applyTerrain(int groundM, List<int> bearingMedianM, List<List<int>>? profileM) {
+    terrainGroundM = groundM;
+    terrainMedians = bearingMedianM;
+    if (profileM != null && profileM.length == TerrainHeight.bearings) {
+      final LatLng here = getLatLng();
+      elevations[here] = groundM.toDouble();
+      for (int b = 0; b < TerrainHeight.bearings; b++) {
+        final double bearing = b * TerrainHeight.bearingStepDegrees;
+        final List<int> samples = profileM[b];
+        for (int k = 0;
+            k < GetElevation.SAMPLE_DISTANCES.length && k < samples.length;
+            k++) {
+          final LatLng point =
+              GetLicenceHRP.travel(here, bearing, GetElevation.SAMPLE_DISTANCES[k]);
+          elevations[point] = samples[k].toDouble();
+        }
+      }
+      startedDownloadingElevations = true;
+      finishedDownloadingElevations = true;
+    }
+    terrainLoaded = true;
+  }
 
   // We split sites per telco
   Telco telco;
@@ -376,18 +420,6 @@ class Site {
       }
     }
     return elevation;
-  }
-
-  int getSiteHillElevation(Set<HeightDistancePair> heightToDistance) {
-    int i = 0;
-    for (HeightDistancePair pair in heightToDistance) {
-      if (i == heightToDistance.length / 2) {
-        // Return the difference in height between tower and median heights
-        return (getElevation(getLatLng()) - pair.height).round();
-      }
-      i++;
-    }
-    return 0;
   }
 
   @override

@@ -14,8 +14,13 @@ class HeightDistancePair implements Comparable<HeightDistancePair> {
   @override
   int get hashCode => height.hashCode ^ distance.hashCode;
 
+  /// Ordered by distance from the site, then height. A bearing's profile has one sample per
+  /// distance, so distance is the natural key; ordering by height alone (the original code) made
+  /// callers that sort by [compareTo] treat the tallest samples as if they were the nearest,
+  /// which is only true by coincidence.
   @override
   int compareTo(HeightDistancePair other) {
-    return height.compareTo(other.height);
+    final byDistance = distance.compareTo(other.distance);
+    return byDistance != 0 ? byDistance : height.compareTo(other.height);
   }
 }

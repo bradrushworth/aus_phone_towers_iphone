@@ -8,6 +8,32 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.18+153] — 2026-09-05
+
+Mirror of the Android app's 7.7.61 terrain rework (aus_phone_towers_java PR #74).
+
+### Changed
+- **Coverage polygons use the transmitter's height above the surrounding terrain.** The
+  path-loss model is given the antenna height plus the site's height above the median terrain
+  toward each bearing, from the nightly `site_terrain` row, in both terrain modes; without a row
+  the antenna height is used as before. Hilltop towers reach further and valley towers less.
+  Previously Calculate Terrain added the hill on top of coefficients that already averaged
+  hilltop sites in - counting them twice - and the plain antenna height was used otherwise.
+- **Calculate Terrain draws coverage that returns beyond a shadowed valley.** Every elevation
+  sample along a bearing is judged on its own, so the far slope of a valley that sees the tower
+  again is covered and the shadow behind the ridge becomes a hole in the polygon. The previous
+  pass charged the worst obstacle to one distance and could only shrink. Holes survive toggling
+  terrain off and on.
+- **Terrain profiles come from the server.** Sites with a nightly terrain row no longer call the
+  Google Elevation API; the download remains as a fallback. The wait for the terrain row is
+  bounded (2 s) and the wait for elevations has a 30 s backstop; a failed request can no longer
+  leave a site without polygons.
+
+### Fixed
+- **The knife-edge obstruction check only examined the highest quarter of a bearing's samples**,
+  which on a rising profile are all beyond the receiver, so obstacles were never charged there;
+  every sample is examined now. Samples are ordered by distance.
+
 ## [1.14.17+152] — 2026-09-05
 
 ### Fixed

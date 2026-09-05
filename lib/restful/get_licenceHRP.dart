@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
@@ -14,6 +15,7 @@ import 'package:phonetowers/model/height_distance_pair.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
+import 'package:phonetowers/pathloss/terrain_coverage.dart';
 
 typedef void ShowSnackBar({
   required String message,
@@ -104,10 +106,31 @@ class GetLicenceHRP {
 
       int towerHeight = device.getTowerHeight();
 
+      // The nightly site_terrain row (Task F6) feeds the effective antenna height in BOTH
+      // modes, so give it a short bounded wait here regardless of calculateTerrain: most rows
+      // answer well within this, and a genuinely absent/slow row must never stall a
+      // non-terrain polygon draw. Bounded (not "wait until terrainLoaded") so a request that
+      // never even starts (see PolygonHelper.needsGoogleElevation's comment) can't hang this
+      // device's polygon forever.
+      final DateTime terrainRowDeadline = DateTime.now().add(const Duration(seconds: 2));
+      while (site.terrainRequested &&
+          !site.terrainLoaded &&
+          DateTime.now().isBefore(terrainRowDeadline)) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+
       if (PolygonHelper.calculateTerrain) {
-        // Wait for the site elevation data to be downloaded
-        while (!site.finishedDownloadingElevations) {
+        // Wait for the site elevation data to be downloaded (via the served site_terrain
+        // profile, or the Google Elevation fallback it starts when no profile arrives).
+        // Bounded to 30 seconds so a stuck or never-started download cannot hang this
+        // device's polygon forever.
+        final DateTime elevationDeadline = DateTime.now().add(const Duration(seconds: 30));
+        while (shouldKeepWaitingForElevation(site, DateTime.now(), elevationDeadline)) {
           await Future.delayed(Duration(milliseconds: 500));
+        }
+        if (!site.finishedDownloadingElevations) {
+          logger.w(
+              'PolygonHelper: GetLicenceHRP: timed out after 30s waiting for elevation data for site ${site.siteId}, device ${device.sddId} — proceeding without terrain');
         }
       }
 
@@ -124,6 +147,14 @@ class GetLicenceHRP {
       // the point density of real (non-estimated) coverage — not just the circular
       // fallback estimate in PolygonHelper.createBasicPolygon.
       final int rowStep = rowStepForBearingIncrement(PolygonHelper.polygonBearingIncrement);
+
+      // Terrain-mode per-rung coverage results, aligned 1:1 with bearingsUsed below, so
+      // ShadowHoles can rebuild the shadow rings once every bearing has been walked.
+      final List<double> bearingsUsed = [];
+      final List<List<TerrainCoverageResult>> coverageByRung = [
+        for (int p = 0; p <= PolygonHelper.getPolygonSignalStrengthPosition(); p++)
+          <TerrainCoverageResult>[]
+      ];
 
       for (int i = 0; i < totalRows; i += rowStep) {
         //Get the row
@@ -148,17 +179,36 @@ class GetLicenceHRP {
         // GetLicenceHRP.sectorHalfWidth. Measured against the live database 2026-08-24.
         double bearing = start_angle + sectorHalfWidth(start_angle, stop_angle);
         bearingToPower[bearing] = power_dBm;
+        bearingsUsed.add(bearing);
 
-        Set<HeightDistancePair> heightToDistance = {};
-        int hillHeight = 0;
-        if (PolygonHelper.calculateTerrain) {
-          // Is the tower on top of a hill?
-          heightToDistance = site.getHeightsAlongBearing(bearing);
-          hillHeight = site.getSiteHillElevation(heightToDistance);
-          if (hillHeight < 0) {
-            hillHeight = 0;
-          }
-        }
+        Set<HeightDistancePair> heights =
+            PolygonHelper.calculateTerrain ? site.getHeightsAlongBearing(bearing) : {};
+
+        // Antenna height above the average terrain toward this bearing (TerrainHeight) - the
+        // same quantity the trainer fitted the coefficients against, used in BOTH modes. Terrain
+        // mode used to add the site's height above the median profile here on top of coefficients
+        // that already averaged hilltop sites into the stratum (counted twice).
+        final double effectiveHeight = site.effectiveHeightM(towerHeight.toDouble(), bearing);
+
+        // Calculate the distance the signal will travel. Use the composite
+        // (mnc + networkType + density + band) lookup — see hrpDistanceKm.
+        CityDensity model = device.getRadiationModel() ?? defaultRadiationModel;
+        // The path-loss model with this transmitter's context bound, so calculateTerrainCoverage
+        // can re-solve the distance after charging terrain to the link budget.
+        double solver(double budgetDb) => hrpDistanceKm(
+            TelcoHelper.getMnc(site.getTelco()),
+            device.getNetworkType(),
+            model,
+            budgetDb,
+            freqInMHz,
+            effectiveHeight);
+
+        // I2: one memoising terrain loss per bearing, shared by every rung below - see the
+        // comment on terrainExcessLossForBearing.
+        final ExcessLoss? terrainLoss = PolygonHelper.calculateTerrain
+            ? terrainExcessLossForBearing(
+                site, heights, bearing, freqInMHz.toDouble(), towerHeight)
+            : null;
 
         int pos = 0;
         for (int p = 0;
@@ -167,24 +217,12 @@ class GetLicenceHRP {
           int receiver_dBm = polygons[p];
           double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
-          // Calculate the distance the signal will travel. Use the composite
-          // (mnc + networkType + density + band) lookup — see hrpDistanceKm.
-          CityDensity model =
-              device.getRadiationModel() ?? defaultRadiationModel;
-          // The path-loss model with this transmitter's context bound, so
-          // calculateTerrainLosses can re-solve the distance after charging terrain to the
-          // link budget.
-          double solver(double budgetDb) => hrpDistanceKm(
-              TelcoHelper.getMnc(site.getTelco()),
-              device.getNetworkType(),
-              model,
-              budgetDb,
-              freqInMHz,
-              towerHeight.toDouble());
           double distanceKm;
           if (PolygonHelper.calculateTerrain) {
-            distanceKm = calculateTerrainLosses(site, heightToDistance,
-                freeSpaceLoss_dBi, solver, bearing, freqInMHz.toDouble(), towerHeight);
+            final TerrainCoverageResult coverage = TerrainCoverage.evaluate(
+                freeSpaceLoss_dBi, solver, terrainLoss!, GetElevation.SAMPLE_DISTANCES);
+            distanceKm = coverage.outerKm;
+            coverageByRung[p].add(coverage);
           } else {
             distanceKm = solver(freeSpaceLoss_dBi);
           }
@@ -199,6 +237,24 @@ class GetLicenceHRP {
           list![pos].add(latlng);
           pos++;
         }
+      }
+
+      // I3: only clear/rebuild shadow holes in terrain mode. Clearing them unconditionally, as
+      // before, wiped out a previous terrain pass's holes the moment terrain mode was toggled
+      // off. A terrain toggle itself never redraws from the polygon cache —
+      // switchTerrainAwareness() always calls refreshPolygons(false) — but a later same-mode
+      // refresh with cachingPolygons true (a signal-strength position or precision change from
+      // the layers sheet / option menu) redraws this device's polygon from cache (the cache
+      // path in PolygonHelper.queryForSignalPolygon) with no recomputation, so it would draw it
+      // with no holes at all.
+      if (PolygonHelper.calculateTerrain) {
+        PolygonHelper.applyTerrainHoles(
+          site.getLatLng(),
+          device,
+          bearingsUsed,
+          coverageByRung,
+          (b, km) => travel(site.getLatLng(), b, km),
+        );
       }
 
       device.setBearingToPowerMap(bearingToPower);
@@ -331,6 +387,14 @@ class GetLicenceHRP {
         mnc, networkType, density, levelInDb, freqInMHz, height);
   }
 
+  /// Whether the terrain-mode elevation wait in [getLicenceHRPData] should keep looping: the
+  /// download hasn't finished yet, and the bounded [deadline] hasn't passed. Extracted as a
+  /// pure, static function (rather than inlining `DateTime.now()` into the while condition) so
+  /// the 30-second timeout boundary is unit-testable without an actual 30-second wait.
+  static bool shouldKeepWaitingForElevation(Site site, DateTime now, DateTime deadline) {
+    return !site.finishedDownloadingElevations && now.isBefore(deadline);
+  }
+
   // Distance in km
   static LatLng travel(LatLng start, double initialBearing, double distance) {
     double bR = toRadians(initialBearing);
@@ -354,72 +418,91 @@ class GetLicenceHRP {
     return angrad * 180.0 / (math.pi);
   }
 
-  /// How many times the terrain loss is fed back into the link budget before giving up.
-  static const int MAX_TERRAIN_ITERATIONS = 6;
-
-  /// Convergence tolerance for the fed-back terrain loss, in dB.
-  static const double TERRAIN_LOSS_TOLERANCE_DB = 0.5;
-
   /// The Earth's effective refractive index used for the bulge term.
   static const double EARTH_REFRACTIVE_INDEX = 0.8;
 
-  /// The coverage distance along [bearing] once terrain is taken into account.
+  /// The coverage distance along [bearing] once terrain is taken into account: the outer radius
+  /// of [calculateTerrainCoverage], discarding the shadow intervals.
   ///
   /// **Terrain is charged to the link budget as diffraction loss, not applied as a hard
-  /// cut-off** (GitHub issue #56, fixed in the Android app first). Until now an obstructed
-  /// bearing was walked down [GetElevation.SAMPLE_DISTANCES] until it reached a rung whose path
-  /// was clear, and the answer was always one of those rungs. Because that ladder does not depend
-  /// on the signal level being drawn, every contour of a site - MAX through WEAK - collapsed onto
-  /// the SAME rung the moment anything blocked the path: in hilly country (the report came from
-  /// Tasmania) all four coverage rings landed on top of each other, so the chosen signal strength
-  /// made no visible difference. It also cut coverage dead at the first ridge, with no allowance
-  /// for the diffraction that in reality carries a signal well past it - which is why the drawn
-  /// range fell far short of what the reporter measured in the field.
-  ///
-  /// Now the worst knife-edge obstruction along the path is converted to a loss in dB
-  /// ([knifeEdgeLossDb]), subtracted from the link budget, and the distance re-solved through the
-  /// caller's own path-loss model. A weaker receiver threshold starts with more budget, so it
-  /// still reaches further after paying the same terrain penalty - the ordering the contours are
-  /// supposed to show. The loss is recomputed at the new (shorter) distance and fed back until it
-  /// settles, because shortening the path changes which obstacles matter.
+  /// cut-off** (GitHub issue #56). Originally an obstructed bearing was walked down
+  /// [GetElevation.SAMPLE_DISTANCES] until it reached a rung whose path was clear, and the answer
+  /// was always one of those rungs. Because that ladder does not depend on the signal level being
+  /// drawn, every contour of a site - MAX through WEAK - collapsed onto the SAME rung the moment
+  /// anything blocked the path: in hilly country (the report came from Tasmania) all four
+  /// coverage rings landed on top of each other, so the chosen signal strength made no visible
+  /// difference. It also cut coverage dead at the first ridge, with no allowance for the
+  /// diffraction that in reality carries a signal well past it, and it could only shrink the
+  /// distance, so coverage that returned on a far slope past a shadowed valley could never be
+  /// drawn. This has been replaced with [TerrainCoverage.evaluate], which charges every elevation
+  /// sample independently and returns the full set of covered intervals.
   ///
   /// [linkBudgetDb] is the path loss this contour can afford, i.e. the transmitted power minus
   /// the receiver threshold, before terrain. [solver] resolves a link budget to a distance with
   /// no terrain applied.
   ///
-  /// Keep in lockstep with the Android app's GetLicenceHRP.calculateTerrainLosses.
+  /// Minor 9: no production caller remains (superseded by [TerrainCoverage.evaluate] via
+  /// [calculateTerrainCoverage]/[terrainExcessLossForBearing]); kept only for its existing unit
+  /// tests, hence [visibleForTesting].
+  @visibleForTesting
   static double calculateTerrainLosses(
       final Site site,
       final Set<HeightDistancePair> heightToDistance,
       final double linkBudgetDb,
-      final double Function(double linkBudgetDb) solver,
+      final DistanceSolver solver,
       final double bearing,
       final double freqInMHz,
       final int towerHeight) {
-    double distanceKm = solver(linkBudgetDb);
-    if (!_isUsableDistance(distanceKm)) {
-      return distanceKm;
-    }
+    return calculateTerrainCoverage(
+            site, heightToDistance, linkBudgetDb, solver, bearing, freqInMHz, towerHeight)
+        .outerKm;
+  }
 
-    double appliedLossDb = 0;
-    for (int iteration = 0; iteration < MAX_TERRAIN_ITERATIONS; iteration++) {
-      double lossDb = terrainExcessLossDb(
-          site, heightToDistance, distanceKm, bearing, freqInMHz, towerHeight);
-      if (lossDb <= appliedLossDb + TERRAIN_LOSS_TOLERANCE_DB) {
-        // Settled: this distance already pays for the terrain in its way.
-        break;
-      }
-      appliedLossDb = lossDb;
+  /// Coverage along [bearing] with terrain charged per sample point ([TerrainCoverage]): the
+  /// outer radius plus the shadow bands behind ridges, which [PolygonHelper] draws as holes.
+  ///
+  /// Kept for existing single-shot callers (e.g. the `calculateTerrainLosses` tests): builds its
+  /// own [ExcessLoss] via [terrainExcessLossForBearing]. A caller evaluating several rungs along
+  /// the SAME bearing should build one loss with that method and call [TerrainCoverage.evaluate]
+  /// for each rung instead (I2), so the ~19-22 knife-edge questions per rung are asked once per
+  /// bearing rather than once per rung.
+  ///
+  /// Minor 9: no production caller remains — [PolygonHelper] and [GetLicenceHRP] itself now go
+  /// straight through [terrainExcessLossForBearing] + [TerrainCoverage.evaluate] per rung. Kept
+  /// only for [calculateTerrainLosses] and its existing unit tests, hence [visibleForTesting].
+  @visibleForTesting
+  static TerrainCoverageResult calculateTerrainCoverage(
+      final Site site,
+      final Set<HeightDistancePair> heightToDistance,
+      final double linkBudgetDb,
+      final DistanceSolver solver,
+      final double bearing,
+      final double freqInMHz,
+      final int towerHeight) {
+    final ExcessLoss loss =
+        terrainExcessLossForBearing(site, heightToDistance, bearing, freqInMHz, towerHeight);
+    return TerrainCoverage.evaluate(linkBudgetDb, solver, loss, GetElevation.SAMPLE_DISTANCES);
+  }
 
-      double shorter = solver(linkBudgetDb - appliedLossDb);
-      if (!_isUsableDistance(shorter) || shorter >= distanceKm) {
-        // The model cannot answer, or refuses to shrink: keep the last usable distance rather
-        // than replacing it with something worse than what we already have.
-        break;
-      }
-      distanceKm = shorter;
-    }
-    return distanceKm;
+  /// A memoising [ExcessLoss] for one bearing (I2). The knife-edge loss at a distance does not
+  /// depend on the rung's link budget - only on distance, bearing and the (fixed, per-bearing)
+  /// terrain profile - so building this once here instead of once per rung avoids re-running
+  /// [TerrainCoverage.evaluate]'s ~19-22 questions, and the [Site.getElevation] linear scan of the
+  /// elevation map behind each one, once per rung for the same answers. Computed once here and
+  /// shared by every rung's [TerrainCoverage.evaluate] call.
+  static ExcessLoss terrainExcessLossForBearing(
+      final Site site,
+      final Set<HeightDistancePair> heightToDistance,
+      final double bearing,
+      final double freqInMHz,
+      final int towerHeight) {
+    final double transmitterGroundElevationM = site.getElevation(site.getLatLng());
+    final Map<double, double> cache = {};
+    return (double distanceKm) => cache.putIfAbsent(
+        distanceKm,
+        () => terrainExcessLossDb(site, heightToDistance, distanceKm, bearing, freqInMHz,
+            towerHeight,
+            transmitterGroundElevationM: transmitterGroundElevationM));
   }
 
   static bool _isUsableDistance(double distanceKm) {
@@ -429,22 +512,29 @@ class GetLicenceHRP {
   /// The worst knife-edge diffraction loss, in dB, imposed by the terrain between the site and a
   /// receiver [distanceKm] away along [bearing]. Zero when the path is clear.
   ///
-  /// Only the highest quarter of the elevation samples are examined, as before: they are the only
-  /// ones that can dominate, and the profile is sampled sparsely enough that testing all of them
-  /// costs more than it buys.
+  /// Every sample is examined because obstacles are not the highest samples on a rising profile;
+  /// 19 per bearing is cheap.
+  ///
+  /// [transmitterGroundElevationM] is `site.getElevation(site.getLatLng())` - constant for the
+  /// whole polygon. Pass it (see [terrainExcessLossForBearing]) when evaluating many distances
+  /// along one bearing so the elevation map isn't rescanned for it every time; left null (the
+  /// default) it is computed here, which keeps this signature usable directly by tests and other
+  /// single-shot callers.
   static double terrainExcessLossDb(
       final Site site,
       final Set<HeightDistancePair> heightToDistance,
       final double distanceKm,
       final double bearing,
       final double freqInMHz,
-      final int towerHeight) {
+      final int towerHeight,
+      {final double? transmitterGroundElevationM}) {
     if (!_isUsableDistance(distanceKm) || heightToDistance.isEmpty) {
       return 0;
     }
 
     final LatLng siteLatLon = site.getLatLng();
-    final double transmitterHeight = site.getElevation(siteLatLon) + towerHeight;
+    final double transmitterHeight =
+        (transmitterGroundElevationM ?? site.getElevation(siteLatLon)) + towerHeight;
 
     final LatLng receiverLatLon = travel(siteLatLon, bearing, distanceKm);
     final double receiverHeight =
@@ -454,19 +544,9 @@ class GetLicenceHRP {
     final double gradient =
         (transmitterHeight - receiverHeight) / (distanceKm * 1000);
 
-    // Only calculate the highest obstacles to save CPU cycles
-    final int limitSamples = (heightToDistance.length / 4).round() + 1;
-    int samples = 0;
     double worstLossDb = 0;
 
-    var sortedHeightToDistance = heightToDistance.toList();
-    sortedHeightToDistance.sort();
-    sortedHeightToDistance = sortedHeightToDistance.reversed.toList();
-
-    for (HeightDistancePair pair in sortedHeightToDistance) {
-      samples++;
-      if (samples > limitSamples) break;
-
+    for (HeightDistancePair pair in heightToDistance) {
       // Height of sample above mean sea level
       final double sampleHeight = pair.height;
       // Distance before obstacle
