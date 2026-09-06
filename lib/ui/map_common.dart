@@ -17,6 +17,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as onlyPath;
+import 'package:phonetowers/helpers/carrier_tint.dart';
 import 'package:phonetowers/helpers/ads_helper.dart';
 import 'package:phonetowers/helpers/analytics_helper.dart';
 import 'package:phonetowers/helpers/camera_restore_helper.dart';
@@ -1661,6 +1662,11 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       backgroundColor: Colors.transparent,
       constraints: BoxConstraints(maxWidth: 600),
       builder: (BuildContext bc) {
+        // The carrier chip is a tonal wash of the carrier's colour (dark text on the light
+        // sheet, light text on the dark one), matching the Android connection card; the raw
+        // colour on a 13% wash put Telstra blue at 3:1 on the dark sheet.
+        final CarrierTint tint =
+            CarrierTint.of(telcoColor, dark: Theme.of(bc).brightness == Brightness.dark);
         return Container(
           decoration: BoxDecoration(
             color: Theme.of(bc).colorScheme.surface,
@@ -1700,13 +1706,13 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: telcoColor.withValues(alpha: 0.13),
+                        color: tint.chipBg,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         TelcoHelper.getName(site.getTelco()),
                         style: TextStyle(
-                            fontSize: 12, fontWeight: FontWeight.bold, color: telcoColor),
+                            fontSize: 12, fontWeight: FontWeight.bold, color: tint.chipFg),
                       ),
                     ),
                   ],

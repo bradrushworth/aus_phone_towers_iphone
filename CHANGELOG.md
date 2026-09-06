@@ -16,6 +16,14 @@ features and bugs are frequently fixed in both.
   non-carrier fill gets that colour all but vanished on the light basemap. The fill and its
   outline are now a mid rose (#E8639B) that reads on light and dark maps and stays clear of
   Vodafone red and NBN magenta. The pin is unchanged. The Android app makes the same change.
+- **Night-blue chrome, and a carrier-tinted chip on the site sheet.** Buttons, switches, chips,
+  the Legend and Driving pills and the dark app bar were coloured from Material 3's default
+  purple, which was never chosen (it is the framework's un-overridden seed) and sat oddly
+  beside Optus cyan and the green signal bars. The colour roles now come from the night blue of
+  the app icon, the same eight values the Android app adopted, and the carrier chip on a site's
+  details sheet is a tonal wash of the carrier's colour (dark text in light mode, light text in
+  dark mode) in place of the raw carrier colour, which put Telstra blue at 3:1 on the dark
+  sheet. Pins, polygons, the signal words and the legend are unchanged.
 
 ## [1.14.19+154] — 2026-09-06
 
