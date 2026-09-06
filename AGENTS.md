@@ -263,6 +263,20 @@ Non-subscribed users see an inline adaptive AdMob banner at the bottom of the ma
   `hideBannerAd()` cancels the retry, which is how a user who goes ad-free mid-wait is never
   served.
 
+## Colour roles and carrier tint (lib/ui/app_theme.dart, lib/helpers/carrier_tint.dart)
+The theme is built by `AppTheme.build(brightness)`, never inline in `main.dart`. Its eight
+primary/secondary role values are the Android app's `brand_*` colour resources
+(`res/values/colors.xml` and `values-night/colors.xml`): light primary #34406B on #FFFFFF,
+container #E3E8F3 on #2E3A5C; dark primary #B7C0D8 on #1E2742, container #323C5A on #CBD5F0.
+Change them in both apps or neither; `test/ui/app_theme_test.dart` pins them and refuses the
+old Material baseline purple (#6750A4), which the app inherited for years by never overriding
+its seed. Chrome that belongs to one carrier (today the carrier chip on the site sheet) takes
+its colours from `CarrierTint.of(carrierColour, dark: ...)`, a port of the Android
+`utilities/CarrierTint.java` with identical mix weights; `test/helpers/carrier_tint_test.dart`
+measures every role against WCAG 2 thresholds for every `TelcoHelper.getColor` value. Never
+paint chrome in the raw carrier colour or as a solid carrier fill (see the class comment for
+why), and leave pins, polygons and the signal ramp alone: they carry meaning.
+
 ## App icon (tool/make_app_icon.py is the single source, for BOTH apps)
 - The mark is designed as SVG in `tool/make_app_icon.py` (three carrier pins on a contour
   map; colours from `TelcoHelper`) and rendered with ImageMagick 7's librsvg delegate

@@ -41,7 +41,7 @@ Version 1.14 ports the Android app's interface overhaul:
 
 - **Tower markers** — one marker per transmitter. Instead of plain coloured pins, each tower is
   shown as the **carrier's logo icon** (Telstra, Optus, Vodafone, NBN, Dense Air, Other, or a
-  generic non‑telco icon). Tap a marker for details.
+  generic non‑telco icon). Tap a marker for details; the sheet names the carrier in a chip washed with its colour.
 - **Coverage polygons** — coloured shaded areas showing the estimated coverage of each antenna.
   The colour matches the carrier (see the legend below). Toggle the outline with **Show/Hide
   Borders**. Polygon opacity is boosted on satellite/hybrid map types and when **Follow GPS**
