@@ -69,7 +69,7 @@ Tower markers use carrier logo icons. The colours below are used for the **cover
 | Dense Air | Navy (17, 53, 79) | Dense Air small cells |
 | NBN | Magenta / Violet (145, 15, 145) | NBN fixed‑wireless & mobile |
 | Other | Azure (0, 127, 255) | Other providers (TPG, Lycamobile, Vivid Wireless, …) |
-| Radio / TV / Civil / Pager / Aviation / CBRS | Pink (255, 177, 216) | Non‑telco transmitters |
+| Radio / TV / Civil / Pager / Aviation / CBRS | Rose (232, 99, 155) | Non‑telco transmitters |
 | Your location | Azure dot | Your device's position (semi‑transparent) |
 
 ## 3. Toolbar menu (top‑right `⋯`)

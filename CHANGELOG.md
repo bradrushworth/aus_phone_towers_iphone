@@ -8,6 +8,15 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **Broadcast coverage is drawn in a deeper rose.** Radio, TV, aviation, paging and other
+  non-carrier polygons were filled with the pale rose of their pin, and at the 20% opacity a
+  non-carrier fill gets that colour all but vanished on the light basemap. The fill and its
+  outline are now a mid rose (#E8639B) that reads on light and dark maps and stays clear of
+  Vodafone red and NBN magenta. The pin is unchanged. The Android app makes the same change.
+
 ## [1.14.19+154] — 2026-09-06
 
 ### Changed
