@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.14.20+155] — 2026-09-06
 
 ### Changed
 - **Broadcast coverage is drawn in a deeper rose.** Radio, TV, aviation, paging and other
