@@ -263,6 +263,31 @@ Non-subscribed users see an inline adaptive AdMob banner at the bottom of the ma
   `hideBannerAd()` cancels the retry, which is how a user who goes ad-free mid-wait is never
   served.
 
+## App icon (tool/make_app_icon.py is the single source, for BOTH apps)
+- The mark is designed as SVG in `tool/make_app_icon.py` (three carrier pins on a contour
+  map; colours from `TelcoHelper`) and rendered with ImageMagick 7's librsvg delegate
+  (`magick -list format` must list RSVG). `python tool/make_app_icon.py assets` writes the
+  vector sources to `tool/appicon/*.svg`, the five 1024 px masters to `assets/appicon*.png`,
+  `store/app-store/icon-1024.png` and the web files flutter_launcher_icons does not manage;
+  then `dart run flutter_launcher_icons` fans them out to Android, iOS, web and macOS.
+- `--android <path to aus_phone_towers_java>` also writes that repo's launcher assets
+  (webp mipmaps, Play icon, feature graphic, the two 512 px masters). Never hand-edit a
+  mipmap or an `AppIcon.appiconset` file in either repo; change the script and re-run it.
+- The two apps carry different variants by decision (2026-09-06): this app keeps the T O V
+  initials (`DEFAULT_VARIANT` dark:letters:7, glyphs baked into the SVG as outlines via
+  fonttools, so no font is needed to re-render), the Java app has hollow centres
+  (`DEFAULT_ANDROID_VARIANT` dark:hollow:7). Sources: `tool/appicon/flutter/` and
+  `tool/appicon/android/`.
+- The adaptive background is a bitmap (the contour map, so launcher parallax moves it under
+  the pins) and the foreground is drawn on the full 108 dp canvas, hence
+  `adaptive_icon_foreground_inset: 0` in `pubspec.yaml`. Do not put the 16 % inset back
+  without shrinking the foreground in the script; the mark is already inside the safe zone.
+- macOS gets its own master (`appicon_macos.png`, Big Sur rounded square with margin and
+  shadow) because flutter_launcher_icons only resizes; until 2026-09 the macOS icon was still
+  Flutter's template logo.
+- After a run, revert the two files the tool touches that are not icon assets:
+  `ios/Runner.xcodeproj/project.pbxproj` and `macos/Flutter/GeneratedPluginRegistrant.swift`.
+
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
 project, you MUST also update the relevant documentation before considering the task complete:

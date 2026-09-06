@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+<filter id="sh" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="8.5"/></filter>
+<filter id="tip" x="-60%" y="-200%" width="220%" height="500%"><feGaussianBlur stdDeviation="3.4"/></filter>
+<linearGradient id="g_telstra" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#346FFF"/><stop offset="0.55" stop-color="#0D54FF"/><stop offset="1" stop-color="#0A40C2"/></linearGradient>
+<radialGradient id="hl_telstra" cx="329.86" cy="376.24" r="97.11" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.20"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="g_vodafone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EA2929"/><stop offset="0.55" stop-color="#E60000"/><stop offset="1" stop-color="#AF0000"/></linearGradient>
+<radialGradient id="hl_vodafone" cx="632.81" cy="376.24" r="97.11" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.20"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+<linearGradient id="g_optus" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29939A"/><stop offset="0.55" stop-color="#007F87"/><stop offset="1" stop-color="#006167"/></linearGradient>
+<radialGradient id="hl_optus" cx="478.30" cy="394.71" r="106.72" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.20"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+</defs>
+<ellipse cx="360.52" cy="639.46" rx="34.76" ry="8.69" fill="#000" opacity="0.42" filter="url(#tip)"/>
+<g transform="rotate(-7.0 360.52 636.90)"><path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="#000" fill-rule="evenodd" opacity="0.42" filter="url(#sh)" transform="translate(0 11.1)"/></g>
+<g transform="rotate(-7.0 360.52 636.90)">
+<path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="url(#g_telstra)" fill-rule="evenodd"/>
+<path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="url(#hl_telstra)" fill-rule="evenodd"/>
+<path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="none" stroke="#000" stroke-opacity="0.10" stroke-width="1.7"/>
+<path d="M1171 1171H762V0H438V1171H31V1434H1171Z" fill="#FFFFFF" transform="translate(325.12 474.69) scale(0.05890 -0.05890)"/>
+</g>
+<ellipse cx="663.48" cy="639.46" rx="34.76" ry="8.69" fill="#000" opacity="0.42" filter="url(#tip)"/>
+<g transform="rotate(7.0 663.48 636.90)"><path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="#000" fill-rule="evenodd" opacity="0.42" filter="url(#sh)" transform="translate(0 11.1)"/></g>
+<g transform="rotate(7.0 663.48 636.90)">
+<path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="url(#g_vodafone)" fill-rule="evenodd"/>
+<path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="url(#hl_vodafone)" fill-rule="evenodd"/>
+<path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="none" stroke="#000" stroke-opacity="0.10" stroke-width="1.7"/>
+<path d="M1358 1434 864 0H498L10 1434H358L657 436Q681 355 686 293H692Q699 360 723 440L1020 1434Z" fill="#FFFFFF" transform="translate(623.19 474.69) scale(0.05890 -0.05890)"/>
+</g>
+<ellipse cx="512.00" cy="683.71" rx="38.19" ry="9.55" fill="#000" opacity="0.42" filter="url(#tip)"/>
+<g><path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="#000" fill-rule="evenodd" opacity="0.42" filter="url(#sh)" transform="translate(0 11.1)"/></g>
+<g>
+<path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="url(#g_optus)" fill-rule="evenodd"/>
+<path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="url(#hl_optus)" fill-rule="evenodd"/>
+<path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="none" stroke="#000" stroke-opacity="0.10" stroke-width="1.7"/>
+<path d="M770 -25Q462 -25 268.0 175.5Q74 376 74 698Q74 1038 271.0 1248.0Q468 1458 793 1458Q1100 1458 1289.5 1257.0Q1479 1056 1479 727Q1479 389 1282.5 182.0Q1086 -25 770 -25ZM784 1180Q614 1180 514.0 1052.5Q414 925 414 715Q414 502 514.0 378.0Q614 254 776 254Q943 254 1041.0 374.5Q1139 495 1139 709Q1139 932 1044.0 1056.0Q949 1180 784 1180Z" fill="#FFFFFF" transform="translate(461.74 502.90) scale(0.06472 -0.06472)"/>
+</g>
+</svg>

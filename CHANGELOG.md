@@ -8,6 +8,19 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.19+154] — 2026-09-06
+
+### Changed
+- **New app icon.** The three carrier pins are kept but drawn as a mark rather than three flat
+  stickers: true teardrops, one light source with a tonal gradient and a soft highlight on each
+  pin, an offset shadow that separates them and a contact shadow at each tip, on a night-blue
+  contour map (a real height-field) that the launcher's parallax moves under the pins. The
+  T / O / V initials stay, now vector outlines of a heavier face rather than live text. The icon
+  is designed as SVG in `tool/make_app_icon.py`, which also writes the Android app's launcher
+  assets (its variant has hollow centres instead of the initials) so the two apps share one
+  mark. The macOS icon, which was still Flutter's template logo, is replaced too. The web
+  manifest background follows the new ground.
+
 ## [1.14.18+153] — 2026-09-05
 
 Mirror of the Android app's 7.7.61 terrain rework (aus_phone_towers_java PR #74).

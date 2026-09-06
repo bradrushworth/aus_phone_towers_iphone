@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<defs>
+
+</defs>
+<path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="#FFFFFF" fill-rule="evenodd" transform="rotate(-7.0 360.52 636.90)"/>
+<path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="#FFFFFF" fill-rule="evenodd" transform="rotate(7.0 663.48 636.90)"/>
+<path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="#FFFFFF" fill-rule="evenodd"/>
+</svg>
