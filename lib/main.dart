@@ -14,6 +14,7 @@ import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
+import 'package:phonetowers/ui/app_theme.dart';
 import 'package:phonetowers/ui/map_common.dart';
 import 'package:phonetowers/utils/secretloader.dart';
 import 'package:phonetowers/utils/strings.dart';
@@ -150,9 +151,10 @@ Future<void> main() async {
 }
 
 class AusPhoneTowers extends StatelessWidget {
-  // F0 (UI overhaul port): light + dark themes seeded from the same purple accent the Android
-  // app's Material 3 components use, following the system setting. The status bar follows the
-  // theme instead of being hard-forced light.
+  // F0 (UI overhaul port): light + dark themes following the system setting, built by AppTheme
+  // from the night blue of the app icon and the Android app's brand tokens (2026-09; the purple
+  // before that was Material 3's un-overridden baseline seed, never a choice). The status bar
+  // follows the theme instead of being hard-forced light.
   @override
   Widget build(BuildContext context) {
     final brightness = MediaQuery.platformBrightnessOf(context);
@@ -170,46 +172,10 @@ class AusPhoneTowers extends StatelessWidget {
     return MaterialApp(
       title: Strings.app_title,
       debugShowCheckedModeBanner: false,
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
+      theme: AppTheme.build(Brightness.light),
+      darkTheme: AppTheme.build(Brightness.dark),
       themeMode: ThemeMode.system,
       home: MapScreen(),
     );
-  }
-
-  ThemeData _buildTheme(Brightness brightness) {
-    final bool dark = brightness == Brightness.dark;
-    final ColorScheme scheme =
-        ColorScheme.fromSeed(seedColor: const Color(0xFF6750A4), brightness: brightness);
-    return ThemeData(
-        colorScheme: scheme,
-        appBarTheme: AppBarTheme(
-            iconTheme: IconThemeData(color: dark ? Colors.grey[400] : Colors.grey, size: 32),
-            elevation: 0.0,
-            backgroundColor:
-                (dark ? const Color(0xFF1D1B23) : Colors.white).withValues(alpha: 0.85)),
-        textTheme: TextTheme(
-            // bodySmall is the cell-info row along the bottom of the map (map_common.dart
-            // ~1690-1760). 10 sp of monospace was hard to read at a glance, which is the one
-            // moment it has to be read — while driving. Nudged to 11.5; kept modest because those
-            // rows are fixed-width and monospace, so a large jump risks clipping rather than
-            // wrapping.
-            bodySmall: TextStyle(
-                fontFamily: 'RobotoMono',
-                color: dark ? Colors.grey[300] : Colors.grey[800],
-                fontSize: 11.5),
-            labelLarge: TextStyle(color: dark ? Colors.grey[300] : Colors.grey[700])),
-        inputDecorationTheme: InputDecorationTheme(
-          enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: dark ? Colors.grey[400]! : Colors.grey[700]!)),
-          focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: dark ? Colors.grey[400]! : Colors.grey[700]!)),
-        ),
-        // map_common.dart references elevatedButtonTheme.style, which previously resolved to
-        // null because no theme ever defined it.
-        elevatedButtonTheme: ElevatedButtonThemeData(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: scheme.secondaryContainer,
-                foregroundColor: scheme.onSecondaryContainer)));
   }
 }
