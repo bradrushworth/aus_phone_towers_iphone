@@ -25,8 +25,9 @@ python tool/make_app_icon.py assets
 dart run flutter_launcher_icons
 ```
 
-then re-export `assets/appicon.png` at 1024 into this folder. It is already RGB, so no
-alpha stripping is needed.
+The first command writes `icon-1024.png` here as well (1024 x 1024 RGB, no alpha), so there
+is nothing to re-export. It needs ImageMagick 7 with the librsvg delegate; see the docstring
+in `tool/make_app_icon.py`.
 
 ## Still to do by hand
 

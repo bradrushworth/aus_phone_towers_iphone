@@ -12,7 +12,7 @@ publish_to: 'none'
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.14.18+153
+version: 1.14.19+154
 
 environment:
   sdk: '>=3.9.2 <4.0.0'
@@ -136,12 +136,20 @@ flutter_launcher_icons:
   remove_alpha_ios: true   # the App Store rejects icons carrying an alpha channel
   # Adaptive-icon layers, which this app previously had no equivalent of at all. Without
   # them Android masks the legacy bitmap instead, which puts a white plate behind the icon
-  # and rules out themed icons on Android 13+.
-  adaptive_icon_background: "#FAF9F5"
+  # and rules out themed icons on Android 13+. The background is a bitmap (the contour map,
+  # so launcher parallax moves it under the pins) and the foreground is drawn on the full
+  # 108 dp canvas by tool/make_app_icon.py, so no extra inset is applied here.
+  adaptive_icon_background: "assets/appicon_background.png"
   adaptive_icon_foreground: "assets/appicon_foreground.png"
+  adaptive_icon_foreground_inset: 0
   adaptive_icon_monochrome: "assets/appicon_monochrome.png"
   web:
     generate: true
     image_path: "assets/appicon.png"
-    background_color: "#FAF9F5"
+    background_color: "#141B30"
     theme_color: "#0D54FF"
+  macos:
+    generate: true
+    # Big Sur shape (rounded square with margin and shadow); the square master would sit
+    # in the Dock as a hard-edged tile. Until 2026-09 this was still Flutter's template logo.
+    image_path: "assets/appicon_macos.png"
