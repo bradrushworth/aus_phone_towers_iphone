@@ -61,7 +61,13 @@ class TelcoHelper {
       case Telco.Other:
         return Color.fromARGB(alpha, 0, 127, 255);
       default:
-        return Color.fromARGB(alpha, 255, 177, 216);
+        // Broadcast radio, TV, aviation, paging, civil and CBRS licences. This was the pale
+        // rose (255, 177, 216), but PolygonHelper fills a non-carrier polygon at only 20%
+        // opacity (29% on satellite) and at that opacity the pale rose was indistinguishable
+        // from the light basemap. #E8639B is the same hue deepened until the fill reads on
+        // both basemaps, while staying clear of Vodafone red and NBN magenta. The pin bitmap
+        // (non_telco.png) is unchanged.
+        return Color.fromARGB(alpha, 232, 99, 155);
     }
   }
 
