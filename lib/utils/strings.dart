@@ -137,6 +137,7 @@ class Strings {
   static String supportPromptAdfreeHeader = 'Or remove the ads';
   static String supportPromptThanks = 'Thank you for your continued support!';
   static String supportPromptMaybeLater = 'Maybe later';
+  static String supportPromptStoreDiagnosticsHeader = 'Store diagnostics (developer mode)';
 
   static String developerMode = 'Developer Mode';
   static String regularMode = 'Regular Mode';

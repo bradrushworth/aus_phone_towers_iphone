@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
 import 'package:phonetowers/utils/strings.dart';
@@ -32,6 +33,8 @@ void main() {
   tearDown(() {
     PurchaseHelper().isSubscribed = false;
     PurchaseHelper().debugProducts = [];
+    PurchaseHelper().storefrontCountryCode = null;
+    MapHelper().developerMode = false;
   });
 
   group('SupportPromptScreen', () {
@@ -75,6 +78,67 @@ void main() {
       expect(find.text(Strings.remove_ads_year_name), findsNothing);
       // Products with no matching entry in the store response still fall back.
       expect(find.text(Strings.donateMediumName), findsOneWidget);
+    });
+
+    // The store diagnostics exist to attribute a price that disagrees with the store's own
+    // purchase sheet — to a storefront or currency difference — rather than leaving it to be
+    // guessed at. They are diagnostic, so they must stay out of the way of everyone else.
+    testWidgets('hides the store diagnostics outside developer mode', (tester) async {
+      MapHelper().developerMode = false;
+      PurchaseHelper().debugProducts = [
+        _product(PurchaseHelper.SKU_DONATION_SMALL, '\$1.23'),
+      ];
+      await pump(tester);
+      expect(find.text(Strings.supportPromptStoreDiagnosticsHeader), findsNothing);
+    });
+
+    testWidgets('shows the storefront and the currency of each price in developer mode',
+        (tester) async {
+      MapHelper().developerMode = true;
+      PurchaseHelper().storefrontCountryCode = 'AUS';
+      PurchaseHelper().debugProducts = [
+        _product(PurchaseHelper.SKU_DONATION_SMALL, '\$1.23'),
+      ];
+      await pump(tester);
+
+      expect(find.text(Strings.supportPromptStoreDiagnosticsHeader), findsOneWidget);
+      final String report = PurchaseHelper().storeDiagnostics;
+      expect(report, contains('Storefront: AUS'));
+      expect(report, contains('${PurchaseHelper.SKU_DONATION_SMALL}: \$1.23'));
+      expect(report, contains('AUD'));
+      expect(find.text(report), findsOneWidget);
+    });
+  });
+
+  group('PurchaseHelper.storeDiagnostics', () {
+    tearDown(() {
+      PurchaseHelper().debugProducts = [];
+      PurchaseHelper().storefrontCountryCode = null;
+    });
+
+    test('says the storefront is unknown rather than implying a default one', () {
+      PurchaseHelper().storefrontCountryCode = null;
+      PurchaseHelper().debugProducts = [];
+      expect(PurchaseHelper().storeDiagnostics,
+          'Storefront: unknown\nNo products loaded.');
+    });
+
+    test('reports the raw amount and currency code beside the display price', () {
+      PurchaseHelper().storefrontCountryCode = 'USA';
+      PurchaseHelper().debugProducts = [
+        ProductDetails(
+          id: PurchaseHelper.SKU_DONATION_SMALL,
+          title: 'Morning Coffee',
+          description: '',
+          price: '\$1.23',
+          rawPrice: 1.23,
+          currencyCode: 'USD',
+        ),
+      ];
+      expect(
+        PurchaseHelper().storeDiagnostics,
+        'Storefront: USA\n${PurchaseHelper.SKU_DONATION_SMALL}: \$1.23  (1.23 USD)',
+      );
     });
   });
 }

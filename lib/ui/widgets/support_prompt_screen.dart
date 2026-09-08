@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:provider/provider.dart';
 
 import '../../helpers/analytics_helper.dart';
+import '../../helpers/map_helper.dart';
 import '../../helpers/purchase_helper.dart';
 import '../../utils/strings.dart';
 
@@ -123,6 +124,24 @@ class SupportPromptScreen extends StatelessWidget {
                   onPressed: () => _dismiss(context),
                   child: Text(Strings.supportPromptMaybeLater),
                 ),
+                // Every price above is the store's own display price for that product, so when
+                // one disagrees with the store's purchase sheet the difference is upstream of
+                // this app — a different storefront, or a different currency wearing the same
+                // "$". Neither is visible in the label itself, so Developer Mode shows what the
+                // store actually answered: the storefront, and each product's raw amount and
+                // currency code. Off by default; this is diagnostic, not product copy.
+                if (MapHelper().developerMode) ...[
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  Text(Strings.supportPromptStoreDiagnosticsHeader,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(
+                    purchaseHelper.storeDiagnostics,
+                    style: const TextStyle(
+                        fontFamily: 'monospace', fontSize: 12, color: Colors.grey),
+                  ),
+                ],
               ],
             ),
           ),

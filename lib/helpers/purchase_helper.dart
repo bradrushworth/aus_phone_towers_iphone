@@ -44,7 +44,6 @@ class PurchaseHelper with ChangeNotifier {
   /// asynchronously in tests where no channel handler exists.
   late final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
-  // ignore: unused_field
   List<String> _notFoundIds = [];
   List<ProductDetails?> _products = [];
   List<PurchaseDetails?> _purchases = [];
@@ -58,6 +57,15 @@ class PurchaseHelper with ChangeNotifier {
   bool _loading = true;
   // ignore: unused_field
   String? _queryProductError;
+
+  /// The storefront the store answered the product query from, as an ISO country code (e.g.
+  /// 'AUS'), or null while it hasn't been read.
+  ///
+  /// A price string only means something next to its storefront: AUD, USD, NZD, CAD and SGD all
+  /// render as a bare "$", so a price fetched from one storefront sitting next to a purchase
+  /// sheet drawn by another reads as arithmetic gone wrong rather than as two currencies. See
+  /// [storeDiagnostics].
+  String? storefrontCountryCode;
 
 
   static const String SKU_DONATION_SMALL = "donation_small";
@@ -360,6 +368,43 @@ class PurchaseHelper with ChangeNotifier {
   String priceLabel({required String sku, required String name, String? fallback}) =>
       PriceLabelHelper.buildLabel(products: _products, sku: sku, name: name, fallback: fallback);
 
+  /// A dump of what the store actually returned: the storefront it answered from, and for each
+  /// product its id, the store's own display price, and the raw amount with its currency code.
+  ///
+  /// Shown on the Support screen under Developer Mode, and logged on every product load, so that
+  /// a displayed price which disagrees with the store's own purchase sheet can be attributed —
+  /// to a storefront difference, a currency difference, or neither — instead of guessed at.
+  String get storeDiagnostics {
+    final StringBuffer buffer =
+        StringBuffer('Storefront: ${storefrontCountryCode ?? 'unknown'}');
+    final Iterable<ProductDetails> loaded = _products.whereType<ProductDetails>();
+    if (loaded.isEmpty) {
+      buffer.write('\nNo products loaded.');
+    }
+    for (final ProductDetails product in loaded) {
+      buffer.write('\n${product.id}: ${product.price}  '
+          '(${product.rawPrice} ${product.currencyCode})');
+    }
+    if (_notFoundIds.isNotEmpty) {
+      buffer.write('\nNot found: ${_notFoundIds.join(', ')}');
+    }
+    return buffer.toString();
+  }
+
+  /// Reads the storefront the store is answering from, e.g. 'AUS'.
+  ///
+  /// Never throws: the call is unimplemented on some platforms and can fail transiently, and a
+  /// storefront that cannot be read must not stop the prices themselves being shown.
+  Future<String?> _readStorefrontCountryCode() async {
+    try {
+      final String code = await _inAppPurchase.countryCode();
+      return code.isEmpty ? null : code;
+    } catch (error) {
+      logger.w('PurchaseHelper: could not read the storefront country code: $error');
+      return null;
+    }
+  }
+
   /// Get all products available for sale
   Future<void> _getProducts() async {
     if (Platform.isIOS) {
@@ -484,6 +529,9 @@ class PurchaseHelper with ChangeNotifier {
     //showSnackBar(message: error);
     logger.i("PurchaseHelper: " + error);
 
+    storefrontCountryCode = await _readStorefrontCountryCode();
+    logger.i('PurchaseHelper: ${storeDiagnostics.replaceAll('\n', ' | ')}');
+
     // Record how App Store Connect actually types each product. The ad-free products must be
     // non-consumable (or a subscription) for a restore to ever find them again; a consumable
     // here can be bought repeatedly and is gone from the store's view the moment it's finished.
@@ -493,11 +541,23 @@ class PurchaseHelper with ChangeNotifier {
         .toList();
     if (types.isNotEmpty) {
       logger.i('PurchaseHelper: store product types: $types');
-      AnalyticsHelper().sendCustomAnalyticsEvent(
-        eventName: 'products_loaded',
-        eventParameters: <String, Object>{'types': types.join(',')},
-      );
     }
+
+    // The storefront and the currency the prices are quoted in ride along with the types: a
+    // price that disagrees with the store's purchase sheet is otherwise indistinguishable, in
+    // the field, from a price that is simply wrong.
+    final Set<String> currencies = _products
+        .whereType<ProductDetails>()
+        .map((ProductDetails p) => p.currencyCode)
+        .toSet();
+    AnalyticsHelper().sendCustomAnalyticsEvent(
+      eventName: 'products_loaded',
+      eventParameters: <String, Object>{
+        'types': types.join(','),
+        'storefront': storefrontCountryCode ?? 'unknown',
+        'currencies': currencies.join(','),
+      },
+    );
 
     // Let any already-open UI (e.g. SupportPromptScreen) pick up live store pricing —
     // see priceFor/priceLabel — without needing an unrelated purchase event to fire.
