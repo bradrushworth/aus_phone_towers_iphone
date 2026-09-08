@@ -202,7 +202,11 @@ workflows:
           # it named a model ("iPhone 16 Pro Max"), missed once Xcode shipped the 17 family,
           # fell through to the first iPhone in the list and captured a 6.3" at 1206x2622.
           #
-          # Apple's required iPhone slot is the 6.9" class: 1320x2868 or 1290x2796.
+          # Capture on the largest iPhone available and resize afterwards. THIS LISTING'S largest
+          # iPhone slot is the 6.5" class (1284x2778) - its Media Manager offers 6.5, 6.3, 6.1,
+          # 5.5 and 4.7 and has no 6.9" slot at all - and simulators for the 6.5" class (iPhone
+          # XS Max, 11 Pro Max) are long gone from current Xcode images, so there is nothing to
+          # pick that captures at the target size natively. The "Normalise" step below does it.
           PICK=""
           for WANT in "Pro Max" "Plus" "iPhone"; do
             PICK=$(xcrun simctl list devices available | grep -E "^ +iPhone" | grep "$WANT" | tail -1 || true)
@@ -232,6 +236,43 @@ workflows:
             --dart-define=SCREENSHOT_MODE=true \
             -d "$SIM_UDID"
           ls -la screenshots/
+      - name: Normalise the screenshots to the 6.5 inch slot
+        script: |
+          #!/usr/bin/env bash
+          set -eo pipefail
+          # Resize every capture to 1284x2778, the largest iPhone size THIS listing accepts.
+          # Nothing here used to touch the pixels, so the pipeline produced 6.9" images and the
+          # step below happily approved them - for a Media Manager with no 6.9" slot to put them
+          # in. Aimed at the wrong number, the check was worse than no check: it read as proof.
+          #
+          # Scale to COVER the target, then centre-crop. 1320x2868 and 1284x2778 differ in aspect
+          # by about 0.4%, so this trims roughly eleven pixels off the height and nothing that
+          # carries meaning. Scaling by the dimension that leaves the other oversized is what
+          # keeps the crop a crop: resample by width alone and a shorter source (a 4.7" fallback,
+          # say) would come out under 2778 tall, and sips would pad it with background rather
+          # than fail. Landscape captures are left alone; this listing is portrait.
+          shopt -s nullglob
+          for F in screenshots/*.png; do
+            W=$(sips -g pixelWidth "$F" | awk "/pixelWidth/{print \$2}")
+            H=$(sips -g pixelHeight "$F" | awk "/pixelHeight/{print \$2}")
+            if [ "$W" -ge "$H" ]; then
+              echo "  ${W}x${H}  $F  left alone (landscape)"
+              continue
+            fi
+            if [ "$W" = "1284" ] && [ "$H" = "2778" ]; then
+              echo "  ${W}x${H}  $F  already 6.5 inch"
+              continue
+            fi
+            # Relatively wider than 1284:2778 -> its height is the binding dimension, and vice
+            # versa. Integer cross-multiplication, so no floating point in the shell.
+            if [ $((W * 2778)) -gt $((H * 1284)) ]; then
+              sips --resampleHeight 2778 "$F" > /dev/null
+            else
+              sips --resampleWidth 1284 "$F" > /dev/null
+            fi
+            sips -c 2778 1284 "$F" > /dev/null
+            echo "  ${W}x${H} -> 1284x2778  $F"
+          done
       - name: Verify the screenshots are a size the App Store accepts
         script: |
           #!/usr/bin/env bash
@@ -247,8 +288,8 @@ workflows:
             W=$(sips -g pixelWidth "$F" | awk "/pixelWidth/{print \$2}")
             H=$(sips -g pixelHeight "$F" | awk "/pixelHeight/{print \$2}")
             case "${W}x${H}" in
-              1320x2868|2868x1320|1290x2796|2796x1290) NOTE="ok (6.9 inch)" ;;
-              *) NOTE="REJECTED - not a 6.9 inch App Store size"; BAD=1 ;;
+              1284x2778|2778x1284|1242x2688|2688x1242) NOTE="ok (6.5 inch)" ;;
+              *) NOTE="REJECTED - not a 6.5 inch App Store size"; BAD=1 ;;
             esac
             echo "  ${W}x${H}  $F  $NOTE"
           done
