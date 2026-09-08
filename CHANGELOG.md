@@ -8,6 +8,23 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.14.21+156] — 2026-09-08
+
+### Changed
+- **The store prices say which storefront quoted them.** A price sitting next to the App
+  Store's own purchase sheet only means something if you know where it came from: AUD, USD,
+  NZD, CAD and SGD all render as a bare "$", so a label reading "$3.99" beside a sheet
+  charging "$5.99" reads as the app inventing a number when it can as easily be two
+  storefronts answering the same question — which is exactly what a TestFlight build does
+  when the device's App Store account and the Sandbox Apple Account are in different
+  countries. Every label was already the store's own display price, unchanged here; what the
+  app never reported was the storefront behind it. `PurchaseHelper` now records the
+  storefront country code the product query answered from and, under **Developer Mode**, the
+  Support the App screen lists it with each product's display price, raw amount and currency
+  code. The same dump is logged on every product load, and the storefront and currency codes
+  travel with the `products_loaded` analytics event. A SKU the storefront does not recognise
+  is now named there too, instead of leaving its price silently absent.
+
 ## [1.14.20+155] — 2026-09-06
 
 ### Changed
