@@ -10,6 +10,8 @@ features and bugs are frequently fixed in both.
 
 ## [Unreleased]
 
+## [1.14.22+157] — 2026-09-12
+
 ### Fixed
 - **Follow GPS now keeps all signal-strength contours visible.** Maximum, Strong, Good and Weak
   layers are rebuilt when the mode toggles and their translucent fills stack to show stronger
