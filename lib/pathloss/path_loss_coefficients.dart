@@ -11,7 +11,11 @@ import 'package:phonetowers/restful/get_licenceHRP.dart';
 /// Three functional forms are supported, selected by [form]:
 /// - [formLogDistance]: levelInDb = b0 + b1·log10(d) + b2·log10(f) + b3·log10(h)
 /// - [formHataCorrection]: Hata-anchored inversion with learned offset (b0) and slope multiplier (b1)
-/// - [formHataCalibration]: regress log-distance on the analytic model's own log-distance estimate
+/// - [formHataCalibration]: runtime inverse of the trainer's central forward propagation curve
+///
+/// Since 2026-09-12 the Android trainer derives [formHataCalibration] coefficients from medians
+/// in independently known true-distance bins. It no longer publishes the p90 outer-reach fit.
+/// The stored/evaluated algebra is unchanged in both apps.
 ///
 /// Ported from the Java `au.com.bitbot.phonetowers.pathloss.PathLossCoefficients`.
 class PathLossCoefficients {

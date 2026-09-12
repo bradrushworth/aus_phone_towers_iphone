@@ -45,7 +45,9 @@ Version 1.14 ports the Android app's interface overhaul:
 - **Coverage polygons** — coloured shaded areas showing the estimated coverage of each antenna.
   The colour matches the carrier (see the legend below). Toggle the outline with **Show/Hide
   Borders**. Polygon opacity is boosted on satellite/hybrid map types and when **Follow GPS**
-  (drive mode) is active, so coverage remains visible over dark imagery.
+  (drive mode) is active, so coverage remains visible over dark imagery. Follow GPS keeps all
+  four nested signal layers visible; their translucent fills stack, making stronger inner areas
+  darker. Coverage never changes the Follow GPS camera zoom.
 - **Coverage labels** — each tower's coverage carries a small text label showing its
   **frequency and technology** (e.g. `850 MHz 4G LTE`). The label sits right on the shaded
   polygon's outer line — anchored on the point of the outermost ring that is furthest from the
@@ -78,7 +80,8 @@ The menu is grouped the same way as the Android app:
 
 - **Reload Everything** — clear the map and re‑download all towers for the current area.
 - **Follow GPS** — toggle "drive mode". When on, the map stays centred on your location as you
-  move (uses more battery). When off, the map stops recentring.
+  move at the current zoom (uses more battery), and every signal-strength contour remains visible.
+  When off, the map stops recentring and the Signal Strength filter controls the outermost contour.
 - **Lock / Unlock Map** — freeze (or unfreeze) *all* camera movement: pan, zoom, rotate and tilt
   gestures, the built‑in "my location" button, Follow GPS's auto‑recentring, and Search's
   jump‑to‑result. Useful when you want to screenshot or study a fixed area of coverage without

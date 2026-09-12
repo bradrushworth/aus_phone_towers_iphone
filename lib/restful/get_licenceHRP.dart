@@ -44,6 +44,9 @@ class GetLicenceHRP {
   bool dataFound;
   String url;
   CancelToken? cancelToken;
+  Object? requestKey;
+  bool Function()? requestIsCurrent;
+  void Function()? onChainFinished;
 
   GetLicenceHRP(
       {required this.url,
@@ -52,7 +55,10 @@ class GetLicenceHRP {
       this.list,
       this.dataFound = false,
       this.showSnackBar,
-      this.cancelToken});
+      this.cancelToken,
+      this.requestKey,
+      this.requestIsCurrent,
+      this.onChainFinished});
 
   Future getLicenceHRPData() async {
     //logger.d('get licence HRP url $url');
@@ -76,6 +82,12 @@ class GetLicenceHRP {
     try {
       rawResponse =
           await api.getLicenceHRPData(url, cancelToken: cancelToken);
+
+      if (requestIsCurrent?.call() == false) {
+        logger.d(
+            'PolygonHelper: GetLicenceHRP: ignoring stale polygon generation for site ${site.siteId}, device ${device.sddId}');
+        return;
+      }
 
       // Api.getLicenceHRPData swallows every DioException (network failure, timeout, 5xx,
       // a genuinely cancelled request) and returns null rather than throwing. A null
@@ -126,12 +138,22 @@ class GetLicenceHRP {
         // device's polygon forever.
         final DateTime elevationDeadline = DateTime.now().add(const Duration(seconds: 30));
         while (shouldKeepWaitingForElevation(site, DateTime.now(), elevationDeadline)) {
-          await Future.delayed(Duration(milliseconds: 500));
+          if (requestIsCurrent?.call() == false) {
+            return;
+          }
+          await Future.delayed(const Duration(milliseconds: 50));
         }
         if (!site.finishedDownloadingElevations) {
           logger.w(
               'PolygonHelper: GetLicenceHRP: timed out after 30s waiting for elevation data for site ${site.siteId}, device ${device.sddId} — proceeding without terrain');
         }
+      }
+
+
+      if (requestIsCurrent?.call() == false) {
+        logger.d(
+            'PolygonHelper: GetLicenceHRP: ignoring stale polygon generation after elevation wait for site ${site.siteId}, device ${device.sddId}');
+        return;
       }
 
       // Draw appropriate signal strength
@@ -211,9 +233,9 @@ class GetLicenceHRP {
             : null;
 
         int pos = 0;
-        for (int p = 0;
-            p <= PolygonHelper.getPolygonSignalStrengthPosition();
-            p++) {
+        // The caller fixes the requested contour set before this asynchronous response arrives.
+        // Do not re-read Follow GPS or menu state mid-download or the result/list sizes can diverge.
+        for (int p = 0; p < list!.length && p < polygons.length; p++) {
           int receiver_dBm = polygons[p];
           double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
@@ -282,7 +304,10 @@ class GetLicenceHRP {
                 // its directional lobes.
                 dataFound: dataFound,
                 showSnackBar: showSnackBar,
-                cancelToken: cancelToken)
+                cancelToken: cancelToken,
+                requestKey: requestKey,
+                requestIsCurrent: requestIsCurrent,
+                onChainFinished: onChainFinished)
             .getLicenceHRPData();
       } else {
         if (dataFound) {
@@ -308,7 +333,10 @@ class GetLicenceHRP {
       // forward instead. SiteHelper.finishSiteDownload only actually clears the
       // site-level guard once every device chain started for this site has terminated.
       if (!spawnedNextPageChain) {
-        SiteHelper.finishSiteDownload(site);
+        if (requestKey != null) {
+          SiteHelper.finishSiteDownload(site, requestKey!);
+        }
+        onChainFinished?.call();
       }
     }
   }

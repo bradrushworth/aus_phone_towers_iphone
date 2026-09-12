@@ -25,6 +25,7 @@ import 'shadow_holes.dart';
 import 'let_type_helper.dart';
 import 'map_helper.dart';
 import 'network_type_helper.dart';
+import 'polygon_request_generation.dart';
 import 'site_helper.dart';
 import '../ui/map_common.dart';
 import 'telco_helper.dart';
@@ -105,7 +106,7 @@ class PolygonHelper with ChangeNotifier {
 
   //static Set<Polygon> globalPolygons = Set<Polygon>();
   static List<MapOverlay> globalListPolygons = [];
-  static CancelToken? cancelFetchingPolygonRequestToken;
+  static final PolygonRequestGeneration _polygonRequests = PolygonRequestGeneration();
   static String terrainAwarenessKey = '';
 
   /// The iOS-restricted Maps key (Elevation API enabled, bundle au.com.bitbot.phonetowers).
@@ -210,6 +211,7 @@ class PolygonHelper with ChangeNotifier {
     if (SiteHelper.isSiteDownloadInFlight(site)) {
       return;
     }
+    final int requestGeneration = _polygonRequests.current;
 
     // Save bandwidth by caching polygons when cachingPolygons==true
     Map<DeviceDetails, Set<PolygonContainer>> polygonCache =
@@ -282,9 +284,6 @@ class PolygonHelper with ChangeNotifier {
     if (!sitesPolygons.containsKey(site)) {
       sitesPolygons[site] = Map<DeviceDetails, Set<PolygonContainer>>();
     }
-
-    //This is helpful in cancelling all apis which refers to this token
-    cancelFetchingPolygonRequestToken = CancelToken();
 
     // Download the polygon data
     deviceLoop:
@@ -371,8 +370,13 @@ class PolygonHelper with ChangeNotifier {
       // Signal that the polygons have changed
       switchingBetweenTerrainAwareness = false;
 
+      final int signalStrengthPosition = signalStrengthPositionFor(
+        followGps: MapHelper.followGPS,
+        configuredPosition: polygonSignalStrengthPos,
+        availableRungs: NetworkTypeHelper.getNetworkBars(d.getNetworkType()).length,
+      );
       List<List<LatLng>> results = [];
-      for (int i = 0; i <= PolygonHelper.getPolygonSignalStrengthPosition(); i++) {
+      for (int i = 0; i <= signalStrengthPosition; i++) {
         results.insert(i, []);
       }
 
@@ -398,7 +402,8 @@ class PolygonHelper with ChangeNotifier {
       // Claim the guard for this device's chain before firing it off — GetLicenceHRP
       // releases its contribution (SiteHelper.finishSiteDownload) in a finally block
       // regardless of how the chain terminates, so this always balances out.
-      SiteHelper.startSiteDownload(site);
+      final CancelToken requestToken = _polygonRequests.createToken();
+      SiteHelper.startSiteDownload(site, requestToken);
 
       GetLicenceHRP(
               site: site,
@@ -406,7 +411,10 @@ class PolygonHelper with ChangeNotifier {
               list: results,
               url: url,
               showSnackBar: showSnackBar ?? defaultShowSnackBar,
-              cancelToken: cancelFetchingPolygonRequestToken)
+              cancelToken: requestToken,
+              requestKey: requestToken,
+              requestIsCurrent: () => _polygonRequests.isCurrent(requestGeneration),
+              onChainFinished: () => _polygonRequests.complete(requestToken))
           .getLicenceHRPData();
     }
   }
@@ -581,6 +589,18 @@ class PolygonHelper with ChangeNotifier {
     for (int p = 0; p < holesByRung.length; p++) {
       device.setTerrainHoles(p, holesByRung[p]);
     }
+  }
+
+  /// Last signal-strength rung to include. Follow GPS deliberately includes every available
+  /// rung; the configured rung remains the upper bound outside driving mode.
+  static int signalStrengthPositionFor({
+    required bool followGps,
+    required int configuredPosition,
+    required int availableRungs,
+  }) {
+    if (availableRungs <= 0) return -1;
+    if (followGps) return availableRungs - 1;
+    return configuredPosition.clamp(0, availableRungs - 1);
   }
 
   /// Draw frequency + technology labels along the outer signal-strength ring, mirroring the
@@ -785,7 +805,9 @@ class PolygonHelper with ChangeNotifier {
           : null;
 
       int pos = 0;
-      for (int p = 0; p <= PolygonHelper.getPolygonSignalStrengthPosition(); p++) {
+      // The requested contour set is fixed by the result-list size at dispatch time. Do not
+      // re-read Follow GPS or menu state mid-calculation.
+      for (int p = 0; p < results.length && p < polygons.length; p++) {
         int receiver_dBm = polygons[p];
         double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
 
@@ -826,13 +848,7 @@ class PolygonHelper with ChangeNotifier {
   }
 
   void clearSitePatterns(bool cancelAllTaskTypes, {Site? skipSite, ShowSnackBar? showSnackBar}) {
-    // Cancel pending REST requests for polygons
-    if (cancelFetchingPolygonRequestToken != null) {
-      if (!cancelFetchingPolygonRequestToken!.isCancelled) {
-        cancelFetchingPolygonRequestToken!
-            .cancel("future request for signal polygon have been cancelled");
-      }
-    }
+    _invalidatePolygonRequests('signal polygon requests were cancelled');
 
     // Signal that the polygons have changed
     PolygonHelper.switchingBetweenTerrainAwareness = false;
@@ -853,23 +869,21 @@ class PolygonHelper with ChangeNotifier {
   }
 
   void refreshPolygons(bool cachingPolygons) {
-    // Reset the fail-safe preventing race conditions going crazy
-    SiteHelper.siteDownloadSinceLastClick.clear();
-
-    // Cancel pending REST requests for polygons
-    if (cancelFetchingPolygonRequestToken != null) {
-      if (!cancelFetchingPolygonRequestToken!.isCancelled) {
-        cancelFetchingPolygonRequestToken!
-            .cancel("future reuqest for signal polygon have been cancelled");
-      }
-    }
+    _invalidatePolygonRequests('signal polygon requests were invalidated by a refresh');
 
     // Refresh polygons to show/hide depending on settings
-    for (int i = 0; i < PolygonHelper.sitesPolygons.keys.length; i++) {
-      Site site = PolygonHelper.sitesPolygons.keys.elementAt(i);
+    // queryForSignalPolygon removes and re-adds map entries, so iterate a stable snapshot.
+    for (Site site in List<Site>.from(PolygonHelper.sitesPolygons.keys)) {
       // Recalculate all the polygons
       queryForSignalPolygon(site, true, cachingPolygons);
     }
+  }
+
+  static void _invalidatePolygonRequests(String reason) {
+    _polygonRequests.invalidate(reason);
+    // New-generation requests must be allowed to start immediately. Exact request keys in
+    // SiteHelper ensure late finally blocks from the cancelled generation cannot disturb them.
+    SiteHelper.siteDownloadSinceLastClick.clear();
   }
 
   void switchTerrainAwareness() {

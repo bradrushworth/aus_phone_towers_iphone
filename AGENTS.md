@@ -63,6 +63,17 @@ dB. It is ported from the Java Android app's `au.com.bitbot.phonetowers.pathloss
 - **`LinearRegression`**: OLS solver (used by tests; the actual training happens server-side in the
   Java app).
 
+### Published propagation semantics
+- The Android trainer is the only writer. Since 2026-09-12 it publishes the **central propagation
+  curve**, not a typical-observer distance and not a p90 outer reach. It bins by independently
+  mapped true log-distance, takes median true/anchor distance per supported bin, fits the physical
+  forward relation with equal bin weights, then converts it to the existing
+  `log10(d)=b0+b1*log10(anchorDistance)` form. The Flutter evaluator remains line-for-line
+  compatible and consumes the same REST rows as Android.
+- Do not reinterpret `hata-calibration` as a percentile envelope. The p90 reach trainer briefly
+  published from 2026-09-05 and could draw a signal polygon far beyond a user's measured
+  user-to-tower distance; it was superseded by the central fit.
+
 ### REST endpoint
 - Coefficients are fetched from `https://api.bitbot.com.au/api/towers/pathloss_coefficients/?_view=json&_expand=no&_count=100`
 - The Java Android app trains the coefficients and writes them to the MySQL `pathloss_coefficients`
@@ -87,6 +98,17 @@ Tests are in `test/pathloss/` and are ported from the Java app's test suite:
 - `linear_regression_test.dart`: OLS solver correctness (exact fit, noisy fit, singular matrix).
 
 Run with: `flutter test test/pathloss/`
+
+## Follow GPS contour policy
+- Outside Follow GPS, the Signal Strength filter chooses the outermost contour drawn.
+- While Follow GPS is on, `PolygonHelper.signalStrengthPositionFor` includes every available
+  signal contour. Maximum, Strong, Good and Weak remain visible together; the translucent fills
+  stack so the inner stronger region is darker. The phone's current dBm never selects or hides a
+  contour in this app.
+- Follow GPS only recentres the camera at its current zoom. Signal polygons never participate in
+  camera fitting. Toggling the mode rebuilds displayed sites so the contour count and opacity
+  change immediately; asynchronous HRP calculations finish against the list size they started
+  with rather than re-reading mode mid-response.
 
 ## Polygon Precision (lib/helpers/polygon_helper.dart, lib/restful/get_licenceHRP.dart)
 `PolygonHelper.polygonBearingIncrement` (set from the "Polygon Precision" menu — Low/Medium/High,

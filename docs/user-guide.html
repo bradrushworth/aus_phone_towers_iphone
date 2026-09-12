@@ -33,8 +33,8 @@
 <h2>1. The map</h2>
 <ul>
   <li><strong>Tower markers</strong> — one marker per transmitter. Instead of plain coloured pins, each tower is shown as the <strong>carrier's logo icon</strong> (Telstra, Optus, Vodafone, NBN, Dense Air, Other, or a generic non-telco icon). Tap a marker for details; the sheet names the carrier in a chip washed with its colour.</li>
-  <li><strong>Coverage polygons</strong> — coloured shaded areas showing the estimated coverage of each antenna. The colour matches the carrier (see the legend below). Toggle the outline with <strong>Show / Hide Borders</strong>. Each ring also shows a small label at its centre with the <strong>frequency</strong> (e.g. <code>850 MHz</code>) and the <strong>network technology</strong> (2G / 3G / 4G / 5G) of that transmitter.</li>
-  <li><strong>Your location</strong> — a semi-transparent azure dot (requires Location permission). The app can centre the map on you; there is no automatic "follow while driving" mode yet.</li>
+  <li><strong>Coverage polygons</strong> — coloured shaded areas showing the estimated coverage of each antenna. The colour matches the carrier (see the legend below). Toggle the outline with <strong>Show / Hide Borders</strong>. Follow GPS keeps every signal-strength contour visible; their translucent fills stack so stronger inner areas look darker, without changing camera zoom. Each ring also shows a small label at its centre with the <strong>frequency</strong> and <strong>network technology</strong>.</li>
+  <li><strong>Your location</strong> — a semi-transparent azure dot (requires Location permission). <strong>Follow GPS</strong> keeps the map centred on you at its current zoom as you move.</li>
 </ul>
 
 <h2>2. Colour & symbol legend</h2>
@@ -58,6 +58,7 @@
 
 <h2>3. Toolbar menu (top-right <code>⋯</code>)</h2>
 <ul>
+  <li><strong>Follow GPS</strong> — keep the map centred on your location at its current zoom. All signal-strength contours remain visible while it is on; turning it off restores the Signal Strength filter's outer contour.</li>
   <li><strong>Show / Hide Borders</strong> — toggle the radiation polygon outlines.</li>
   <li><strong>Search Sites</strong> — find a specific tower / site.</li>
   <li><strong>Reload Everything</strong> — clear the map and re-download all towers for the current area.</li>
@@ -103,7 +104,7 @@
     <tr><td>Connected-tower / Cell Info bar</td><td>Yes</td><td>Not yet</td></tr>
     <tr><td>Timing-advance ring</td><td>Yes</td><td>Not yet</td></tr>
     <tr><td>Observation markers (yellow / orange)</td><td>Yes</td><td>Not yet</td></tr>
-    <tr><td>Follow-GPS drive mode</td><td>Yes</td><td>Not yet</td></tr>
+    <tr><td>Follow-GPS drive mode</td><td>Yes</td><td>Yes</td></tr>
     <tr><td>Shows your location dot</td><td>Yes</td><td>Yes (azure dot)</td></tr>
   </tbody>
 </table>

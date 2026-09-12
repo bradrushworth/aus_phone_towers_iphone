@@ -1095,6 +1095,9 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           message:
               'GPS is now OFF. This will save battery and stop the screen from recentring on your location!');
     }
+    // Follow GPS changes the contour display policy and fill opacity. Rebuild every currently
+    // displayed site, but the camera remains controlled solely by location updates above.
+    PolygonHelper().refreshPolygons(false);
     state.setState(() {});
   }
 
