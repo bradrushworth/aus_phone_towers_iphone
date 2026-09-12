@@ -8,6 +8,16 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Follow GPS now keeps all signal-strength contours visible.** Maximum, Strong, Good and Weak
+  layers are rebuilt when the mode toggles and their translucent fills stack to show stronger
+  areas as darker. They do not affect camera zoom.
+- **Coverage remains compatible with Android's central-propagation coefficient contract.** The
+  Flutter evaluator and REST schema are unchanged; publishing new server coefficients remains
+  separately gated behind Android's reviewed production dry run.
+
 ## [1.14.21+156] — 2026-09-08
 
 ### Changed
@@ -126,7 +136,6 @@ Mirror of the Android app's 7.7.61 terrain rework (aus_phone_towers_java PR #74)
 - New `products_loaded` and `transaction_history` analytics events record how App Store Connect
   types each product and what the customer's transaction history holds, so a mismatch like this
   one is visible from Firebase rather than from a refund request.
-
 ## [1.14.15+150] — 2026-08-31
 
 ### Fixed
