@@ -11,7 +11,8 @@ launcher's parallax moves the map under the pins.
 Each app has its own variant of the mark (Brad's choice, 2026-09-06): this Flutter app keeps
 the T O V initials, set as vector outlines of Segoe UI Bold baked into the SVG so the render
 does not depend on the machine's fonts; the Java app has hollow centres. Both stand on the
-same night-blue contour map.
+same light contour map (cream with deep-blue contour lines) since 2026-09-14; the night-blue
+ground remains available as the dark:... variants.
 
 Outputs (all from the same SVG, rendered by ImageMagick's librsvg delegate):
 
@@ -58,8 +59,8 @@ GROUNDS = {
     "light": dict(top="#FAF8F3", bottom="#E9E6DE", contour="#1F2A44", c_op=0.10,
                   shadow_op=0.26, tip_op=0.30, text="#2B2B6B", subtext="#4A4A5A"),
 }
-DEFAULT_VARIANT = "dark:letters:7"          # this app: T O V initials
-DEFAULT_ANDROID_VARIANT = "dark:hollow:7"    # aus_phone_towers_java: hollow centres
+DEFAULT_VARIANT = "light:letters:7"          # this app: T O V initials
+DEFAULT_ANDROID_VARIANT = "light:hollow:7"    # aus_phone_towers_java: hollow centres
 LETTER_FONTS = ("C:/Windows/Fonts/segoeuib.ttf", "/Library/Fonts/Segoe UI Bold.ttf",
                 "C:/Windows/Fonts/arialbd.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
 

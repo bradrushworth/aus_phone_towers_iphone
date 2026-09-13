@@ -8,7 +8,12 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.14.23+158] — 2026-09-14
+
+### Changed
+- **The app icon stands on a light ground.** Cream with deep-blue contour lines instead of the
+  night-blue map; the three carrier pins and this app's T O V initials are unchanged. The
+  Android app makes the same change with its hollow-centred pins.
 
 ## [1.14.22+157] — 2026-09-12
 
