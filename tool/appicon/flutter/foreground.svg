@@ -9,24 +9,24 @@
 <linearGradient id="g_optus" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#29939A"/><stop offset="0.55" stop-color="#007F87"/><stop offset="1" stop-color="#006167"/></linearGradient>
 <radialGradient id="hl_optus" cx="478.30" cy="394.71" r="106.72" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.20"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
 </defs>
-<ellipse cx="360.52" cy="639.46" rx="34.76" ry="8.69" fill="#000" opacity="0.42" filter="url(#tip)"/>
-<g transform="rotate(-7.0 360.52 636.90)"><path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="#000" fill-rule="evenodd" opacity="0.42" filter="url(#sh)" transform="translate(0 11.1)"/></g>
+<ellipse cx="360.52" cy="639.46" rx="34.76" ry="8.69" fill="#000" opacity="0.30" filter="url(#tip)"/>
+<g transform="rotate(-7.0 360.52 636.90)"><path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="#000" fill-rule="evenodd" opacity="0.26" filter="url(#sh)" transform="translate(0 11.1)"/></g>
 <g transform="rotate(-7.0 360.52 636.90)">
 <path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="url(#g_telstra)" fill-rule="evenodd"/>
 <path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="url(#hl_telstra)" fill-rule="evenodd"/>
 <path d="M360.52 636.90 L272.00 483.57 A102.22 102.22 0 1 1 449.05 483.57 Z" fill="none" stroke="#000" stroke-opacity="0.10" stroke-width="1.7"/>
 <path d="M1171 1171H762V0H438V1171H31V1434H1171Z" fill="#FFFFFF" transform="translate(325.12 474.69) scale(0.05890 -0.05890)"/>
 </g>
-<ellipse cx="663.48" cy="639.46" rx="34.76" ry="8.69" fill="#000" opacity="0.42" filter="url(#tip)"/>
-<g transform="rotate(7.0 663.48 636.90)"><path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="#000" fill-rule="evenodd" opacity="0.42" filter="url(#sh)" transform="translate(0 11.1)"/></g>
+<ellipse cx="663.48" cy="639.46" rx="34.76" ry="8.69" fill="#000" opacity="0.30" filter="url(#tip)"/>
+<g transform="rotate(7.0 663.48 636.90)"><path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="#000" fill-rule="evenodd" opacity="0.26" filter="url(#sh)" transform="translate(0 11.1)"/></g>
 <g transform="rotate(7.0 663.48 636.90)">
 <path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="url(#g_vodafone)" fill-rule="evenodd"/>
 <path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="url(#hl_vodafone)" fill-rule="evenodd"/>
 <path d="M663.48 636.90 L574.95 483.57 A102.22 102.22 0 1 1 752.00 483.57 Z" fill="none" stroke="#000" stroke-opacity="0.10" stroke-width="1.7"/>
 <path d="M1358 1434 864 0H498L10 1434H358L657 436Q681 355 686 293H692Q699 360 723 440L1020 1434Z" fill="#FFFFFF" transform="translate(623.19 474.69) scale(0.05890 -0.05890)"/>
 </g>
-<ellipse cx="512.00" cy="683.71" rx="38.19" ry="9.55" fill="#000" opacity="0.42" filter="url(#tip)"/>
-<g><path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="#000" fill-rule="evenodd" opacity="0.42" filter="url(#sh)" transform="translate(0 11.1)"/></g>
+<ellipse cx="512.00" cy="683.71" rx="38.19" ry="9.55" fill="#000" opacity="0.30" filter="url(#tip)"/>
+<g><path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="#000" fill-rule="evenodd" opacity="0.26" filter="url(#sh)" transform="translate(0 11.1)"/></g>
 <g>
 <path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="url(#g_optus)" fill-rule="evenodd"/>
 <path d="M512.00 681.16 L414.72 512.66 A112.33 112.33 0 1 1 609.28 512.66 Z" fill="url(#hl_optus)" fill-rule="evenodd"/>

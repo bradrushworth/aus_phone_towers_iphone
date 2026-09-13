@@ -310,10 +310,12 @@ why), and leave pins, polygons and the signal ramp alone: they carry meaning.
   (webp mipmaps, Play icon, feature graphic, the two 512 px masters). Never hand-edit a
   mipmap or an `AppIcon.appiconset` file in either repo; change the script and re-run it.
 - The two apps carry different variants by decision (2026-09-06): this app keeps the T O V
-  initials (`DEFAULT_VARIANT` dark:letters:7, glyphs baked into the SVG as outlines via
+  initials (`DEFAULT_VARIANT` light:letters:7, glyphs baked into the SVG as outlines via
   fonttools, so no font is needed to re-render), the Java app has hollow centres
-  (`DEFAULT_ANDROID_VARIANT` dark:hollow:7). Sources: `tool/appicon/flutter/` and
-  `tool/appicon/android/`.
+  (`DEFAULT_ANDROID_VARIANT` light:hollow:7). Sources: `tool/appicon/flutter/` and
+  `tool/appicon/android/`. Since 2026-09-14 both stand on a light ground (cream with
+  deep-blue contour lines) instead of the earlier night-blue map; the night-blue ground
+  remains available as the `dark:...` variants.
 - The adaptive background is a bitmap (the contour map, so launcher parallax moves it under
   the pins) and the foreground is drawn on the full 108 dp canvas, hence
   `adaptive_icon_foreground_inset: 0` in `pubspec.yaml`. Do not put the 16 % inset back
