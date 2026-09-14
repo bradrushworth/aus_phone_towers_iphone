@@ -157,4 +157,107 @@ void main() {
       expect(e.isSubscribed, isFalse);
     });
   });
+
+  // Coverage for the yearly_adfree_pass Non-Renewing Subscription (bead aptios-589), which
+  // replaces yearly_adfree (a Consumable, resellable and invisible to a StoreKit restore) but
+  // must be honoured alongside it until every customer has moved over.
+  group('evaluateEntitlements (yearly_adfree_pass alongside the legacy consumable)', () {
+    test('the pass alone grants yearly ad-free with the same expiry math as the consumable',
+        () async {
+      const int now = 1700000000000;
+      final int purchasedAt = now - (_expiryPeriod - 1000);
+      final PurchaseEntitlement e = await evaluateEntitlements(
+        [_purchase(skuSubscribeOneYearPass, purchasedAt.toString())],
+        nowMillis: now,
+        expiryPeriod: _expiryPeriod,
+      );
+      expect(e.isSubscribed, isTrue);
+      expect(e.isSubscribedPermanently, isFalse);
+      expect(e.yearlyPurchaseExpired, isFalse);
+      expect(e.yearlyExpiryEpoch, purchasedAt + _expiryPeriod);
+      expect(e.expiredYearlyProductIds, isEmpty);
+    });
+
+    test('an expired pass is reported for cleanup, same as the legacy consumable', () async {
+      const int now = 1700000000000;
+      final int purchasedAt = now - _expiryPeriod - 1000;
+      final PurchaseEntitlement e = await evaluateEntitlements(
+        [_purchase(skuSubscribeOneYearPass, purchasedAt.toString())],
+        nowMillis: now,
+        expiryPeriod: _expiryPeriod,
+      );
+      expect(e.isSubscribed, isFalse);
+      expect(e.yearlyPurchaseExpired, isTrue);
+      expect(e.expiredYearlyProductIds, [skuSubscribeOneYearPass]);
+    });
+
+    test('both active -> subscribed, expiry is whichever expires later', () async {
+      const int now = 1700000000000;
+      final int legacyPurchasedAt = now - (_expiryPeriod - 1000); // expires soon
+      final int passPurchasedAt = now - 1000; // expires much later
+      final PurchaseEntitlement e = await evaluateEntitlements(
+        [
+          _purchase(skuSubscribeOneYear, legacyPurchasedAt.toString()),
+          _purchase(skuSubscribeOneYearPass, passPurchasedAt.toString()),
+        ],
+        nowMillis: now,
+        expiryPeriod: _expiryPeriod,
+      );
+      expect(e.isSubscribed, isTrue);
+      expect(e.yearlyExpiryEpoch, passPurchasedAt + _expiryPeriod);
+      expect(e.expiredYearlyProductIds, isEmpty);
+    });
+
+    test('legacy expired but pass active -> still subscribed, only the legacy id is flagged',
+        () async {
+      const int now = 1700000000000;
+      final int legacyPurchasedAt = now - _expiryPeriod - 1000; // expired
+      final int passPurchasedAt = now - 1000; // active
+      final PurchaseEntitlement e = await evaluateEntitlements(
+        [
+          _purchase(skuSubscribeOneYear, legacyPurchasedAt.toString()),
+          _purchase(skuSubscribeOneYearPass, passPurchasedAt.toString()),
+        ],
+        nowMillis: now,
+        expiryPeriod: _expiryPeriod,
+      );
+      expect(e.isSubscribed, isTrue);
+      expect(e.yearlyExpiryEpoch, passPurchasedAt + _expiryPeriod);
+      expect(e.expiredYearlyProductIds, [skuSubscribeOneYear]);
+    });
+
+    test('both expired -> not subscribed, both ids flagged for cleanup', () async {
+      const int now = 1700000000000;
+      final int legacyPurchasedAt = now - _expiryPeriod - 1000;
+      final int passPurchasedAt = now - _expiryPeriod - 2000;
+      final PurchaseEntitlement e = await evaluateEntitlements(
+        [
+          _purchase(skuSubscribeOneYear, legacyPurchasedAt.toString()),
+          _purchase(skuSubscribeOneYearPass, passPurchasedAt.toString()),
+        ],
+        nowMillis: now,
+        expiryPeriod: _expiryPeriod,
+      );
+      expect(e.isSubscribed, isFalse);
+      expect(e.yearlyPurchaseExpired, isTrue);
+      expect(e.expiredYearlyProductIds, unorderedEquals([skuSubscribeOneYear, skuSubscribeOneYearPass]));
+    });
+
+    test('permanent + expired pass -> subscribed and permanent, pass still flagged for cleanup',
+        () async {
+      const int now = 1700000000000;
+      final int passPurchasedAt = now - _expiryPeriod - 1000;
+      final PurchaseEntitlement e = await evaluateEntitlements(
+        [
+          _purchase(skuSubscribePermanently, '0'),
+          _purchase(skuSubscribeOneYearPass, passPurchasedAt.toString()),
+        ],
+        nowMillis: now,
+        expiryPeriod: _expiryPeriod,
+      );
+      expect(e.isSubscribed, isTrue);
+      expect(e.isSubscribedPermanently, isTrue);
+      expect(e.expiredYearlyProductIds, [skuSubscribeOneYearPass]);
+    });
+  });
 }

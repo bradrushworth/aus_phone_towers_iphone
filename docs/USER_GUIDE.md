@@ -122,6 +122,9 @@ The menu is grouped the same way as the Android app:
   App Store (which may ask you to sign in), then tells you whether a purchase was found. The
   yearly option reverts to showing ads after 12 months and can be bought again; the permanent
   option never expires. While you have ads removed, the app will not sell you either option again.
+  On iOS, "1 Year Ad‑Free" may be sold under a different underlying App Store product than it was
+  previously (bead `aptios-589`) — this is invisible to you: the price, the year of ad-free
+  removal, and Restore Purchases all work the same either way.
 - **Donate** — support development with a one‑off in‑app purchase (small / medium / large).
   Donations are repeatable and do **not** remove ads (not shown on the Web build).
   - **Support the App** — the last item in the Donate menu; opens a full‑screen "Support Aus
