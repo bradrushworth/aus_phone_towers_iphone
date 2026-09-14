@@ -23,6 +23,23 @@ class _FakeApi extends Api {
   Future<Map<String, dynamic>?> getSiteTerrainData(String path) async => _response;
 }
 
+/// bead 8uq item 4: a fake that returns a different canned response on each successive call,
+/// so a retry succeeding on its second attempt can be exercised without a real network error.
+class _SequentialFakeApi extends Api {
+  _SequentialFakeApi(this._responses) : super.initialize();
+
+  final List<Map<String, dynamic>?> _responses;
+  int callCount = 0;
+
+  @override
+  Future<Map<String, dynamic>?> getSiteTerrainData(String path) async {
+    final Map<String, dynamic>? response =
+        callCount < _responses.length ? _responses[callCount] : _responses.last;
+    callCount++;
+    return response;
+  }
+}
+
 /// Tests for [GetSiteTerrain.parseProfile], the pure parser that turns the `profile_m` cell
 /// ("b0s0,b0s1,...;b1s0,...", 24 groups of [GetElevation.SAMPLE_DISTANCES.length] samples each)
 /// into a `List<List<int>>`, or null when the row is absent or malformed. No network — this
@@ -234,6 +251,72 @@ void main() {
       await GetSiteTerrain(site: site, api: _FakeApi(body)).fetch();
 
       expect(site.terrainGroundM, 650);
+    });
+  });
+
+  // --- GetSiteTerrain retry: bead 8uq item 4 ---
+  //
+  // Api.getSiteTerrainData collapses every Dio failure (network error, timeout, non-2xx,
+  // including a genuine 404) to null, so a retry cannot distinguish an expected miss from a
+  // real transport failure the way the Java app's GetJSON.requestNotFound can (documented on
+  // GetSiteTerrain._fetchRowWithRetry). It therefore retries on ANY null first response.
+  group('GetSiteTerrain retry (bead 8uq item 4)', () {
+    late Site site;
+
+    setUp(() {
+      PolygonHelper.calculateTerrain = false;
+      site = Site(telco: Telco.Optus, cityDensity: CityDensity.OPEN)
+        ..siteId = '1'
+        ..latitude = -35.28
+        ..longitude = 149.13;
+    });
+
+    tearDown(() {
+      PolygonHelper.calculateTerrain = false;
+    });
+
+    test('a first-attempt failure is retried once and succeeds on the second attempt', () async {
+      final Map<String, dynamic> goodBody = {
+        'restify': {
+          'rows': [
+            {
+              'values': {
+                'site_id': {'value': '1'},
+                'ground_m': {'value': '650'},
+                'bearing_median_m': {'value': List.filled(TerrainHeight.bearings, 600).join(',')},
+              }
+            }
+          ]
+        }
+      };
+      final _SequentialFakeApi api = _SequentialFakeApi([null, goodBody]);
+
+      await GetSiteTerrain(site: site, api: api).fetch();
+
+      expect(api.callCount, 2, reason: 'the failed first attempt must be retried exactly once');
+      expect(site.terrainGroundM, 650, reason: 'the retried response must be applied');
+      expect(site.terrainLoaded, isTrue);
+    });
+
+    test('a failure on both attempts falls back exactly as a single failure would', () async {
+      final _SequentialFakeApi api = _SequentialFakeApi([null, null]);
+
+      await GetSiteTerrain(site: site, api: api).fetch();
+
+      expect(api.callCount, 2, reason: 'exactly one retry -- not an unbounded loop');
+      expect(site.terrainLoaded, isTrue);
+      expect(site.terrainGroundM, isNull);
+    });
+
+    test('a first-attempt success never triggers a retry', () async {
+      final Map<String, dynamic> goodBody = {
+        'restify': {'rowCount': 0}
+      };
+      final _SequentialFakeApi api = _SequentialFakeApi([goodBody, null]);
+
+      await GetSiteTerrain(site: site, api: api).fetch();
+
+      expect(api.callCount, 1, reason: 'a non-null first response must not be retried');
     });
   });
 

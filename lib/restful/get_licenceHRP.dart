@@ -16,6 +16,7 @@ import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/pathloss/terrain_coverage.dart';
+import 'package:phonetowers/helpers/shadow_holes.dart';
 
 typedef void ShowSnackBar({
   required String message,
@@ -47,6 +48,11 @@ class GetLicenceHRP {
   Object? requestKey;
   bool Function()? requestIsCurrent;
   void Function()? onChainFinished;
+  // Item 1 (bead 8uq): every page's shadow-hole contribution, accumulated across the chained
+  // per-page requests and merged (ShadowHoles.mergePages) only once the last page is reached,
+  // instead of each page overwriting device's terrain holes in turn. Shared by reference across
+  // the whole chain, the same way `list` already accumulates polygon points across pages.
+  final List<ShadowHolesPage> terrainPages;
 
   GetLicenceHRP(
       {required this.url,
@@ -58,7 +64,9 @@ class GetLicenceHRP {
       this.cancelToken,
       this.requestKey,
       this.requestIsCurrent,
-      this.onChainFinished});
+      this.onChainFinished,
+      List<ShadowHolesPage>? terrainPages})
+      : terrainPages = terrainPages ?? [];
 
   Future getLicenceHRPData() async {
     //logger.d('get licence HRP url $url');
@@ -118,34 +126,52 @@ class GetLicenceHRP {
 
       int towerHeight = device.getTowerHeight();
 
+      // I2 (bead 8uq): checked both before waiting and again after waking, in both waits
+      // below, so a task the UI or Dio CancelToken has already discarded stops immediately
+      // instead of finishing out its deadline.
+      bool isCancelledNow() => isCancelledFor(
+          cancelTokenCancelled: cancelToken?.isCancelled == true,
+          requestIsCurrentResult: requestIsCurrent?.call());
+
       // The nightly site_terrain row (Task F6) feeds the effective antenna height in BOTH
       // modes, so give it a short bounded wait here regardless of calculateTerrain: most rows
       // answer well within this, and a genuinely absent/slow row must never stall a
       // non-terrain polygon draw. Bounded (not "wait until terrainLoaded") so a request that
       // never even starts (see PolygonHelper.needsGoogleElevation's comment) can't hang this
       // device's polygon forever.
-      final DateTime terrainRowDeadline = DateTime.now().add(const Duration(seconds: 2));
-      while (site.terrainRequested &&
-          !site.terrainLoaded &&
-          DateTime.now().isBefore(terrainRowDeadline)) {
-        await Future.delayed(const Duration(milliseconds: 50));
+      //
+      // I3 (bead 8uq item 3): awaits site.terrainLoadedFuture instead of polling with
+      // Future.delayed in a loop. The future completes exactly where terrainLoaded used to be
+      // set (Site.markTerrainLoaded), so this wakes as soon as the row (or its absence/failure)
+      // is settled instead of at the next 50ms tick.
+      if (site.terrainRequested && !site.terrainLoaded) {
+        if (isCancelledNow()) {
+          return;
+        }
+        await site.terrainLoadedFuture.timeout(const Duration(seconds: 2), onTimeout: () {});
+        if (isCancelledNow()) {
+          return;
+        }
       }
 
       if (PolygonHelper.calculateTerrain) {
         // Wait for the site elevation data to be downloaded (via the served site_terrain
         // profile, or the Google Elevation fallback it starts when no profile arrives).
         // Bounded to 30 seconds so a stuck or never-started download cannot hang this
-        // device's polygon forever.
-        final DateTime elevationDeadline = DateTime.now().add(const Duration(seconds: 30));
-        while (shouldKeepWaitingForElevation(site, DateTime.now(), elevationDeadline)) {
-          if (requestIsCurrent?.call() == false) {
+        // device's polygon forever. I3: awaits site.elevationsFinishedFuture instead of polling.
+        if (!site.finishedDownloadingElevations) {
+          if (isCancelledNow()) {
             return;
           }
-          await Future.delayed(const Duration(milliseconds: 50));
-        }
-        if (!site.finishedDownloadingElevations) {
-          logger.w(
-              'PolygonHelper: GetLicenceHRP: timed out after 30s waiting for elevation data for site ${site.siteId}, device ${device.sddId} — proceeding without terrain');
+          await site.elevationsFinishedFuture
+              .timeout(const Duration(seconds: 30), onTimeout: () {});
+          if (!site.finishedDownloadingElevations) {
+            logger.w(
+                'PolygonHelper: GetLicenceHRP: timed out after 30s waiting for elevation data for site ${site.siteId}, device ${device.sddId} — proceeding without terrain');
+          }
+          if (isCancelledNow()) {
+            return;
+          }
         }
       }
 
@@ -269,20 +295,31 @@ class GetLicenceHRP {
       // the layers sheet / option menu) redraws this device's polygon from cache (the cache
       // path in PolygonHelper.queryForSignalPolygon) with no recomputation, so it would draw it
       // with no holes at all.
+      // Item 1 (bead 8uq): accumulate this page's bearings/coverage into terrainPages, shared
+      // across the whole chained request, and only merge + rebuild the device's holes once the
+      // LAST page (nextPage == null, checked below after this block) is reached. Applying holes
+      // on every page used to mean each page's applyTerrainHoles call overwrote the previous
+      // page's holes outright, so a multi-page response (more sectors than fit in one
+      // _count=360 page) kept only the final page's shadow holes. See ShadowHoles.mergePages.
       if (PolygonHelper.calculateTerrain) {
-        PolygonHelper.applyTerrainHoles(
-          site.getLatLng(),
-          device,
-          bearingsUsed,
-          coverageByRung,
-          (b, km) => travel(site.getLatLng(), b, km),
-        );
+        terrainPages.add(
+            ShadowHolesPage(bearingsUsed: bearingsUsed, coverageByRung: coverageByRung));
       }
 
       device.setBearingToPowerMap(bearingToPower);
 
       //onPostexecute
       NextPage? nextPage = fetchFailed ? null : rawResponse!.restify!.nextPage;
+      if (PolygonHelper.calculateTerrain && nextPage == null) {
+        final ShadowHolesPage merged = ShadowHoles.mergePages(terrainPages);
+        PolygonHelper.applyTerrainHoles(
+          site.getLatLng(),
+          device,
+          merged.bearingsUsed,
+          merged.coverageByRung,
+          (b, km) => travel(site.getLatLng(), b, km),
+        );
+      }
       if (nextPage != null) {
         // Calling new async task to get json for next page. This continuation carries
         // forward this device's contribution to the in-flight guard, so mark that we
@@ -293,6 +330,7 @@ class GetLicenceHRP {
                 device: device,
                 list: list,
                 url: nextPage.href,
+                terrainPages: terrainPages,
                 // Carry "did any page so far have real rows" forward across pagination.
                 // dataFound defaults to false on a fresh instance, and this class only ever
                 // sets it true (never resets it), so without threading it through here, a
@@ -421,6 +459,16 @@ class GetLicenceHRP {
   /// the 30-second timeout boundary is unit-testable without an actual 30-second wait.
   static bool shouldKeepWaitingForElevation(Site site, DateTime now, DateTime deadline) {
     return !site.finishedDownloadingElevations && now.isBefore(deadline);
+  }
+
+  /// Whether the terrain waits in [getLicenceHRPData] should treat this request as cancelled
+  /// (bead 8uq item 2): true once the Dio [CancelToken] has fired, or once [requestIsCurrentResult]
+  /// (the stale-generation check, evaluated by the caller before calling this) says false.
+  /// Extracted as a pure, static function so the cancellation decision is unit-testable without
+  /// standing up a real CancelToken or waiting on a Future.
+  static bool isCancelledFor(
+      {required bool cancelTokenCancelled, bool? requestIsCurrentResult}) {
+    return cancelTokenCancelled || requestIsCurrentResult == false;
   }
 
   // Distance in km

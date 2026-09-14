@@ -172,7 +172,7 @@ class PolygonHelper with ChangeNotifier {
       // Without this, GetLicenceHRP's bounded terrain-mode wait would simply burn its full
       // deadline on every single request for this site, since nothing else was ever going to
       // flip finishedDownloadingElevations. Give up on terrain for this site instead.
-      site.finishedDownloadingElevations = true;
+      site.markElevationsFinished();
       logger.e('PolygonHelper: startGoogleElevation: failed to start for site ${site.siteId}: $e\n$stack');
     }
   }
