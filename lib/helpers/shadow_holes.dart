@@ -5,6 +5,16 @@ import '../pathloss/terrain_coverage.dart';
 /// Returns the point [distanceKm] out from the site along [bearingDegrees].
 typedef PointAt = LatLng Function(double bearingDegrees, double distanceKm);
 
+/// One licence_hrp page's contribution to the shared bearingsUsed / coverageByRung accumulators
+/// [GetLicenceHRP.getLicenceHRPData] builds while walking a (possibly multi-page) response. See
+/// [ShadowHoles.mergePages].
+class ShadowHolesPage {
+  final List<double> bearingsUsed;
+  final List<List<TerrainCoverageResult>> coverageByRung;
+
+  const ShadowHolesPage({required this.bearingsUsed, required this.coverageByRung});
+}
+
 /// Turns the shadow bands [TerrainCoverage] found on each bearing into rings that the map draws
 /// as holes in the coverage polygon (PolygonOptions.addHole). Adjacent bearings whose shadows
 /// overlap in range share one ring, so a valley behind a ridge is one hole rather than a comb of
@@ -67,6 +77,43 @@ class ShadowHoles {
     }
 
     return [for (final run in runs) _ring(bearings, results, run, pointAt)];
+  }
+
+  /// Concatenates every page's bearings and per-rung coverage results, in page order, into the
+  /// single accumulator [buildAllRungs] expects.
+  ///
+  /// **Multi-page hole assembly (bead 8uq item 1).** A licence_hrp response for a site with more
+  /// sectors than fit in one `_count=360` page arrives as several pages, each handled by its own
+  /// chained [GetLicenceHRP.getLicenceHRPData] call. Before this method existed, each page built
+  /// its own `bearingsUsed`/`coverageByRung` from scratch and called
+  /// [PolygonHelper.applyTerrainHoles] directly, so only the LAST page's shadow holes survived —
+  /// every earlier page's holes were silently overwritten (not merged) the moment the next
+  /// page's response was processed. This is a pure function (no Dio/network types) precisely so
+  /// the merge itself — order preserved, every page's rungs concatenated — is unit-testable
+  /// without async plumbing: see `test/helpers/shadow_holes_test.dart`'s `mergePages` group for
+  /// two-page vectors whose rungs must merge into one.
+  ///
+  /// A page whose rung count doesn't match the others is not specially handled here — every page
+  /// is assumed built against the same device and therefore the same rung count, which
+  /// [GetLicenceHRP.getLicenceHRPData] guarantees since the polygon-point list and rung count are
+  /// fixed for the whole chained request. [buildAllRungs]'s own length guard still applies per
+  /// rung once merged.
+  static ShadowHolesPage mergePages(List<ShadowHolesPage> pages) {
+    final List<double> bearings = [];
+    int rungs = 0;
+    for (final page in pages) {
+      if (page.coverageByRung.length > rungs) rungs = page.coverageByRung.length;
+    }
+    final List<List<TerrainCoverageResult>> coverageByRung = [
+      for (int r = 0; r < rungs; r++) <TerrainCoverageResult>[]
+    ];
+    for (final page in pages) {
+      bearings.addAll(page.bearingsUsed);
+      for (int r = 0; r < page.coverageByRung.length; r++) {
+        coverageByRung[r].addAll(page.coverageByRung[r]);
+      }
+    }
+    return ShadowHolesPage(bearingsUsed: bearings, coverageByRung: coverageByRung);
   }
 
   /// One entry per rung; a rung whose result list length differs from bearings gets an empty list.
