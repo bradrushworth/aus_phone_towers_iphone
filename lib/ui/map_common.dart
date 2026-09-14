@@ -566,6 +566,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(999),
               onTap: () => LegendSheet.show(context),
               child: Container(
+                // F7 (accessibility parity port, Android PR java#107): 48dp minimum touch
+                // target on the persistent Legend chip.
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                alignment: Alignment.center,
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.secondaryContainer,
@@ -1681,14 +1685,18 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // drag handle
-                Container(
-                  width: 40,
-                  height: 5,
-                  margin: EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(bc).colorScheme.outline,
-                    borderRadius: BorderRadius.circular(3),
+                // drag handle — F7 (accessibility parity port, Android PR java#107): purely
+                // decorative, excluded from the semantics tree so screen readers don't stop on
+                // an unlabelled shape.
+                ExcludeSemantics(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    margin: EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(bc).colorScheme.outline,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
                 // header: name + telco chip
@@ -1971,6 +1979,9 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                   children: [
                     Expanded(
                       child: FilledButton.tonal(
+                        // F7 (accessibility parity port, Android PR java#107): 48dp minimum
+                        // touch target on the sheet's action buttons.
+                        style: FilledButton.styleFrom(minimumSize: Size(0, 48)),
                         onPressed: () => launchDirections(site),
                         child: AutoSizeText('Directions', maxLines: 1),
                       ),
@@ -1978,6 +1989,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                     SizedBox(width: 8),
                     Expanded(
                       child: FilledButton.tonal(
+                        style: FilledButton.styleFrom(minimumSize: Size(0, 48)),
                         onPressed: () => launchURL(site.siteId!),
                         child: AutoSizeText('ACMA ↗', maxLines: 1),
                       ),

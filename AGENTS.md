@@ -6,6 +6,36 @@ iPhone/Flutter repository. The Android project (`aus_phone_towers_java`) has its
 app's F-track and the web-adaptivity requirements) lives in that repo at
 `docs/ui-overhaul-plan.md`; the corresponding beads epic here is `aptios-uh4`.
 
+## F-track parity audit (2026-09-15, bead aptios-uh4)
+Commit `876fe42` ported Android's F0-F6 UI overhaul phases to this app in one pass. This note
+records a follow-up audit against three Android UI PRs opened the same day this app's remainder
+work started (java#98 Settings screen, java#101 search Clear/case-insensitive recents, java#107
+touch targets/decorative semantics/reduce motion) and what changed here as a result:
+- **java#98 (Settings screen)**: Android moved Settings from a bottom sheet to a real
+  `PreferenceFragmentCompat` screen; no preference *label* changed (checked the PR's `strings.xml`
+  diff). This app's Settings sheet (`ui/widgets/layers_settings_sheets.dart`) is unaffected —
+  it's still a sheet on this platform, deliberately (iOS/web have no `PreferenceFragmentCompat`
+  equivalent), and no wording needs to follow.
+- **java#101 (search Clear + case-insensitive recents)**: ported. `helpers/recent_searches.dart`
+  mirrors Android's `utilities/RecentSearches` (`withQuery`/`cleared`/`excluding`, case-insensitive
+  de-dup, 10-entry cap); the search sheet gained a "Clear" link next to "RECENT SEARCHES".
+- **java#107 (48dp touch targets, decorative-view semantics, reduce motion)**: ported the parts
+  that apply to this platform — 48dp minimum touch targets on the Legend chip, the Filters
+  sheet's Advanced expander, and the site sheet's Directions/ACMA buttons; `ExcludeSemantics` on
+  every sheet's decorative drag handle and the legend's colour swatches (this app's `Container`
+  widgets carry no semantics node by default unless something adds one, so most of these are
+  defensive/documenting rather than fixing a live screen-reader regression — unlike Android's
+  `View`, which is semantics-visible by default); and a reduce-motion check
+  (`helpers/camera_motion.dart`, gated on `MediaQuery.disableAnimations`) on the search-result
+  camera move, which now actually animates (`animateCamera`) instead of always jumping
+  (`moveCamera`) as it silently did before this audit.
+- **Not ported (deliberately out of scope for this bead)**: the Android compass (java#105) and
+  Lock Map/Polygon Precision (java#106, a *reverse* port — Android copying a feature this app
+  already had) are follow-ups, not F-track parity gaps.
+- **Known gap, not fixed here**: `docs/user-guide.html` never got the F6 "Search that answers"
+  bullet that `docs/USER_GUIDE.md` has carried since `876fe42` — the two docs were already out of
+  sync before this audit; filed as a follow-up rather than expanded here.
+
 ## Project basics
 - Flutter app (Dart), targeting iOS (primary) and Android (secondary). Package: `phonetowers`.
 - State management: `provider` (`ChangeNotifier` singletons — `SiteHelper`, `PurchaseHelper`,
