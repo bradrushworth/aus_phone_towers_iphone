@@ -31,7 +31,10 @@ Version 1.14 ports the Android app's interface overhaul:
   **Directions** and **ACMA** buttons.
 - **Search that answers** — searching now opens a **results list ranked nearest-first** (name,
   state/postcode, distance). Tap a result to fly there and open its details; your last 10
-  searches are remembered. The map no longer clears or zooms out to all of Australia.
+  searches are remembered (searching the same name again, in any letter case, reuses its spot
+  instead of listing it twice) and a **Clear** link empties the list. The map no longer clears
+  or zooms out to all of Australia, and the fly-to itself is skipped in favour of an instant
+  jump when your system's reduce-motion setting is on.
 - **Map legend** — the persistent **ⓘ Legend** chip (top-left) explains pin colours, coverage
   shading and ring labels.
 - **Dark mode** — the app now follows your system light/dark setting, including a dark map style

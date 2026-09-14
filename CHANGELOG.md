@@ -8,6 +8,31 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Added
+- **Search results now show a Clear action for recent searches, and repeating a search in a
+  different letter case reuses its spot.** The F6 search sheet (ranked-by-distance results, no
+  continent-wide camera jump, recent searches) already shipped; this adds the "Clear" link next
+  to the recent-searches list and makes the de-duplication case-insensitive (searching "Dickson"
+  again after "dickson" no longer lists it twice) — mirroring the Android app's Phase 6 follow-up
+  (PR java#101). The list management now lives in a pure, unit-tested `RecentSearches` class.
+
+### Changed
+- **Touch targets on the Legend chip, the Filters sheet's Advanced expander, and the site
+  sheet's Directions/ACMA buttons now meet the 48dp minimum.** Their visible size and wording are
+  unchanged; only the tappable area grew, mirroring the Android app's Phase 7 touch-target pass
+  (PR java#107). The Driving indicator and filter chips are left alone — the indicator isn't
+  tappable and Material's chip size is deliberately compact on both platforms.
+- **Decorative drag handles and the legend's colour swatches are excluded from the screen-reader
+  tree.** Their meaning is already carried by the label beside them, so VoiceOver/TalkBack skips
+  straight to it instead of announcing an unlabelled shape.
+- **Tapping a search result now flies the camera there, and skips the animation when your
+  system's reduce-motion setting is on.** Previously the camera always jumped instantly with no
+  animation at all; it now animates like the Android app's fly-to, gated on
+  `MediaQuery.disableAnimations` the same way Android gates on "Remove animations" (PR java#107).
+- No changes to data, matching, or accuracy — this is a search/accessibility parity pass only.
+
 ## [1.14.23+158] — 2026-09-14
 
 ### Changed

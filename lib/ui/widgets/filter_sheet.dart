@@ -304,9 +304,17 @@ class FilterSheet {
               }),
             ]),
             // Advanced: multiplex
+            // F7 (accessibility parity port, Android PR java#107): a real toggle needs a 48dp
+            // touch target like any other tappable row, not just its line of text.
             InkWell(
               onTap: () => setSheetState(() => advancedOpen = !advancedOpen),
-              child: title('Advanced  ${advancedOpen ? '▴' : '▾'}'),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: title('Advanced  ${advancedOpen ? '▴' : '▾'}'),
+                ),
+              ),
             ),
             if (advancedOpen) ...[
               title('Multiplex'),
@@ -345,14 +353,19 @@ class FilterSheet {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 5,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(
-                      color: Theme.of(bc).colorScheme.outline,
-                      borderRadius: BorderRadius.circular(3),
+                // F7 (accessibility parity port, Android PR java#107): purely decorative —
+                // excluded from the semantics tree so screen readers don't stop on an
+                // unlabelled shape.
+                ExcludeSemantics(
+                  child: Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(bc).colorScheme.outline,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
                   ),
                 ),
