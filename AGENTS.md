@@ -75,9 +75,13 @@ dB. It is ported from the Java Android app's `au.com.bitbot.phonetowers.pathloss
   user-to-tower distance; it was superseded by the central fit.
 
 ### REST endpoint
-- Coefficients are fetched from `https://api.bitbot.com.au/api/towers/pathloss_coefficients/?_view=json&_expand=no&_count=100`
+- Coefficients are fetched from `https://api.bitbot.com.au/api/towers/pathloss_coefficients/?_view=json&_expand=no&_count=100`,
+  paging through RESTify's `nextPage.href` link (same pattern as `GetLicenceHRP`/`GetDevices`)
+  until every row has been collected — a stratum published past row 100 is no longer silently
+  dropped. A full page is logged, since it is the direct evidence more rows may follow.
 - The Java Android app trains the coefficients and writes them to the MySQL `pathloss_coefficients`
-  table. This iPhone app only reads them — it does not train.
+  table. This iPhone app only reads them — it does not train. As of 2026-09-15 the Android app's
+  own fetch (`GetPathLossCoefficients.java`) still has no equivalent paging — see aptios-4uh.
 - REST client: `lib/restful/get_path_loss_coefficients.dart`
 
 ### Wiring
