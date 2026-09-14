@@ -8,6 +8,17 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Path-loss coefficients are no longer capped at 100 rows.** The startup fetch that loads the
+  server's trained log-distance coefficients now follows RESTify's `nextPage` link and collects
+  every page, the same way the licence/antenna endpoints already do, instead of stopping after
+  a single `_count=100` page. Only 22 coefficient groups existed when this was first written, so
+  nothing was visibly wrong yet — but any stratum published past row 100 would have vanished
+  silently, with those sites falling back to the less accurate analytic Okumura-Hata model and
+  no error shown. A full page is now also logged, as a signal that pagination is doing real work.
+
 ## [1.14.23+158] — 2026-09-14
 
 ### Changed
