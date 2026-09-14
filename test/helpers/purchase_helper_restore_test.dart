@@ -252,6 +252,93 @@ void main() {
     });
   });
 
+  group('yearly_adfree_pass (bead aptios-589)', () {
+    test('yearlySku falls back to the legacy consumable when the store has not returned the pass',
+        () async {
+      PurchaseHelper().debugProducts = [];
+      expect(PurchaseHelper().yearlySku, PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR);
+    });
+
+    test('yearlySku prefers the pass once the store returns it', () async {
+      PurchaseHelper().debugProducts = [
+        ProductDetails(
+          id: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS,
+          title: 'One Year Ad Free',
+          description: '',
+          price: 'A\$14.99',
+          rawPrice: 14.99,
+          currencyCode: 'AUD',
+        ),
+      ];
+      expect(PurchaseHelper().yearlySku, PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS);
+    });
+
+    test('initiatePurchase refuses to sell the pass again when the legacy yearly is active',
+        () async {
+      PurchaseHelper().isSubscribed = true;
+      PurchaseHelper().isSubscribedPermanently = false;
+
+      await PurchaseHelper().initiatePurchase(sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS);
+
+      expect(messages, hasLength(1));
+      expect(messages.single.toLowerCase(), contains('already'));
+    });
+
+    test('delivering the pass grants ad-free and thanks the user, same as the legacy consumable',
+        () async {
+      final String justNow = DateTime.now().millisecondsSinceEpoch.toString();
+      await PurchaseHelper().deliverProduct(
+        _purchase(PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS,
+            status: PurchaseStatus.purchased, transactionDateMs: justNow),
+        <String, Object>{},
+      );
+
+      expect(PurchaseHelper().isSubscribed, isTrue);
+      expect(PurchaseHelper().isSubscribedPermanently, isFalse);
+      expect(messages.where((m) => m.startsWith('Thanks')), hasLength(1));
+    });
+
+    test('an expired pass is dropped from the inventory so it can be bought again', () async {
+      const int expiredPurchaseMs = 1;
+      await PurchaseHelper().deliverProduct(
+        _purchase(PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS,
+            status: PurchaseStatus.purchased, transactionDateMs: expiredPurchaseMs.toString()),
+        <String, Object>{},
+      );
+
+      // The transaction date is 1970 - a year and change before "now" - so the entitlement it
+      // grants has already lapsed by the time _hasPurchase evaluates it.
+      expect(PurchaseHelper().isSubscribed, isFalse);
+
+      // With the lapsed pass cleared out of _purchases, buying it again must not be refused as
+      // already-owned.
+      await PurchaseHelper().initiatePurchase(sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS);
+      expect(messages.any((m) => m.toLowerCase().contains('already')), isFalse);
+    });
+
+    test('an active pass plus an expired legacy consumable: still subscribed overall, and the '
+        'expired legacy id is dropped from the inventory even though ad-free stays granted',
+        () async {
+      final int now = DateTime.now().millisecondsSinceEpoch;
+      await PurchaseHelper().handlePurchaseUpdates([
+        _purchase(PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
+            status: PurchaseStatus.purchased, transactionDateMs: '1'),
+        _purchase(PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS,
+            status: PurchaseStatus.purchased, transactionDateMs: now.toString()),
+      ]);
+
+      // The active pass carries the entitlement even though the legacy consumable it arrived
+      // alongside had already lapsed.
+      expect(PurchaseHelper().isSubscribed, isTrue);
+
+      // Any yearly purchase is refused while an active yearly entitlement is held (the customer
+      // does not need the discontinued product once they hold the replacement) — the guard is
+      // sku-agnostic for "yearly", not just for the id passed in.
+      await PurchaseHelper().initiatePurchase(sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR);
+      expect(messages.any((m) => m.toLowerCase().contains('already')), isTrue);
+    });
+  });
+
   group('revocations on the live purchase stream', () {
     test('a refund notification withdraws the entitlement instead of re-granting it',
         () async {

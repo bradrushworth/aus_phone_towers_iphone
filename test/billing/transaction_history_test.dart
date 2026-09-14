@@ -127,6 +127,23 @@ void main() {
       expect(restores.single.transactionDate, '1000');
     });
 
+    test('the yearly_adfree_pass Non-Renewing Subscription restores like any other ad-free id',
+        () {
+      // bead aptios-589: the pass is not a consumable, so it would normally already be found by
+      // the plugin's own Transaction.currentEntitlements-based restore — this only confirms the
+      // history scan treats it the same as the other ad-free ids rather than ignoring it.
+      final List<PurchaseDetails> restores = adFreeRestoresFromHistory([
+        _tx('30', 'yearly_adfree_pass', 3000, type: 'Non-Renewing Subscription'),
+      ]);
+      expect(restores, hasLength(1));
+      expect(restores.single.productID, 'yearly_adfree_pass');
+    });
+
+    test('kAdFreeProductIds covers the legacy consumable, its pass replacement and permanent',
+        () {
+      expect(kAdFreeProductIds, {'yearly_adfree', 'yearly_adfree_pass', 'permanent_adfree'});
+    });
+
     test('yearly and permanent are restored independently', () {
       final List<PurchaseDetails> restores = adFreeRestoresFromHistory([
         _tx('10', 'yearly_adfree', 1000),

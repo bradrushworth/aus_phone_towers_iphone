@@ -8,6 +8,22 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **"1 Year Ad-Free" now has a proper replacement product ready for the App Store.** Until now the
+  yearly pass (`yearly_adfree`) was configured in App Store Connect as a Consumable — a product
+  type Apple lets the store sell over and over, and one that "Restore Purchases" can never find
+  (this caused a real customer to be charged three times, fixed for existing owners in 1.14.17).
+  A product's type cannot be changed after creation, so the app now also knows about a second
+  product id, `yearly_adfree_pass`, meant to be created as a Non-Renewing Subscription — a type
+  that restores correctly and can be bought again once the year is up without any special-casing.
+  The app buys and shows the price for whichever of the two ids the App Store is currently selling,
+  and continues to honour the old id for anyone who already owns it, so nothing changes for
+  existing customers and nothing breaks before the new product exists in the App Store. Google
+  Play is not affected — see Open Questions in the PR for what still needs to happen in App Store
+  Connect before this ships.
+
 ## [1.14.23+158] — 2026-09-14
 
 ### Changed

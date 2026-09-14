@@ -7,6 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// This is a seed only: [PurchaseHelper._hasPurchase] always re-evaluates
 /// against the store once it responds and overwrites this cache accordingly,
 /// so a refunded/expired purchase still re-shows ads once the store answers.
+///
+/// The cache is deliberately product-id agnostic: it records only the entitlement decision
+/// (`evaluateEntitlements`'s [PurchaseEntitlement]), not which SKU produced it. Since
+/// `yearly_adfree_pass` (bead `aptios-589`) grants the same yearly entitlement as the legacy
+/// `yearly_adfree` consumable via the same purchase-date + one-year expiry math, a cold start
+/// re-shows/hides ads correctly regardless of which of the two the customer holds.
 class EntitlementCache {
   static const String _kIsSubscribed = 'cached_is_subscribed';
   static const String _kIsSubscribedPermanently = 'cached_is_subscribed_permanently';

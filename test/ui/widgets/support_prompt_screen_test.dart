@@ -80,6 +80,19 @@ void main() {
       expect(find.text(Strings.donateMediumName), findsOneWidget);
     });
 
+    // bead aptios-589: once App Store Connect has yearly_adfree_pass, the button must price and
+    // buy that id instead of the legacy consumable it replaces.
+    testWidgets('prices the yearly_adfree_pass once the store returns it, not the legacy consumable',
+        (tester) async {
+      PurchaseHelper().debugProducts = [
+        _product(PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR, '\$4.56'),
+        _product(PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR_PASS, '\$5.67'),
+      ];
+      await pump(tester);
+      expect(find.text('${Strings.remove_ads_year_name} (\$5.67)'), findsOneWidget);
+      expect(find.text('${Strings.remove_ads_year_name} (\$4.56)'), findsNothing);
+    });
+
     // The store diagnostics exist to attribute a price that disagrees with the store's own
     // purchase sheet — to a storefront or currency difference — rather than leaving it to be
     // guessed at. They are diagnostic, so they must stay out of the way of everyone else.

@@ -198,7 +198,9 @@ enum without also building the underlying feature.
 
 ## Ads and billing (lib/helpers/ads_helper.dart, lib/helpers/purchase_helper.dart)
 Non-subscribed users see an inline adaptive AdMob banner at the bottom of the map; purchasing
-`yearly_adfree` or `permanent_adfree` (via `in_app_purchase`/`in_app_purchase_storekit`) removes it.
+`yearly_adfree`/`yearly_adfree_pass` or `permanent_adfree` (via
+`in_app_purchase`/`in_app_purchase_storekit`) removes it. See "App Store Connect product types"
+below for why there are two yearly ids.
 
 ### Ads
 - **`AdsHelper`** (singleton): loads the banner via `AdSize.getInlineAdaptiveBannerAdSize`, whose
@@ -253,22 +255,54 @@ Non-subscribed users see an inline adaptive AdMob banner at the bottom of the ma
   important fact about iOS billing here. The App Store sells a consumable again every time (a
   customer paid three times), and StoreKit 2's restore — the plugin walks
   `Transaction.currentEntitlements` — never returns one. Product types cannot be changed after
-  creation; the long-term fix (bead `aptios-589`) is a new product id for the yearly pass. Until
-  then:
+  creation, so the fix (bead `aptios-589`) is a second product id, `yearly_adfree_pass`, typed as
+  a **Non-Renewing Subscription** — restorable, and re-purchasable once its year is up because
+  StoreKit (unlike a non-consumable) does not block repurchase of a non-renewing subscription.
+  `yearly_adfree` stays wired up (existing owners keep working) but hidden from sale once the
+  pass exists.
+  - **Both ids are honoured everywhere ad-free is decided.** `evaluateEntitlements`
+    (`lib/helpers/entitlement_evaluator.dart`) evaluates `yearly_adfree` and `yearly_adfree_pass`
+    independently — each with the same purchase-date + one-year expiry math, since a Non-Renewing
+    Subscription has no server-side "current" state of its own and StoreKit hands the transaction
+    back like any other owned purchase, leaving expiry entirely to the app — then reports whichever
+    is active and expires later as the entitlement (a customer can hold one expired and one active
+    at once, e.g. a lapsed old consumable next to a freshly bought pass).
+    `PurchaseEntitlement.expiredYearlyProductIds` lists every expired id (not just one), and
+    `PurchaseHelper._hasPurchase()` finishes (if still pending) and drops each from `_purchases` so
+    it can be sold again. `kAdFreeProductIds` (`lib/billing/transaction_history.dart`) includes
+    both ids, so the transaction-history restore scan below and `initiatePurchase`'s
+    already-owned guard cover the pass too. `EntitlementCache` itself stays product-id agnostic —
+    it only ever records the evaluated decision, not which SKU produced it.
+  - **Which id gets sold**: `PurchaseHelper.yearlySku` returns `yearly_adfree_pass` once the store
+    has actually returned it in a product query (i.e. the owner created it in App Store Connect
+    and it cleared for sale) and falls back to `yearly_adfree` until then, so purchases keep
+    working before the owner's App Store Connect step. `SupportPromptScreen`'s yearly button buys
+    and prices whatever `yearlySku` currently returns — it never hardcodes an id.
+    `yearly_adfree_pass` is only added to the product query set on iOS (`Platform.isIOS`): it will
+    never exist on Google Play, so querying for it there would just be permanent "not found" log
+    noise for no benefit.
   - `PurchaseHelper.restorePurchases()` follows the plugin's restore with a scan of
     `Transaction.all` (`SK2Transaction.transactions()`), reduced by the pure
     `adFreeRestoresFromHistory` (`lib/billing/transaction_history.dart`, tested in
     `test/billing/transaction_history_test.dart`) to the newest un-revoked transaction per
-    ad-free SKU and delivered through the normal restore path.
+    ad-free SKU (all three ids) and delivered through the normal restore path.
     `SKIncludeConsumableInAppPurchaseHistory` in `ios/Runner/Info.plist` is what makes finished
-    consumables appear there on iOS 18+ — do not remove it. Below iOS 18 a finished consumable is
-    in no StoreKit list at all, so the history is not treated as authoritative and
-    `EntitlementCache` is left alone.
+    consumables appear there on iOS 18+ — do not remove it (this still matters for `yearly_adfree`
+    holdouts; `yearly_adfree_pass`, not being a consumable, is expected to already surface through
+    the plugin's normal `Transaction.currentEntitlements`-based restore without needing this
+    scan). Below iOS 18 a finished consumable is in no StoreKit list at all, so the history is not
+    treated as authoritative and `EntitlementCache` is left alone.
   - When restore *and* history come back empty and authoritative, `_hasPurchase()` runs against
     what the session holds and clears a stale cache (refunds, another Apple ID). A failure on
     either path leaves the cache alone. `restoreBatchTimeout` bounds the wait for the plugin's
     asynchronous restored batch; `initStoreInfo` runs restore and `_getProducts()` concurrently
     so prices never queue behind that wait.
+  - **Google Play is not affected by any of this.** The Android build buys ad-free products with
+    `buyNonConsumable`, which the code comment there notes means they are "acknowledged but never
+    consumed" — Google Play's Billing Library returns every acknowledged, un-consumed managed
+    product from `queryPurchasesAsync` regardless of age, so there is no Play-side equivalent of
+    "a consumable is invisible to restore". No new Android product id was created or is needed;
+    `yearly_adfree` on Android is untouched by this bead.
   - Refunds: StoreKit 2 re-emits a revoked transaction on `Transaction.updates` and the plugin
     forwards it as `purchased`; `StoreKitTransactionJson.isRevoked` on
     `verificationData.localVerificationData` is the only tell. `_listenToPurchaseUpdated`
