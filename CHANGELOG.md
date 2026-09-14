@@ -8,6 +8,18 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **The EIRP-to-signal-power constant chain now has named, documented constants instead of
+  unlabelled numbers.** The +3, gain-2.15, -41.7 and +13.5 dB terms in
+  DeviceDetails.getPowerAtBearing are now eirpHrpAgreementDb, dbiToDbdDb, rsrpConversionDb and
+  omniCalibrationDb, each documented with the live-data evidence behind its value. A new
+  widebandToRsrpConversionDb helper makes the theoretical, bandwidth-aware RSRP conversion
+  explicit and testable, alongside a note on why the empirically calibrated constant is used
+  instead (see bead aptios-6i0). This is a legibility change only - predicted signal is unchanged
+  to the tenth of a dB.
+
 ## [1.14.23+158] — 2026-09-14
 
 ### Changed
