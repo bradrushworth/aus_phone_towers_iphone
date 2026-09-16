@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.15.0+159] — 2026-09-16
 
 ### Fixed
 - **Path-loss coefficients are no longer capped at 100 rows.** The startup fetch that loads the
