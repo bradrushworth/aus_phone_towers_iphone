@@ -31,16 +31,20 @@ class LegendSheet {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 20,
-                    height: 20,
-                    margin: const EdgeInsets.only(right: 12, top: 1),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: outlineOnly ? Colors.transparent : colour,
-                      border: outlineOnly
-                          ? Border.all(color: colour.withValues(alpha: 1), width: 2.5)
-                          : null,
+                  // F7 (accessibility parity port, Android PR java#107): decorative — the label
+                  // beside it already states what the colour means.
+                  ExcludeSemantics(
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      margin: const EdgeInsets.only(right: 12, top: 1),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: outlineOnly ? Colors.transparent : colour,
+                        border: outlineOnly
+                            ? Border.all(color: colour.withValues(alpha: 1), width: 2.5)
+                            : null,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -71,14 +75,19 @@ class LegendSheet {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(bc).colorScheme.outline,
-                    borderRadius: BorderRadius.circular(3),
+              // F7 (accessibility parity port, Android PR java#107): purely decorative —
+              // excluded from the semantics tree so screen readers don't stop on an unlabelled
+              // shape.
+              ExcludeSemantics(
+                child: Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(bc).colorScheme.outline,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
               ),

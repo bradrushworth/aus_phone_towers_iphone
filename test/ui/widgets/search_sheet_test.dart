@@ -80,4 +80,29 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(requestedGeohash, 'r3dp4'); // the tile still downloads without a camera
   });
+
+  // F6 parity with the Android search sheet's "Clear" action (PR java#101).
+  testWidgets('Clear removes the recent-searches list without closing the sheet',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'recentSearches': '["Dickson","Reid"]'});
+
+    await open(tester, [result('1', 'Telstra Site 490 Northbourne Ave')]);
+
+    expect(find.text('RECENT SEARCHES'), findsOneWidget);
+    expect(find.text('Dickson'), findsOneWidget);
+    expect(find.text('Reid'), findsOneWidget);
+
+    await tester.tap(find.text('Clear'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('RECENT SEARCHES'), findsNothing);
+    expect(find.text('Dickson'), findsNothing);
+    expect(find.text('Reid'), findsNothing);
+    // The sheet itself is still open — only the recents section disappears.
+    expect(find.text('Telstra Site 490 Northbourne Ave'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final stored = await SearchHelper.getRecentSearches();
+    expect(stored, isEmpty);
+  });
 }

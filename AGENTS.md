@@ -6,6 +6,36 @@ iPhone/Flutter repository. The Android project (`aus_phone_towers_java`) has its
 app's F-track and the web-adaptivity requirements) lives in that repo at
 `docs/ui-overhaul-plan.md`; the corresponding beads epic here is `aptios-uh4`.
 
+## F-track parity audit (2026-09-15, bead aptios-uh4)
+Commit `876fe42` ported Android's F0-F6 UI overhaul phases to this app in one pass. This note
+records a follow-up audit against three Android UI PRs opened the same day this app's remainder
+work started (java#98 Settings screen, java#101 search Clear/case-insensitive recents, java#107
+touch targets/decorative semantics/reduce motion) and what changed here as a result:
+- **java#98 (Settings screen)**: Android moved Settings from a bottom sheet to a real
+  `PreferenceFragmentCompat` screen; no preference *label* changed (checked the PR's `strings.xml`
+  diff). This app's Settings sheet (`ui/widgets/layers_settings_sheets.dart`) is unaffected —
+  it's still a sheet on this platform, deliberately (iOS/web have no `PreferenceFragmentCompat`
+  equivalent), and no wording needs to follow.
+- **java#101 (search Clear + case-insensitive recents)**: ported. `helpers/recent_searches.dart`
+  mirrors Android's `utilities/RecentSearches` (`withQuery`/`cleared`/`excluding`, case-insensitive
+  de-dup, 10-entry cap); the search sheet gained a "Clear" link next to "RECENT SEARCHES".
+- **java#107 (48dp touch targets, decorative-view semantics, reduce motion)**: ported the parts
+  that apply to this platform — 48dp minimum touch targets on the Legend chip, the Filters
+  sheet's Advanced expander, and the site sheet's Directions/ACMA buttons; `ExcludeSemantics` on
+  every sheet's decorative drag handle and the legend's colour swatches (this app's `Container`
+  widgets carry no semantics node by default unless something adds one, so most of these are
+  defensive/documenting rather than fixing a live screen-reader regression — unlike Android's
+  `View`, which is semantics-visible by default); and a reduce-motion check
+  (`helpers/camera_motion.dart`, gated on `MediaQuery.disableAnimations`) on the search-result
+  camera move, which now actually animates (`animateCamera`) instead of always jumping
+  (`moveCamera`) as it silently did before this audit.
+- **Not ported (deliberately out of scope for this bead)**: the Android compass (java#105) and
+  Lock Map/Polygon Precision (java#106, a *reverse* port — Android copying a feature this app
+  already had) are follow-ups, not F-track parity gaps.
+- **Known gap, not fixed here**: `docs/user-guide.html` never got the F6 "Search that answers"
+  bullet that `docs/USER_GUIDE.md` has carried since `876fe42` — the two docs were already out of
+  sync before this audit; filed as a follow-up rather than expanded here.
+
 ## Project basics
 - Flutter app (Dart), targeting iOS (primary) and Android (secondary). Package: `phonetowers`.
 - State management: `provider` (`ChangeNotifier` singletons — `SiteHelper`, `PurchaseHelper`,
@@ -138,6 +168,47 @@ coverage ring, i.e. how many points it has.
   path (`map_common.dart` → `queryForSignalPolygon(site, false, false, ...)`) does **not** use this
   cache, so tapping a tower after changing precision always reflects the new setting.
 
+## Terrain awareness (site_terrain, effective height, coverage intervals, bead 8uq)
+Mirrors the Java app's `au.com.bitbot.phonetowers.utilities.ShadowHoles` /
+`restful/GetLicenceHRP` / `restful/GetSiteTerrain` / `model/Site` (see that repo's AGENTS.md
+"Terrain awareness" section for the shared design). `restful/get_site_terrain.dart` fetches the
+nightly `site_terrain` row per site (both modes); `Site.applyTerrain` installs ground/medians
+and, with a profile, the 24 x 19 samples into the elevation map. Terrain mode:
+`pathloss/terrain_coverage.dart`'s `TerrainCoverage.evaluate` per bearing (outer radius + shadow
+bands), `helpers/shadow_holes.dart`'s `ShadowHoles` turns the bands into
+`PolygonOptions.addHole` rings via `ShadowHoles.buildAllRungs`; holes live on `DeviceDetails` per
+rung and are only cleared/rebuilt in terrain mode.
+
+- **Multi-page hole assembly (bead 8uq item 1).** A licence_hrp response wider than one
+  `_count=360` page is fetched as several pages, each its own chained
+  `GetLicenceHRP.getLicenceHRPData` call. Each page's `bearingsUsed`/`coverageByRung` is appended
+  to a `List<ShadowHolesPage> terrainPages` shared by reference across the whole chain (the same
+  way the polygon point `list` already accumulates); `PolygonHelper.applyTerrainHoles` is called
+  exactly once, on `ShadowHoles.mergePages(terrainPages)`, only when the last page is reached
+  (`nextPage == null`). Calling it per page — the previous behaviour — overwrote every earlier
+  page's holes with the last page's alone. `mergePages` is pure (order-preserving concatenation
+  per rung); see `test/helpers/shadow_holes_test.dart`'s `mergePages` tests for two-page vectors.
+- **Nothing waits forever, and cancellation is honoured (bead 8uq items 2–3).** Both bounded
+  waits in `GetLicenceHRP.getLicenceHRPData` (≤ 2 s for the terrain row, ≤ 30 s for elevations)
+  `await` a `Completer`-backed future — `Site.terrainLoadedFuture` / `Site.elevationsFinishedFuture`,
+  completed by `Site.markTerrainLoaded()` / `Site.markElevationsFinished()` — instead of polling
+  with `Future.delayed` in a loop, and check `GetLicenceHRP.isCancelledFor` (the Dio `CancelToken`
+  OR the stale-generation `requestIsCurrent` check) both immediately before starting to wait and
+  again right after waking, so a task the app has already discarded stops right away instead of
+  finishing out its deadline. Every place that used to set `terrainLoaded`/
+  `finishedDownloadingElevations` directly now goes through one of the two `mark*` methods, so the
+  future always tracks the flag. `Completer.complete()` throws if called twice (unlike Java's
+  idempotent `CountDownLatch.countDown()`), so both `mark*` methods guard with `isCompleted`.
+- **Retry once on a failed site_terrain fetch (bead 8uq item 4).** `GetSiteTerrain.fetch()`
+  retries the request once, after `retryBackoffMs` (500 ms), if the first attempt returned no
+  data. Unlike the Java app, `Api.getSiteTerrainData` collapses every Dio failure — network
+  error, timeout, non-2xx, including a genuine 404 for a row not yet computed — to `null`, so
+  this app cannot distinguish an expected miss from a real transport failure the way Java's
+  `GetJSON.requestNotFound` can; it retries on any `null` first response rather than adding that
+  distinction to `Api`. Without this, a single transport hiccup left `site.terrainRequested` true
+  forever — nothing ever re-requests the row for that site — so it drew on the antenna height
+  alone for the app's whole lifetime.
+
 ## Network type classification (lib/model/device_detail.dart)
 `DeviceDetails.getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId)` classifies
 one ACMA licence row from its own emission designator + frequency + telco — **not** stored, always
@@ -202,7 +273,9 @@ enum without also building the underlying feature.
 
 ## Ads and billing (lib/helpers/ads_helper.dart, lib/helpers/purchase_helper.dart)
 Non-subscribed users see an inline adaptive AdMob banner at the bottom of the map; purchasing
-`yearly_adfree` or `permanent_adfree` (via `in_app_purchase`/`in_app_purchase_storekit`) removes it.
+`yearly_adfree`/`yearly_adfree_pass` or `permanent_adfree` (via
+`in_app_purchase`/`in_app_purchase_storekit`) removes it. See "App Store Connect product types"
+below for why there are two yearly ids.
 
 ### Ads
 - **`AdsHelper`** (singleton): loads the banner via `AdSize.getInlineAdaptiveBannerAdSize`, whose
@@ -257,22 +330,54 @@ Non-subscribed users see an inline adaptive AdMob banner at the bottom of the ma
   important fact about iOS billing here. The App Store sells a consumable again every time (a
   customer paid three times), and StoreKit 2's restore — the plugin walks
   `Transaction.currentEntitlements` — never returns one. Product types cannot be changed after
-  creation; the long-term fix (bead `aptios-589`) is a new product id for the yearly pass. Until
-  then:
+  creation, so the fix (bead `aptios-589`) is a second product id, `yearly_adfree_pass`, typed as
+  a **Non-Renewing Subscription** — restorable, and re-purchasable once its year is up because
+  StoreKit (unlike a non-consumable) does not block repurchase of a non-renewing subscription.
+  `yearly_adfree` stays wired up (existing owners keep working) but hidden from sale once the
+  pass exists.
+  - **Both ids are honoured everywhere ad-free is decided.** `evaluateEntitlements`
+    (`lib/helpers/entitlement_evaluator.dart`) evaluates `yearly_adfree` and `yearly_adfree_pass`
+    independently — each with the same purchase-date + one-year expiry math, since a Non-Renewing
+    Subscription has no server-side "current" state of its own and StoreKit hands the transaction
+    back like any other owned purchase, leaving expiry entirely to the app — then reports whichever
+    is active and expires later as the entitlement (a customer can hold one expired and one active
+    at once, e.g. a lapsed old consumable next to a freshly bought pass).
+    `PurchaseEntitlement.expiredYearlyProductIds` lists every expired id (not just one), and
+    `PurchaseHelper._hasPurchase()` finishes (if still pending) and drops each from `_purchases` so
+    it can be sold again. `kAdFreeProductIds` (`lib/billing/transaction_history.dart`) includes
+    both ids, so the transaction-history restore scan below and `initiatePurchase`'s
+    already-owned guard cover the pass too. `EntitlementCache` itself stays product-id agnostic —
+    it only ever records the evaluated decision, not which SKU produced it.
+  - **Which id gets sold**: `PurchaseHelper.yearlySku` returns `yearly_adfree_pass` once the store
+    has actually returned it in a product query (i.e. the owner created it in App Store Connect
+    and it cleared for sale) and falls back to `yearly_adfree` until then, so purchases keep
+    working before the owner's App Store Connect step. `SupportPromptScreen`'s yearly button buys
+    and prices whatever `yearlySku` currently returns — it never hardcodes an id.
+    `yearly_adfree_pass` is only added to the product query set on iOS (`Platform.isIOS`): it will
+    never exist on Google Play, so querying for it there would just be permanent "not found" log
+    noise for no benefit.
   - `PurchaseHelper.restorePurchases()` follows the plugin's restore with a scan of
     `Transaction.all` (`SK2Transaction.transactions()`), reduced by the pure
     `adFreeRestoresFromHistory` (`lib/billing/transaction_history.dart`, tested in
     `test/billing/transaction_history_test.dart`) to the newest un-revoked transaction per
-    ad-free SKU and delivered through the normal restore path.
+    ad-free SKU (all three ids) and delivered through the normal restore path.
     `SKIncludeConsumableInAppPurchaseHistory` in `ios/Runner/Info.plist` is what makes finished
-    consumables appear there on iOS 18+ — do not remove it. Below iOS 18 a finished consumable is
-    in no StoreKit list at all, so the history is not treated as authoritative and
-    `EntitlementCache` is left alone.
+    consumables appear there on iOS 18+ — do not remove it (this still matters for `yearly_adfree`
+    holdouts; `yearly_adfree_pass`, not being a consumable, is expected to already surface through
+    the plugin's normal `Transaction.currentEntitlements`-based restore without needing this
+    scan). Below iOS 18 a finished consumable is in no StoreKit list at all, so the history is not
+    treated as authoritative and `EntitlementCache` is left alone.
   - When restore *and* history come back empty and authoritative, `_hasPurchase()` runs against
     what the session holds and clears a stale cache (refunds, another Apple ID). A failure on
     either path leaves the cache alone. `restoreBatchTimeout` bounds the wait for the plugin's
     asynchronous restored batch; `initStoreInfo` runs restore and `_getProducts()` concurrently
     so prices never queue behind that wait.
+  - **Google Play is not affected by any of this.** The Android build buys ad-free products with
+    `buyNonConsumable`, which the code comment there notes means they are "acknowledged but never
+    consumed" — Google Play's Billing Library returns every acknowledged, un-consumed managed
+    product from `queryPurchasesAsync` regardless of age, so there is no Play-side equivalent of
+    "a consumable is invisible to restore". No new Android product id was created or is needed;
+    `yearly_adfree` on Android is untouched by this bead.
   - Refunds: StoreKit 2 re-emits a revoked transaction on `Transaction.updates` and the plugin
     forwards it as `purchased`; `StoreKitTransactionJson.isRevoked` on
     `verificationData.localVerificationData` is the only tell. `_listenToPurchaseUpdated`

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:phonetowers/helpers/camera_motion.dart';
+import 'package:phonetowers/helpers/recent_searches.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/ui/map_common.dart';
@@ -23,11 +25,10 @@ class SearchSheet {
       dynamic mapController) async {
     List<String> recents = const [];
     try {
-      recents = List<String>.from(await SearchHelper.getRecentSearches());
+      recents = RecentSearches.excluding(await SearchHelper.getRecentSearches(), query);
     } catch (_) {
       // Recent searches are a convenience; never let them block the results.
     }
-    recents.remove(query);
     if (!context.mounted) return;
 
     // Drop focus before the modal opens. The search field still holds focus when results arrive,
@@ -46,7 +47,7 @@ class SearchSheet {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       constraints: const BoxConstraints(maxWidth: 600),
-      builder: (bc) {
+      builder: (bc) => StatefulBuilder(builder: (bc, setSheetState) {
         final onSurface = Theme.of(bc).colorScheme.onSurface;
         final onSurfaceVariant = Theme.of(bc).colorScheme.onSurfaceVariant;
         return Container(
@@ -60,14 +61,19 @@ class SearchSheet {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  decoration: BoxDecoration(
-                    color: Theme.of(bc).colorScheme.outline,
-                    borderRadius: BorderRadius.circular(3),
+              // F7 (accessibility parity port, Android PR java#107): purely decorative —
+              // excluded from the semantics tree so screen readers don't stop on an unlabelled
+              // shape.
+              ExcludeSemantics(
+                child: Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(bc).colorScheme.outline,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
                   ),
                 ),
               ),
@@ -118,12 +124,34 @@ class SearchSheet {
                     if (recents.isNotEmpty) ...[
                       Padding(
                         padding: const EdgeInsets.only(top: 14, bottom: 2),
-                        child: Text('RECENT SEARCHES',
-                            style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
-                                color: onSurfaceVariant)),
+                        child: Row(children: [
+                          Expanded(
+                            child: Text('RECENT SEARCHES',
+                                style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.8,
+                                    color: onSurfaceVariant)),
+                          ),
+                          // F6 parity with the Android search sheet's "Clear" action (PR
+                          // java#101): wipes the recent-searches list without a confirmation
+                          // dialog — it only clears local search history.
+                          InkWell(
+                            onTap: () {
+                              SearchHelper.clearRecentSearches();
+                              setSheetState(() => recents = const []);
+                            },
+                            child: Container(
+                              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                              alignment: Alignment.centerRight,
+                              child: Text('Clear',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(bc).colorScheme.primary)),
+                            ),
+                          ),
+                        ]),
                       ),
                       for (final recent in recents)
                         InkWell(
@@ -145,7 +173,7 @@ class SearchSheet {
             ],
           ),
         );
-      },
+      }),
     );
   }
 
@@ -154,13 +182,22 @@ class SearchSheet {
       SearchResult r,
       void Function(String geoHash, bool expandGeohash) downloadTowers,
       dynamic mapController) {
+    // F7 (accessibility parity port, Android PR java#107): read the reduce-motion signal before
+    // popping the sheet — MediaQuery.of needs a still-mounted context.
+    final bool skipAnimation = CameraMotion.shouldSkipAnimation(
+        disableAnimations: MediaQuery.of(sheetContext).disableAnimations);
     Navigator.of(sheetContext).pop();
     if (r.geohash.isNotEmpty) {
       downloadTowers(r.geohash, false);
     }
     final target = LatLng(r.latitude, r.longitude);
     if (!MapBodyState.lockMap && mapController != null) {
-      mapController.moveCamera(CameraUpdate.newLatLngZoom(target, 15));
+      final update = CameraUpdate.newLatLngZoom(target, 15);
+      if (skipAnimation) {
+        mapController.moveCamera(update);
+      } else {
+        mapController.animateCamera(update);
+      }
     }
     // Open the site sheet once the tile has had a moment to land; quietly skip if it hasn't.
     Future.delayed(const Duration(milliseconds: _siteSheetWaitMs), () {

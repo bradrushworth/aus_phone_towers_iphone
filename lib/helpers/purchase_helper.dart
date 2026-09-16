@@ -74,6 +74,12 @@ class PurchaseHelper with ChangeNotifier {
   static const String SKU_SUBSCRIBE_PERMANENTLY = "permanent_adfree";
   static const String SKU_SUBSCRIBE_ONE_YEAR = "yearly_adfree";
 
+  /// The Non-Renewing Subscription replacing [SKU_SUBSCRIBE_ONE_YEAR] — see the doc comment on
+  /// [skuSubscribeOneYearPass] (bead `aptios-589`) for why. Only exists in App Store Connect
+  /// once the owner creates it there, so [yearlySku] falls back to the legacy consumable until
+  /// the store actually returns this product.
+  static const String SKU_SUBSCRIBE_ONE_YEAR_PASS = "yearly_adfree_pass";
+
   final Set<String> _kProductIds = Set.from([
     SKU_DONATION_SMALL,
     SKU_DONATION_MEDIUM,
@@ -81,6 +87,22 @@ class PurchaseHelper with ChangeNotifier {
     SKU_SUBSCRIBE_ONE_YEAR,
     SKU_SUBSCRIBE_PERMANENTLY,
   ]);
+
+  /// Product ids to query from the store. [SKU_SUBSCRIBE_ONE_YEAR_PASS] only exists in App
+  /// Store Connect (bead `aptios-589`), so it is queried on iOS only — asking Google Play for a
+  /// product id that will never exist there would just add permanent "not found" log/analytics
+  /// noise on Android for no benefit.
+  Set<String> get _productIdsToQuery => (!kIsWeb && Platform.isIOS)
+      ? <String>{..._kProductIds, SKU_SUBSCRIBE_ONE_YEAR_PASS}
+      : _kProductIds;
+
+  /// Which yearly ad-free product id to offer for sale right now: the new
+  /// [SKU_SUBSCRIBE_ONE_YEAR_PASS] once the store has actually returned it (i.e. the owner has
+  /// created it in App Store Connect and it cleared for sale), otherwise the legacy
+  /// [SKU_SUBSCRIBE_ONE_YEAR] consumable, so purchases keep working before that happens.
+  String get yearlySku => _products.any((ProductDetails? p) => p?.id == SKU_SUBSCRIBE_ONE_YEAR_PASS)
+      ? SKU_SUBSCRIBE_ONE_YEAR_PASS
+      : SKU_SUBSCRIBE_ONE_YEAR;
 
   bool isDonated = false;
   bool isSubscribed = false;
@@ -414,7 +436,7 @@ class PurchaseHelper with ChangeNotifier {
     }
 
     final ProductDetailsResponse productDetailResponse = await _inAppPurchase.queryProductDetails(
-      _kProductIds.toSet(),
+      _productIdsToQuery,
     );
     if (productDetailResponse.error != null) {
       String error = "In-App Billing Failed: " + productDetailResponse.error!.message;
@@ -605,22 +627,26 @@ class PurchaseHelper with ChangeNotifier {
       expiryPeriod: EXPIRY_PERIOD,
     );
 
-    // 2a) Finish/consume an expired yearly purchase so ads return and the user
-    // can buy it again. (evaluateEntitlements is pure, so the mutation lives here.)
-    if (entitlement.yearlyPurchaseExpired) {
-      PurchaseDetails? expired;
-      try {
-        expired = _purchases.singleWhere(
-            (purchaseDetails) => purchaseDetails!.productID == SKU_SUBSCRIBE_ONE_YEAR);
-      } catch (e) {
-        expired = null;
-      }
-      if (expired != null) {
-        eventMap['expired_sku'] = SKU_SUBSCRIBE_ONE_YEAR;
-        if (expired.pendingCompletePurchase) {
-          await _inAppPurchase.completePurchase(expired);
+    // 2a) Finish/consume each expired yearly purchase so ads return and the user can buy it
+    // again. (evaluateEntitlements is pure, so the mutation lives here.) Two product ids can
+    // independently be expired — the legacy consumable and its Non-Renewing Subscription
+    // replacement (bead aptios-589) — so this walks the full list rather than assuming one.
+    if (entitlement.expiredYearlyProductIds.isNotEmpty) {
+      eventMap['expired_sku'] = entitlement.expiredYearlyProductIds.join(',');
+      for (final String sku in entitlement.expiredYearlyProductIds) {
+        PurchaseDetails? expired;
+        try {
+          expired = _purchases
+              .singleWhere((purchaseDetails) => purchaseDetails!.productID == sku);
+        } catch (e) {
+          expired = null;
         }
-        _purchases.removeWhere((p) => p!.productID == SKU_SUBSCRIBE_ONE_YEAR);
+        if (expired != null) {
+          if (expired.pendingCompletePurchase) {
+            await _inAppPurchase.completePurchase(expired);
+          }
+          _purchases.removeWhere((p) => p!.productID == sku);
+        }
       }
     }
 
@@ -686,8 +712,9 @@ class PurchaseHelper with ChangeNotifier {
     // answered at cold start — and if the product is typed as a consumable in App Store Connect
     // the customer is simply charged again in full, which is how one came to pay three times.
     // Upgrading an active yearly pass to permanent is still allowed.
+    final bool isYearlySku = sku == SKU_SUBSCRIBE_ONE_YEAR || sku == SKU_SUBSCRIBE_ONE_YEAR_PASS;
     final bool alreadyHeld = (sku == SKU_SUBSCRIBE_PERMANENTLY && isSubscribedPermanently) ||
-        (sku == SKU_SUBSCRIBE_ONE_YEAR && isSubscribed);
+        (isYearlySku && isSubscribed);
     // Likewise if the store has already told us this account owns the exact ad-free SKU.
     // Donations are consumables and are meant to be bought again, so they are never blocked.
     final bool ownedPerStore =
@@ -722,12 +749,14 @@ class PurchaseHelper with ChangeNotifier {
           bool bought = false;
           try {
             if (productToBuy.id == SKU_SUBSCRIBE_PERMANENTLY ||
-                productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR) {
+                productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR ||
+                productToBuy.id == SKU_SUBSCRIBE_ONE_YEAR_PASS) {
               // Ad-free purchases are bought as non-consumables so that, on Android, they are
               // acknowledged but never consumed (matching the Java app). On iOS this call makes
-              // no difference: whether the App Store treats the product as consumable or
-              // non-consumable is fixed by its type in App Store Connect, and only a
-              // non-consumable (or subscription) is ever returned by a restore.
+              // no difference: whether the App Store treats the product as a non-consumable or a
+              // subscription is fixed by its type in App Store Connect (`buyConsumable` reduces
+              // to the exact same StoreKit 2 `Product.purchase()` call anyway), and only a
+              // non-consumable or subscription is ever returned by a restore.
               bought = await _inAppPurchase.buyNonConsumable(
                 purchaseParam: purchaseParam,
               );
@@ -936,6 +965,7 @@ class PurchaseHelper with ChangeNotifier {
           await _hasPurchase();
           break;
         }
+      case SKU_SUBSCRIBE_ONE_YEAR_PASS:
       case SKU_SUBSCRIBE_ONE_YEAR:
         {
           thank('Thanks! Enjoy the app now ad free for the next year.');

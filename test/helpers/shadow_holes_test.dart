@@ -140,4 +140,71 @@ void main() {
     expect(holesByRung[0].length, 1);
     expect(holesByRung[1], isEmpty);
   });
+
+  // --- mergePages: bead 8uq item 1, multi-page hole assembly ---
+  //
+  // A licence_hrp response wider than one _count=360 page arrives as several pages, each
+  // building its own bearingsUsed/coverageByRung. Before ShadowHoles.mergePages existed,
+  // GetLicenceHRP called applyTerrainHoles once PER PAGE, so only the last page's holes
+  // survived -- earlier pages were silently overwritten, not merged. These two-page test
+  // vectors pin the pure merge (order-preserving concatenation per rung) GetLicenceHRP now
+  // relies on before calling buildAllRungs exactly once, on the merged result.
+
+  test('mergePages concatenates bearings and coverage in page order across two rungs', () {
+    final page1 = ShadowHolesPage(
+      bearingsUsed: [10.0, 20.0],
+      coverageByRung: [
+        [_result(5), _result(6)], // rung 0
+        [_result(4), _result(4.5)], // rung 1
+      ],
+    );
+    final page2 = ShadowHolesPage(
+      bearingsUsed: [30.0],
+      coverageByRung: [
+        [_result(7)], // rung 0
+        [_result(4.2)], // rung 1
+      ],
+    );
+
+    final merged = ShadowHoles.mergePages([page1, page2]);
+
+    expect(merged.bearingsUsed, [10.0, 20.0, 30.0]);
+    expect(merged.coverageByRung.length, 2);
+    expect(merged.coverageByRung[0].length, 3);
+    expect(merged.coverageByRung[1].length, 3);
+    // Page order preserved within each rung, not just bearing order.
+    expect(merged.coverageByRung[0][0].outerKm, 5.0);
+    expect(merged.coverageByRung[0][1].outerKm, 6.0);
+    expect(merged.coverageByRung[0][2].outerKm, 7.0);
+  });
+
+  test('mergePages then buildAllRungs merges a shadow ring across the page boundary', () {
+    // Same three overlapping shadows as "adjacent overlapping shadows become one ring", but
+    // split so the middle bearing (12.5) is the start of page 2 -- i.e. a shadow run that must
+    // merge across the page boundary, which is exactly what a real multi-page response needs.
+    final page1 = ShadowHolesPage(
+      bearingsUsed: [10.0],
+      coverageByRung: [
+        [_result(10, [4, 8])],
+      ],
+    );
+    final page2 = ShadowHolesPage(
+      bearingsUsed: [12.5, 15.0],
+      coverageByRung: [
+        [_result(10, [4.5, 8.5]), _result(10, [4, 7])],
+      ],
+    );
+
+    final merged = ShadowHoles.mergePages([page1, page2]);
+    final holesByRung =
+        ShadowHoles.buildAllRungs(_site, merged.bearingsUsed, merged.coverageByRung, _flat);
+
+    expect(holesByRung.length, 1);
+    // Merging across the page boundary must produce ONE ring spanning all three bearings -- the
+    // same shape the single-page test above pins. Before the merge existed, page 2 alone
+    // (bearings [12.5, 15]) would have overwritten page 1's hole entirely, losing the
+    // 10-degree bearing's shadow.
+    expect(holesByRung[0].length, 1);
+    expect(holesByRung[0][0].length, 2 + 3 + 3 + 2);
+  });
 }
