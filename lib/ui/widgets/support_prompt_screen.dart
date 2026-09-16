@@ -83,10 +83,14 @@ class SupportPromptScreen extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 8),
                   OutlinedButton(
-                    onPressed: () => _logAndPurchase(context, 'subscribe_yearly',
-                        PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR),
+                    // Buys and prices whichever yearly product id the store is currently
+                    // selling — the new Non-Renewing Subscription once App Store Connect has it
+                    // (bead aptios-589), the legacy consumable until then. See
+                    // PurchaseHelper.yearlySku.
+                    onPressed: () => _logAndPurchase(
+                        context, 'subscribe_yearly', purchaseHelper.yearlySku),
                     child: Text(purchaseHelper.priceLabel(
-                        sku: PurchaseHelper.SKU_SUBSCRIBE_ONE_YEAR,
+                        sku: purchaseHelper.yearlySku,
                         name: Strings.remove_ads_year_name)),
                   ),
                   const SizedBox(height: 8),

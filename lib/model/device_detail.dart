@@ -28,6 +28,67 @@ class DeviceDetails {
   /// Java app's DeviceDetails.OMNI_CALIBRATION_DB.
   static const double omniCalibrationDb = 13.5;
 
+  /// Empirical offset applied after the Watts-to-dBm conversion in [getPowerAtBearing]. Not
+  /// theoretically derived - kept because it best aligns the eirp-derived power path with the
+  /// separate licence_hrp.power reference path (see bead keen-moser-3c3ce6-aqw). EirpScaleIT's
+  /// replay of real LTE observations found the chain including this term scores closest to
+  /// measured reality: median residual -1.83 dB (indicative, see caveat below), vs -7.14 dB for
+  /// a literal theoretical RSRP conversion (see [widebandToRsrpConversionDb]) and +23.65 dB
+  /// with no calibration terms at all. Caveat: these constants were fitted against
+  /// device_details.eirp data that mixes Watts and dB-scale values for approximately 1.85% of rows
+  /// (bead keen-moser-3c3ce6-aqw, still in progress). The quoted residuals are therefore
+  /// indicative, not settled, and reflect the current constant-chain calibration against
+  /// that mixed-unit dataset. Mirrors the Java app's DeviceDetails.EIRP_HRP_AGREEMENT_DB.
+  static const double eirpHrpAgreementDb = 3.0;
+
+  /// dBi to dBd conversion applied to directional antenna gain (dipole vs isotropic reference).
+  /// Mirrors the Java app's DeviceDetails.DBI_TO_DBD_DB.
+  static const double dbiToDbdDb = 2.15;
+
+  /// Empirically-calibrated net offset standing in for the fact that LTE devices report RSRP -
+  /// power per resource element - while licence EIRP (and the eirp/HRP-derived power above)
+  /// describes the WIDEBAND carrier. Converting wideband power to a per-resource-element figure
+  /// is theoretically a function of carrier bandwidth: [widebandToRsrpConversionDb] computes
+  /// that value explicitly and is unit-tested against the standard LTE resource-block table.
+  /// For a 20 MHz carrier it comes to about -30.8 dB.
+  ///
+  /// This constant is NOT that theoretical value. EirpScaleIT's replay against real observations
+  /// (bead keen-moser-3c3ce6-aqw, still in progress, hypothesis B) found the literal theoretical
+  /// conversion scores WORSE than the status quo (median residual -7.14 dB vs -1.83 dB, indicative,
+  /// see [eirpHrpAgreementDb] caveat), so the empirically correct offset is nearer -27 dB,
+  /// not -30.8 dB, and the remaining gap is the eirpHrpAgreementDb / antenna-pattern calibration
+  /// this chain also carries. Do not replace this constant with [widebandToRsrpConversionDb]'s
+  /// output without re-running that replay - it was tried and made predictions worse. Mirrors the
+  /// Java app's DeviceDetails.RSRP_CONVERSION_DB.
+  /// https://www.phys.hawaii.edu/~anita/new/papers/militaryHandbook/antennas.pdf
+  static const double rsrpConversionDb = -41.7;
+
+  /// Standard LTE resource-block counts by channel bandwidth (3GPP TS 36.101 Table 5.6-1), used
+  /// by [widebandToRsrpConversionDb]. Mirrors the Java app's DeviceDetails.lteResourceBlockCount.
+  static int _lteResourceBlockCount(int bandwidthHz) {
+    final double mhz = bandwidthHz / 1000000.0;
+    if (mhz <= 1.4) return 6;
+    if (mhz <= 3.0) return 15;
+    if (mhz <= 5.0) return 25;
+    if (mhz <= 10.0) return 50;
+    if (mhz <= 15.0) return 75;
+    return 100; // 20 MHz and wider
+  }
+
+  /// Theoretical wideband-carrier-power to per-resource-element RSRP conversion, in dB, for an
+  /// LTE carrier of the given bandwidth: -10*log10(12 * N_RB), where 12 is the number of
+  /// subcarriers in a resource block and N_RB is the standard LTE resource-block count for the
+  /// bandwidth ([_lteResourceBlockCount]). This is the formula behind the "wideband to RSRP"
+  /// conversion discussed in bead keen-moser-3c3ce6-aqw, kept here as a documented, unit-tested
+  /// reference so [rsrpConversionDb]'s magnitude can be understood and re-checked. It is NOT
+  /// wired into [getPowerAtBearing] - see the note on [rsrpConversionDb] for why a literal
+  /// per-bandwidth conversion was tried and scored worse against real observations. Mirrors the
+  /// Java app's DeviceDetails.widebandToRsrpConversionDb.
+  static double widebandToRsrpConversionDb(int bandwidthHz) {
+    final int resourceBlocks = _lteResourceBlockCount(bandwidthHz);
+    return -10 * log10(12.0 * resourceBlocks);
+  }
+
   // Details from the database
 
   String? sddId,
@@ -530,7 +591,7 @@ class DeviceDetails {
           'from get power bearing gainDBi=$gainDBi frontToBackRatio=$frontToBackRatio beamwidth=$beamwidth');
 
     double power_dBm = 10 * log10(eirp!) + 30; // Convert Watts to dBm
-    power_dBm += 3; // Seems to give closer answers to LicenceHRP
+    power_dBm += eirpHrpAgreementDb;
 
     if (NetworkTypeHelper.isRsrp(networkType)) {
       //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(bandwidth); // Convert RSRP to RSSI
@@ -540,10 +601,9 @@ class DeviceDetails {
     //if (getNetworkType() == NetworkType.LTE) power_dBm += 20; // Convert RSRP to RSSI by adding 20 dBm
     if (azimuth != null && (beamwidth > 0 && beamwidth < 360)) {
       // Only add directional gain if we know where the gain is pointing
-      power_dBm += gainDBi - 2.15; // -2.15 converts from dBi to dBd
+      power_dBm += gainDBi - dbiToDbdDb;
     }
-    power_dBm -=
-        41.7; // https://www.phys.hawaii.edu/~anita/new/papers/militaryHandbook/antennas.pdf
+    power_dBm += rsrpConversionDb;
 
     if (azimuth == null) {
       // This is an omnidirectional antenna. The -41.7 constant above was calibrated for the

@@ -3,6 +3,8 @@ import 'package:phonetowers/restful/get_licenceHRP.dart';
 import 'package:phonetowers/helpers/let_type_helper.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
+import 'package:phonetowers/helpers/translate_frequencies.dart';
+import 'package:phonetowers/model/antenna.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/site.dart';
 
@@ -672,6 +674,89 @@ void main() {
     test('testToString', () {
       deviceDetails.deviceRegistrationIdentifier = "10240601";
       expect(deviceDetails.toString(), "10240601");
+    });
+
+    // --- bead aptios-6i0 / keen-moser-3c3ce6-aqw: named-constant chain must reproduce the old
+    // literal chain exactly. See DeviceDetails.rsrpConversionDb and .widebandToRsrpConversionDb
+    // for why the theoretical, bandwidth-aware conversion is NOT wired into getPowerAtBearing -
+    // EirpScaleIT's replay (Android commit 941c8697) found it scores worse than this calibrated
+    // constant chain. These tests pin the net numeric behaviour so nobody accidentally
+    // "simplifies" the constants into the theoretical value later. Mirrors
+    // DeviceDetailsTest.java in the Android app with identical vectors.
+    double oldLiteralChain(double eirpWatts, double gainDBi, bool directional) {
+      double power = 10 * log10(eirpWatts) + 30;
+      power += 3;
+      if (directional) {
+        power += gainDBi - 2.15;
+      }
+      power -= 41.7;
+      if (!directional) {
+        power += 13.5;
+      }
+      return power;
+    }
+
+    const eirpWattsVectors = [0.5, 1.0, 5.0, 20.0, 50.0, 120.0];
+    const gainDbiVectors = [0.0, 6.0, 10.0, 16.0, 20.0];
+    const bandwidthHzVectors = [1400000, 3000000, 5000000, 10000000, 15000000, 20000000, 100000000];
+
+    test('namedConstantChain_matchesOldLiteralChain_directional', () {
+      for (final eirpWatts in eirpWattsVectors) {
+        for (final gainDBi in gainDbiVectors) {
+          for (final bandwidthHz in bandwidthHzVectors) {
+            final device = new DeviceDetails(networkType: NetworkType.LTE);
+            device.setSite(site);
+            device.eirp = eirpWatts;
+            device.bandwidth = bandwidthHz;
+            device.azimuth = 90;
+            device.antenna = new Antenna()
+              ..gain = gainDBi
+              ..frontToBack = 25
+              ..horizontalBeamwidth = 60;
+
+            final expected = oldLiteralChain(eirpWatts, gainDBi, true);
+            final actual = device.getPowerAtBearing(90);
+            expect(actual, closeTo(expected, 0.1),
+                reason: 'eirp=$eirpWatts gain=$gainDBi bw=$bandwidthHz');
+          }
+        }
+      }
+    });
+
+    test('namedConstantChain_matchesOldLiteralChain_omni', () {
+      for (final eirpWatts in eirpWattsVectors) {
+        for (final bandwidthHz in bandwidthHzVectors) {
+          final device = new DeviceDetails(networkType: NetworkType.LTE);
+          device.setSite(site);
+          device.eirp = eirpWatts;
+          device.bandwidth = bandwidthHz;
+          device.azimuth = null;
+
+          final expected = oldLiteralChain(eirpWatts, 0.0, false);
+          final actual = device.getPowerAtBearing(0);
+          expect(actual, closeTo(expected, 0.1), reason: 'eirp=$eirpWatts bw=$bandwidthHz');
+        }
+      }
+    });
+
+    test('widebandToRsrpConversionDb_matchesStandardResourceBlockTable', () {
+      // -10*log10(12*N_RB) for the standard LTE bandwidth/N_RB table (3GPP TS 36.101 5.6-1).
+      expect(DeviceDetails.widebandToRsrpConversionDb(1400000), closeTo(-18.57, 0.01));
+      expect(DeviceDetails.widebandToRsrpConversionDb(3000000), closeTo(-22.55, 0.01));
+      expect(DeviceDetails.widebandToRsrpConversionDb(5000000), closeTo(-24.77, 0.01));
+      expect(DeviceDetails.widebandToRsrpConversionDb(10000000), closeTo(-27.78, 0.01));
+      expect(DeviceDetails.widebandToRsrpConversionDb(15000000), closeTo(-29.54, 0.01));
+      expect(DeviceDetails.widebandToRsrpConversionDb(20000000), closeTo(-30.79, 0.01));
+      // Bandwidths above 20 MHz clamp to the widest standard LTE table entry rather than
+      // extrapolating.
+      expect(DeviceDetails.widebandToRsrpConversionDb(100000000), closeTo(-30.79, 0.01));
+    });
+
+    test('rsrpConversionDb_isCalibratedNotTheoretical', () {
+      // SETTLED 2026-08-25 (bead keen-moser-3c3ce6-aqw): the theoretical 20 MHz value (~-30.8 dB)
+      // was tried against real observations and scored worse than the calibrated constant.
+      expect(DeviceDetails.rsrpConversionDb,
+          lessThan(DeviceDetails.widebandToRsrpConversionDb(20000000)));
     });
   });
 }
