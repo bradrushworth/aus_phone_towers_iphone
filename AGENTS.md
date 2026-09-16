@@ -6,6 +6,36 @@ iPhone/Flutter repository. The Android project (`aus_phone_towers_java`) has its
 app's F-track and the web-adaptivity requirements) lives in that repo at
 `docs/ui-overhaul-plan.md`; the corresponding beads epic here is `aptios-uh4`.
 
+## F-track parity audit (2026-09-15, bead aptios-uh4)
+Commit `876fe42` ported Android's F0-F6 UI overhaul phases to this app in one pass. This note
+records a follow-up audit against three Android UI PRs opened the same day this app's remainder
+work started (java#98 Settings screen, java#101 search Clear/case-insensitive recents, java#107
+touch targets/decorative semantics/reduce motion) and what changed here as a result:
+- **java#98 (Settings screen)**: Android moved Settings from a bottom sheet to a real
+  `PreferenceFragmentCompat` screen; no preference *label* changed (checked the PR's `strings.xml`
+  diff). This app's Settings sheet (`ui/widgets/layers_settings_sheets.dart`) is unaffected —
+  it's still a sheet on this platform, deliberately (iOS/web have no `PreferenceFragmentCompat`
+  equivalent), and no wording needs to follow.
+- **java#101 (search Clear + case-insensitive recents)**: ported. `helpers/recent_searches.dart`
+  mirrors Android's `utilities/RecentSearches` (`withQuery`/`cleared`/`excluding`, case-insensitive
+  de-dup, 10-entry cap); the search sheet gained a "Clear" link next to "RECENT SEARCHES".
+- **java#107 (48dp touch targets, decorative-view semantics, reduce motion)**: ported the parts
+  that apply to this platform — 48dp minimum touch targets on the Legend chip, the Filters
+  sheet's Advanced expander, and the site sheet's Directions/ACMA buttons; `ExcludeSemantics` on
+  every sheet's decorative drag handle and the legend's colour swatches (this app's `Container`
+  widgets carry no semantics node by default unless something adds one, so most of these are
+  defensive/documenting rather than fixing a live screen-reader regression — unlike Android's
+  `View`, which is semantics-visible by default); and a reduce-motion check
+  (`helpers/camera_motion.dart`, gated on `MediaQuery.disableAnimations`) on the search-result
+  camera move, which now actually animates (`animateCamera`) instead of always jumping
+  (`moveCamera`) as it silently did before this audit.
+- **Not ported (deliberately out of scope for this bead)**: the Android compass (java#105) and
+  Lock Map/Polygon Precision (java#106, a *reverse* port — Android copying a feature this app
+  already had) are follow-ups, not F-track parity gaps.
+- **Known gap, not fixed here**: `docs/user-guide.html` never got the F6 "Search that answers"
+  bullet that `docs/USER_GUIDE.md` has carried since `876fe42` — the two docs were already out of
+  sync before this audit; filed as a follow-up rather than expanded here.
+
 ## Project basics
 - Flutter app (Dart), targeting iOS (primary) and Android (secondary). Package: `phonetowers`.
 - State management: `provider` (`ChangeNotifier` singletons — `SiteHelper`, `PurchaseHelper`,
@@ -133,6 +163,47 @@ coverage ring, i.e. how many points it has.
   change won't retroactively apply until that cache entry is invalidated. The primary marker-tap
   path (`map_common.dart` → `queryForSignalPolygon(site, false, false, ...)`) does **not** use this
   cache, so tapping a tower after changing precision always reflects the new setting.
+
+## Terrain awareness (site_terrain, effective height, coverage intervals, bead 8uq)
+Mirrors the Java app's `au.com.bitbot.phonetowers.utilities.ShadowHoles` /
+`restful/GetLicenceHRP` / `restful/GetSiteTerrain` / `model/Site` (see that repo's AGENTS.md
+"Terrain awareness" section for the shared design). `restful/get_site_terrain.dart` fetches the
+nightly `site_terrain` row per site (both modes); `Site.applyTerrain` installs ground/medians
+and, with a profile, the 24 x 19 samples into the elevation map. Terrain mode:
+`pathloss/terrain_coverage.dart`'s `TerrainCoverage.evaluate` per bearing (outer radius + shadow
+bands), `helpers/shadow_holes.dart`'s `ShadowHoles` turns the bands into
+`PolygonOptions.addHole` rings via `ShadowHoles.buildAllRungs`; holes live on `DeviceDetails` per
+rung and are only cleared/rebuilt in terrain mode.
+
+- **Multi-page hole assembly (bead 8uq item 1).** A licence_hrp response wider than one
+  `_count=360` page is fetched as several pages, each its own chained
+  `GetLicenceHRP.getLicenceHRPData` call. Each page's `bearingsUsed`/`coverageByRung` is appended
+  to a `List<ShadowHolesPage> terrainPages` shared by reference across the whole chain (the same
+  way the polygon point `list` already accumulates); `PolygonHelper.applyTerrainHoles` is called
+  exactly once, on `ShadowHoles.mergePages(terrainPages)`, only when the last page is reached
+  (`nextPage == null`). Calling it per page — the previous behaviour — overwrote every earlier
+  page's holes with the last page's alone. `mergePages` is pure (order-preserving concatenation
+  per rung); see `test/helpers/shadow_holes_test.dart`'s `mergePages` tests for two-page vectors.
+- **Nothing waits forever, and cancellation is honoured (bead 8uq items 2–3).** Both bounded
+  waits in `GetLicenceHRP.getLicenceHRPData` (≤ 2 s for the terrain row, ≤ 30 s for elevations)
+  `await` a `Completer`-backed future — `Site.terrainLoadedFuture` / `Site.elevationsFinishedFuture`,
+  completed by `Site.markTerrainLoaded()` / `Site.markElevationsFinished()` — instead of polling
+  with `Future.delayed` in a loop, and check `GetLicenceHRP.isCancelledFor` (the Dio `CancelToken`
+  OR the stale-generation `requestIsCurrent` check) both immediately before starting to wait and
+  again right after waking, so a task the app has already discarded stops right away instead of
+  finishing out its deadline. Every place that used to set `terrainLoaded`/
+  `finishedDownloadingElevations` directly now goes through one of the two `mark*` methods, so the
+  future always tracks the flag. `Completer.complete()` throws if called twice (unlike Java's
+  idempotent `CountDownLatch.countDown()`), so both `mark*` methods guard with `isCompleted`.
+- **Retry once on a failed site_terrain fetch (bead 8uq item 4).** `GetSiteTerrain.fetch()`
+  retries the request once, after `retryBackoffMs` (500 ms), if the first attempt returned no
+  data. Unlike the Java app, `Api.getSiteTerrainData` collapses every Dio failure — network
+  error, timeout, non-2xx, including a genuine 404 for a row not yet computed — to `null`, so
+  this app cannot distinguish an expected miss from a real transport failure the way Java's
+  `GetJSON.requestNotFound` can; it retries on any `null` first response rather than adding that
+  distinction to `Api`. Without this, a single transport hiccup left `site.terrainRequested` true
+  forever — nothing ever re-requests the row for that site — so it drew on the antenna height
+  alone for the app's whole lifetime.
 
 ## Network type classification (lib/model/device_detail.dart)
 `DeviceDetails.getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId)` classifies

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/restful/rest_filter.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
+import 'package:phonetowers/helpers/recent_searches.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/ui/map_common.dart';
@@ -46,7 +47,6 @@ class SearchHelper with ChangeNotifier {
   static int searchStatus = kSearchStopped;
   static final String DB_WILD_CARD = "%25";
   static const String _kRecentSearches = 'recentSearches';
-  static const int _kMaxRecents = 10;
   Logger logger = new Logger();
   Api api = Api.initialize();
   final ShowSnackBar? showSnackBar;
@@ -169,11 +169,13 @@ class SearchHelper with ChangeNotifier {
   static void recordRecentSearch(String query) async {
     final prefs = await SharedPreferences.getInstance();
     final recents = await getRecentSearches();
-    recents.remove(query);
-    recents.insert(0, query);
-    while (recents.length > _kMaxRecents) {
-      recents.removeLast();
-    }
-    prefs.setString(_kRecentSearches, jsonEncode(recents));
+    prefs.setString(_kRecentSearches, jsonEncode(RecentSearches.withQuery(recents, query)));
+  }
+
+  /// F6 parity with the Android search sheet's "Clear" action (PR java#101): wipes the recent-
+  /// searches list.
+  static Future<void> clearRecentSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kRecentSearches, jsonEncode(RecentSearches.cleared()));
   }
 }

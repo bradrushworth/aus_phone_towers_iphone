@@ -104,5 +104,44 @@ void main() {
       expect(site.finishedDownloadingElevations, isFalse);
       expect(site.elevations, isEmpty);
     });
+
+    // --- terrainLoadedFuture / elevationsFinishedFuture: bead 8uq item 3, Completer-based waits ---
+
+    test('applyTerrain with a profile completes both terrainLoadedFuture and elevationsFinishedFuture', () async {
+      final List<int> medians = List.filled(TerrainHeight.bearings, 600);
+      final List<List<int>> profile =
+          List.generate(TerrainHeight.bearings, (b) => List.filled(GetElevation.SAMPLE_DISTANCES.length, 5));
+
+      site.applyTerrain(750, medians, profile);
+
+      // Both futures must already be complete -- await must not hang.
+      await site.terrainLoadedFuture.timeout(const Duration(milliseconds: 50));
+      await site.elevationsFinishedFuture.timeout(const Duration(milliseconds: 50));
+    });
+
+    test('applyTerrain without a profile only completes terrainLoadedFuture', () async {
+      site.applyTerrain(800, List.filled(TerrainHeight.bearings, 600), null);
+
+      await site.terrainLoadedFuture.timeout(const Duration(milliseconds: 50));
+      expect(
+        site.elevationsFinishedFuture.timeout(const Duration(milliseconds: 50)),
+        throwsA(isA<Exception>()),
+        reason: 'no profile means the elevation download was never settled here',
+      );
+    });
+
+    test('markTerrainLoaded / markElevationsFinished are safe to call twice', () async {
+      // Completer.complete throws if called a second time; the mark* methods must guard that,
+      // unlike Java's idempotent CountDownLatch.countDown() they mirror.
+      site.markTerrainLoaded();
+      site.markTerrainLoaded();
+      site.markElevationsFinished();
+      site.markElevationsFinished();
+
+      expect(site.terrainLoaded, isTrue);
+      expect(site.finishedDownloadingElevations, isTrue);
+      await site.terrainLoadedFuture.timeout(const Duration(milliseconds: 50));
+      await site.elevationsFinishedFuture.timeout(const Duration(milliseconds: 50));
+    });
   });
 }
