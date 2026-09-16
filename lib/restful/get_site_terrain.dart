@@ -77,22 +77,27 @@ class GetSiteTerrain {
     return null;
   }
 
-  /// Requests the row, applies it to [site] when usable, and always finishes by setting
-  /// [Site.terrainLoaded] and — only in terrain mode, and only when nothing has finished the
-  /// elevation download yet — starting the Google Elevation fallback via
+  /// bead 8uq item 4: retried once, after [retryBackoffMs], if the request returned no data at
+  /// all. The original request plus this one retry.
+  static const int maxAttempts = 2;
+  static const int retryBackoffMs = 500;
+
+  /// Requests the row, applies it to [site] when usable, and always finishes by calling
+  /// [Site.markTerrainLoaded] and -- only in terrain mode, and only when nothing has finished
+  /// the elevation download yet -- starting the Google Elevation fallback via
   /// [PolygonHelper.startGoogleElevation]. Every failure mode (network error, non-2xx/no
   /// response, an empty `rows` array, or a malformed row) ends up here exactly the same way, so
   /// GetLicenceHRP's bounded waits can never hang on this request.
   Future<void> fetch() async {
     try {
       if (!RestFilter.isUsableValue(site.siteId)) {
-        // No siteId to filter on — RestFilter.isUsableValue would reject the resulting
+        // No siteId to filter on -- RestFilter.isUsableValue would reject the resulting
         // clause server-side anyway (HTTP 412); don't bother firing the request.
         logger.w('GetSiteTerrain: site has no usable siteId, skipping site_terrain request');
         return;
       }
 
-      final Map<String, dynamic>? json = await api.getSiteTerrainData(urlFor(site));
+      final Map<String, dynamic>? json = await _fetchRowWithRetry();
 
       final dynamic restify = json?['restify'];
       final dynamic rows = (restify is Map) ? restify['rows'] : null;
@@ -124,11 +129,33 @@ class GetSiteTerrain {
       logger.e(
           'GetSiteTerrain: error loading site_terrain for site ${site.siteId}: $e\n$stack');
     } finally {
-      site.terrainLoaded = true;
+      site.markTerrainLoaded();
       // Terrain mode without a served profile: fall back to the Google Elevation download.
       if (PolygonHelper.calculateTerrain && !site.finishedDownloadingElevations) {
         PolygonHelper.startGoogleElevation(site);
       }
     }
+  }
+
+  /// Fetches the site_terrain row, retrying once after [retryBackoffMs] if the first attempt
+  /// returned no data.
+  ///
+  /// [Api.getSiteTerrainData] collapses every Dio failure -- network error, timeout, non-2xx,
+  /// including a genuine 404 for a row not yet computed -- to `null`; unlike the Java app's
+  /// `GetJSON.requestNotFound`, nothing at this layer distinguishes an expected miss from a real
+  /// transport failure, so this retries either way. Retrying an expected miss is one harmless
+  /// extra request 500ms later, not a correctness problem -- see the PR description for why that
+  /// trade-off was made instead of threading Dio status codes through [Api.getSiteTerrainData].
+  Future<Map<String, dynamic>?> _fetchRowWithRetry() async {
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      final Map<String, dynamic>? json = await api.getSiteTerrainData(urlFor(site));
+      if (json != null) return json;
+      if (attempt < maxAttempts) {
+        logger.i(
+            'GetSiteTerrain: retrying site_terrain for site ${site.siteId} after a failed fetch');
+        await Future.delayed(const Duration(milliseconds: retryBackoffMs));
+      }
+    }
+    return null;
   }
 }

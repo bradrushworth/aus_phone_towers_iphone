@@ -32,6 +32,27 @@ features and bugs are frequently fixed in both.
   animation at all; it now animates like the Android app's fly-to, gated on
   `MediaQuery.disableAnimations` the same way Android gates on "Remove animations" (PR java#107).
 - No changes to data, matching, or accuracy — this is a search/accessibility parity pass only.
+- **The terrain waits no longer poll.** The two bounded waits above used to spin in a
+  `Future.delayed` loop; they now `await` a Completer-backed future that completes the instant
+  the row (or elevation data) is settled, so drawing resumes as soon as the data is ready instead
+  of at the next 50 ms tick.
+
+### Fixed
+- **A multi-page tower's terrain shadow holes were dropped down to just the last page.**
+  Terrain-mode coverage for a licence_hrp response that needed more than one page (more sectors
+  than fit in one request) used to rebuild and overwrite the tower's shadow holes on every page,
+  so only the final page's holes ever reached the map — earlier pages' holes vanished. Every
+  page's holes are now merged before the polygon is redrawn, so a hilly-country tower with a
+  wide, multi-page radiation pattern shows every shadow it should. Matches the Android app.
+- **Panning away while terrain data loads no longer burns the full wait.** The two bounded waits
+  in tower drawing (up to 2 s for the site_terrain row, up to 30 s for elevation data) now also
+  check the request's Dio `CancelToken`, not just the stale-generation check, right before and
+  after waiting — so a task the app has already discarded stops immediately instead of finishing
+  out its deadline.
+- **A site_terrain request that fails once is retried automatically.** Previously a single
+  network hiccup or gateway error fetching a site's terrain row left that site drawing on the
+  antenna height alone for the rest of the app's lifetime — nothing ever asked again. The request
+  is now retried once, after a short backoff, before falling back exactly as before.
 
 ## [1.14.23+158] — 2026-09-14
 

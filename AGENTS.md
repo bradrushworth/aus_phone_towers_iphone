@@ -164,6 +164,47 @@ coverage ring, i.e. how many points it has.
   path (`map_common.dart` → `queryForSignalPolygon(site, false, false, ...)`) does **not** use this
   cache, so tapping a tower after changing precision always reflects the new setting.
 
+## Terrain awareness (site_terrain, effective height, coverage intervals, bead 8uq)
+Mirrors the Java app's `au.com.bitbot.phonetowers.utilities.ShadowHoles` /
+`restful/GetLicenceHRP` / `restful/GetSiteTerrain` / `model/Site` (see that repo's AGENTS.md
+"Terrain awareness" section for the shared design). `restful/get_site_terrain.dart` fetches the
+nightly `site_terrain` row per site (both modes); `Site.applyTerrain` installs ground/medians
+and, with a profile, the 24 x 19 samples into the elevation map. Terrain mode:
+`pathloss/terrain_coverage.dart`'s `TerrainCoverage.evaluate` per bearing (outer radius + shadow
+bands), `helpers/shadow_holes.dart`'s `ShadowHoles` turns the bands into
+`PolygonOptions.addHole` rings via `ShadowHoles.buildAllRungs`; holes live on `DeviceDetails` per
+rung and are only cleared/rebuilt in terrain mode.
+
+- **Multi-page hole assembly (bead 8uq item 1).** A licence_hrp response wider than one
+  `_count=360` page is fetched as several pages, each its own chained
+  `GetLicenceHRP.getLicenceHRPData` call. Each page's `bearingsUsed`/`coverageByRung` is appended
+  to a `List<ShadowHolesPage> terrainPages` shared by reference across the whole chain (the same
+  way the polygon point `list` already accumulates); `PolygonHelper.applyTerrainHoles` is called
+  exactly once, on `ShadowHoles.mergePages(terrainPages)`, only when the last page is reached
+  (`nextPage == null`). Calling it per page — the previous behaviour — overwrote every earlier
+  page's holes with the last page's alone. `mergePages` is pure (order-preserving concatenation
+  per rung); see `test/helpers/shadow_holes_test.dart`'s `mergePages` tests for two-page vectors.
+- **Nothing waits forever, and cancellation is honoured (bead 8uq items 2–3).** Both bounded
+  waits in `GetLicenceHRP.getLicenceHRPData` (≤ 2 s for the terrain row, ≤ 30 s for elevations)
+  `await` a `Completer`-backed future — `Site.terrainLoadedFuture` / `Site.elevationsFinishedFuture`,
+  completed by `Site.markTerrainLoaded()` / `Site.markElevationsFinished()` — instead of polling
+  with `Future.delayed` in a loop, and check `GetLicenceHRP.isCancelledFor` (the Dio `CancelToken`
+  OR the stale-generation `requestIsCurrent` check) both immediately before starting to wait and
+  again right after waking, so a task the app has already discarded stops right away instead of
+  finishing out its deadline. Every place that used to set `terrainLoaded`/
+  `finishedDownloadingElevations` directly now goes through one of the two `mark*` methods, so the
+  future always tracks the flag. `Completer.complete()` throws if called twice (unlike Java's
+  idempotent `CountDownLatch.countDown()`), so both `mark*` methods guard with `isCompleted`.
+- **Retry once on a failed site_terrain fetch (bead 8uq item 4).** `GetSiteTerrain.fetch()`
+  retries the request once, after `retryBackoffMs` (500 ms), if the first attempt returned no
+  data. Unlike the Java app, `Api.getSiteTerrainData` collapses every Dio failure — network
+  error, timeout, non-2xx, including a genuine 404 for a row not yet computed — to `null`, so
+  this app cannot distinguish an expected miss from a real transport failure the way Java's
+  `GetJSON.requestNotFound` can; it retries on any `null` first response rather than adding that
+  distinction to `Api`. Without this, a single transport hiccup left `site.terrainRequested` true
+  forever — nothing ever re-requests the row for that site — so it drew on the antenna height
+  alone for the app's whole lifetime.
+
 ## Network type classification (lib/model/device_detail.dart)
 `DeviceDetails.getNetworkTypeStatic(emission, frequency, bandwidth, telco, antennaId)` classifies
 one ACMA licence row from its own emission designator + frequency + telco — **not** stored, always
