@@ -10,6 +10,30 @@ features and bugs are frequently fixed in both.
 
 ## [Unreleased]
 
+### Fixed
+- **Path-loss coefficients are no longer capped at 100 rows.** The startup fetch that loads the
+  server's trained log-distance coefficients now follows RESTify's `nextPage` link and collects
+  every page, the same way the licence/antenna endpoints already do, instead of stopping after
+  a single `_count=100` page. Only 22 coefficient groups existed when this was first written, so
+  nothing was visibly wrong yet — but any stratum published past row 100 would have vanished
+  silently, with those sites falling back to the less accurate analytic Okumura-Hata model and
+  no error shown. A full page is now also logged, as a signal that pagination is doing real work.
+- **A multi-page tower's terrain shadow holes were dropped down to just the last page.**
+  Terrain-mode coverage for a licence_hrp response that needed more than one page (more sectors
+  than fit in one request) used to rebuild and overwrite the tower's shadow holes on every page,
+  so only the final page's holes ever reached the map — earlier pages' holes vanished. Every
+  page's holes are now merged before the polygon is redrawn, so a hilly-country tower with a
+  wide, multi-page radiation pattern shows every shadow it should. Matches the Android app.
+- **Panning away while terrain data loads no longer burns the full wait.** The two bounded waits
+  in tower drawing (up to 2 s for the site_terrain row, up to 30 s for elevation data) now also
+  check the request's Dio `CancelToken`, not just the stale-generation check, right before and
+  after waiting — so a task the app has already discarded stops immediately instead of finishing
+  out its deadline.
+- **A site_terrain request that fails once is retried automatically.** Previously a single
+  network hiccup or gateway error fetching a site's terrain row left that site drawing on the
+  antenna height alone for the rest of the app's lifetime — nothing ever asked again. The request
+  is now retried once, after a short backoff, before falling back exactly as before.
+
 ### Changed
 - **The EIRP-to-signal-power constant chain now has named, documented constants instead of
   unlabelled numbers.** The +3, gain-2.15, -41.7 and +13.5 dB terms in
@@ -56,23 +80,6 @@ features and bugs are frequently fixed in both.
   to the recent-searches list and makes the de-duplication case-insensitive (searching "Dickson"
   again after "dickson" no longer lists it twice) — mirroring the Android app's Phase 6 follow-up
   (PR java#101). The list management now lives in a pure, unit-tested `RecentSearches` class.
-
-### Fixed
-- **A multi-page tower's terrain shadow holes were dropped down to just the last page.**
-  Terrain-mode coverage for a licence_hrp response that needed more than one page (more sectors
-  than fit in one request) used to rebuild and overwrite the tower's shadow holes on every page,
-  so only the final page's holes ever reached the map — earlier pages' holes vanished. Every
-  page's holes are now merged before the polygon is redrawn, so a hilly-country tower with a
-  wide, multi-page radiation pattern shows every shadow it should. Matches the Android app.
-- **Panning away while terrain data loads no longer burns the full wait.** The two bounded waits
-  in tower drawing (up to 2 s for the site_terrain row, up to 30 s for elevation data) now also
-  check the request's Dio `CancelToken`, not just the stale-generation check, right before and
-  after waiting — so a task the app has already discarded stops immediately instead of finishing
-  out its deadline.
-- **A site_terrain request that fails once is retried automatically.** Previously a single
-  network hiccup or gateway error fetching a site's terrain row left that site drawing on the
-  antenna height alone for the rest of the app's lifetime — nothing ever asked again. The request
-  is now retried once, after a short backoff, before falling back exactly as before.
 
 ## [1.14.23+158] — 2026-09-14
 
