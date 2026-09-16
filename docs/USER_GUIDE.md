@@ -31,7 +31,10 @@ Version 1.14 ports the Android app's interface overhaul:
   **Directions** and **ACMA** buttons.
 - **Search that answers** — searching now opens a **results list ranked nearest-first** (name,
   state/postcode, distance). Tap a result to fly there and open its details; your last 10
-  searches are remembered. The map no longer clears or zooms out to all of Australia.
+  searches are remembered (searching the same name again, in any letter case, reuses its spot
+  instead of listing it twice) and a **Clear** link empties the list. The map no longer clears
+  or zooms out to all of Australia, and the fly-to itself is skipped in favour of an instant
+  jump when your system's reduce-motion setting is on.
 - **Map legend** — the persistent **ⓘ Legend** chip (top-left) explains pin colours, coverage
   shading and ring labels.
 - **Dark mode** — the app now follows your system light/dark setting, including a dark map style
@@ -122,6 +125,9 @@ The menu is grouped the same way as the Android app:
   App Store (which may ask you to sign in), then tells you whether a purchase was found. The
   yearly option reverts to showing ads after 12 months and can be bought again; the permanent
   option never expires. While you have ads removed, the app will not sell you either option again.
+  On iOS, "1 Year Ad‑Free" may be sold under a different underlying App Store product than it was
+  previously (bead `aptios-589`) — this is invisible to you: the price, the year of ad-free
+  removal, and Restore Purchases all work the same either way.
 - **Donate** — support development with a one‑off in‑app purchase (small / medium / large).
   Donations are repeatable and do **not** remove ads (not shown on the Web build).
   - **Support the App** — the last item in the Donate menu; opens a full‑screen "Support Aus

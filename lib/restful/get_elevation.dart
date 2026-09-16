@@ -178,7 +178,7 @@ class GetElevation {
     } finally {
       // Always release GetLicenceHRP's wait loop — on failure the polygons simply draw
       // without terrain, and the user has been told why.
-      site.finishedDownloadingElevations = true;
+      site.markElevationsFinished();
     }
   }
 

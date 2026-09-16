@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -36,6 +37,32 @@ class Site {
   bool terrainRequested = false;
   bool terrainLoaded = false;
 
+  /// I3 (bead 8uq): completers released by [markTerrainLoaded] / [markElevationsFinished], so
+  /// GetLicenceHRP's terrain waits can `await` a future with a timeout instead of polling with
+  /// `Future.delayed` in a loop. A site is normally only ever settled once, but
+  /// `Completer.complete` throws if called a second time (unlike Java's idempotent
+  /// `CountDownLatch.countDown()`), so both mark* methods below guard with `isCompleted` first.
+  final Completer<void> _terrainCompleter = Completer<void>();
+  final Completer<void> _elevationCompleter = Completer<void>();
+
+  /// Completes once the site_terrain row (or its absence/failure) is settled.
+  Future<void> get terrainLoadedFuture => _terrainCompleter.future;
+
+  /// Completes once elevation data (downloaded, absent, or failed) is settled.
+  Future<void> get elevationsFinishedFuture => _elevationCompleter.future;
+
+  /// Marks the site_terrain row as settled and releases [terrainLoadedFuture] waiters.
+  void markTerrainLoaded() {
+    terrainLoaded = true;
+    if (!_terrainCompleter.isCompleted) _terrainCompleter.complete();
+  }
+
+  /// Marks elevation data as settled and releases [elevationsFinishedFuture] waiters.
+  void markElevationsFinished() {
+    finishedDownloadingElevations = true;
+    if (!_elevationCompleter.isCompleted) _elevationCompleter.complete();
+  }
+
   /// The height the path-loss model is given toward this bearing; see [TerrainHeight].
   double effectiveHeightM(double antennaHeightM, double bearing) =>
       TerrainHeight.effectiveHeightM(antennaHeightM, terrainGroundM, terrainMedians, bearing);
@@ -66,9 +93,9 @@ class Site {
         }
       }
       startedDownloadingElevations = true;
-      finishedDownloadingElevations = true;
+      markElevationsFinished();
     }
-    terrainLoaded = true;
+    markTerrainLoaded();
   }
 
   // We split sites per telco

@@ -3,11 +3,19 @@ import 'dart:convert';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_storekit/store_kit_2_wrappers.dart' show SK2Transaction;
 
-import '../helpers/entitlement_evaluator.dart' show skuSubscribeOneYear, skuSubscribePermanently;
+import '../helpers/entitlement_evaluator.dart'
+    show skuSubscribeOneYear, skuSubscribeOneYearPass, skuSubscribePermanently;
 
-/// The two products that remove ads. Everything else in the store (the donations) is a
-/// consumable that neither grants nor needs an entitlement, so the history scan ignores it.
-const Set<String> kAdFreeProductIds = <String>{skuSubscribeOneYear, skuSubscribePermanently};
+/// The products that remove ads: the legacy `yearly_adfree` consumable, its Non-Renewing
+/// Subscription replacement `yearly_adfree_pass` (bead aptios-589 — see
+/// [skuSubscribeOneYearPass]), and `permanent_adfree`. Everything else in the store (the
+/// donations) is a consumable that neither grants nor needs an entitlement, so the history scan
+/// ignores it.
+const Set<String> kAdFreeProductIds = <String>{
+  skuSubscribeOneYear,
+  skuSubscribeOneYearPass,
+  skuSubscribePermanently,
+};
 
 /// Pure readers over a StoreKit 2 transaction's `jsonRepresentation` — the decoded JWS
 /// transaction payload Apple documents as `JWSTransactionDecodedPayload`. The plugin surfaces it
