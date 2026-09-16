@@ -11,6 +11,14 @@ features and bugs are frequently fixed in both.
 ## [Unreleased]
 
 ### Changed
+- **The EIRP-to-signal-power constant chain now has named, documented constants instead of
+  unlabelled numbers.** The +3, gain-2.15, -41.7 and +13.5 dB terms in
+  DeviceDetails.getPowerAtBearing are now eirpHrpAgreementDb, dbiToDbdDb, rsrpConversionDb and
+  omniCalibrationDb, each documented with the live-data evidence behind its value. A new
+  widebandToRsrpConversionDb helper makes the theoretical, bandwidth-aware RSRP conversion
+  explicit and testable, alongside a note on why the empirically calibrated constant is used
+  instead (see bead aptios-6i0). This is a legibility change only - predicted signal is unchanged
+  to the tenth of a dB.
 - **"1 Year Ad-Free" now has a proper replacement product ready for the App Store.** Until now the
   yearly pass (`yearly_adfree`) was configured in App Store Connect as a Consumable — a product
   type Apple lets the store sell over and over, and one that "Restore Purchases" can never find
