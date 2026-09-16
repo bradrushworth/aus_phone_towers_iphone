@@ -1,7 +1,6 @@
 import 'package:phonetowers/utils/app_constants.dart';
 
 typedef void TowerInfoChanged({required String message});
-typedef void MenuItemChanged({required bool itemChanged});
 
 class NavigationMenu {
   static bool isTelstraVisible = true;
