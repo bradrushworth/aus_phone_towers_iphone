@@ -69,14 +69,22 @@ iOS. The table below lists each one and whether it can be brought to iOS.
 
 Both apps use the platform store for entitlements:
 
-- **Remove Ads — 1 Year** (`yearly_adfree`): grants ad-free for 365 days from the purchase;
-  after that ads return and it can be bought again. **On the App Store it is a Consumable**
-  (verified in App Store Connect, 2026-09-05) — the store will sell it again at any time, and a
-  consumable is never returned by StoreKit's restore. The app therefore also reads the StoreKit 2
-  transaction history on every restore (see "Ads and billing" in `AGENTS.md`), which lists
-  finished consumables on iOS 18+ thanks to `SKIncludeConsumableInAppPurchaseHistory` in
-  `Info.plist`. Re-typing it as a non-renewing subscription under a new product id is tracked as
-  bead `aptios-589`.
+- **Remove Ads — 1 Year** (`yearly_adfree`, plus `yearly_adfree_pass` on iOS — bead `aptios-589`):
+  grants ad-free for 365 days from the purchase; after that ads return and it can be bought again.
+  **On the App Store `yearly_adfree` is a Consumable** (verified in App Store Connect,
+  2026-09-05) — the store will sell it again at any time, and a consumable is never returned by
+  StoreKit's restore. Product types cannot be changed after creation, so the fix is a second
+  product id, `yearly_adfree_pass`, typed as a **Non-Renewing Subscription** — restorable, and
+  re-purchasable once its year is up. The app buys and prices whichever id the store currently
+  offers (the pass once the owner has created it in App Store Connect, `yearly_adfree` until
+  then) and honours both for existing owners: either id grants the same one-year entitlement,
+  computed the same way. The app also still reads the StoreKit 2 transaction history on every
+  restore (see "Ads and billing" in `AGENTS.md`), which lists finished consumables on iOS 18+
+  thanks to `SKIncludeConsumableInAppPurchaseHistory` in `Info.plist` — needed for `yearly_adfree`
+  holdouts; the pass is expected to already restore normally, not being a consumable. Google Play
+  is unaffected: Android purchases ad-free products as acknowledged-but-never-consumed, which
+  Play's Billing Library returns from a query regardless of age, so there is no Play-side
+  equivalent of this bug and no new Android product was created.
 - **Remove Ads — Permanent** (`permanent_adfree`): a non-consumable purchase that removes ads
   forever and is restored on every launch.
 - **Donations** (small / medium / large): one-off consumable purchases that support development.
