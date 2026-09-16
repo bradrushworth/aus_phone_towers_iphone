@@ -46,6 +46,37 @@ class _FakeHttpClientAdapter implements HttpClientAdapter {
   }
 }
 
+/// A fake Dio [HttpClientAdapter] that serves [firstPageBody] for [firstPagePath] and returns
+/// an HTTP 500 (rather than throwing) for every other request, so tests can exercise the
+/// statusCode-failure branch specifically, as distinct from a thrown exception.
+class _ErrorStatusAfterFirstPageAdapter implements HttpClientAdapter {
+  _ErrorStatusAfterFirstPageAdapter({required this.firstPagePath, required this.firstPageBody});
+
+  final String firstPagePath;
+  final Map<String, dynamic> firstPageBody;
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(RequestOptions options,
+      Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
+    if (options.path == firstPagePath) {
+      return ResponseBody.fromString(
+        jsonEncode(firstPageBody),
+        200,
+        headers: {
+          Headers.contentTypeHeader: [Headers.jsonContentType],
+        },
+      );
+    }
+    return ResponseBody.fromString(
+      'Internal Server Error',
+      500,
+    );
+  }
+}
+
 /// A RESTify `pathloss_coefficients` row for composite coefficient group (mnc, density),
 /// distinguished by [mnc] so many rows can coexist in one fetch. Uses the composite key format
 /// (`density|mnc|networkType|band`) — the only form the server has published since the
@@ -161,9 +192,22 @@ void main() {
       expect(adapter.requestedPaths, [firstPagePath, page2Path, page3Path]);
     });
 
-    test('a fetch failure on a later page falls back to null rather than a partial set',
-        () async {
-      final List<Map<String, dynamic>> page1 = _rows(1);
+    test('a fetch failure before any page succeeds returns null', () async {
+      final Api api = Api.initialize()
+        ..dio.httpClientAdapter = _FakeHttpClientAdapter({
+          // firstPagePath deliberately absent: the fake adapter throws immediately, simulating
+          // a network failure on the very first request.
+        });
+
+      final PathLossCoefficients? coeffs = await GetPathLossCoefficients.fetchFromServer(api: api);
+
+      expect(coeffs, isNull);
+    });
+
+    test('a fetch failure on a later page keeps the rows already collected', () async {
+      // Page 1 succeeds with a full page (100 rows); page 2 fails outright. The rows already
+      // gathered from page 1 must not be discarded just because a later page failed.
+      final List<Map<String, dynamic>> page1 = _rows(100);
       const String page2Path = '/towers/pathloss_coefficients/page2';
 
       final Api api = Api.initialize()
@@ -175,7 +219,49 @@ void main() {
 
       final PathLossCoefficients? coeffs = await GetPathLossCoefficients.fetchFromServer(api: api);
 
-      expect(coeffs, isNull);
+      expect(coeffs, isNotNull);
+      expect(coeffs!.allComposite.length, 100);
+    });
+
+    test('an HTTP error status on a later page keeps the rows already collected', () async {
+      final List<Map<String, dynamic>> page1 = _rows(1);
+      const String page2Path = '/towers/pathloss_coefficients/page2-error';
+
+      final Api api = Api.initialize()
+        ..dio.httpClientAdapter = _ErrorStatusAfterFirstPageAdapter(
+          firstPagePath: firstPagePath,
+          firstPageBody: _page(page1, nextHref: page2Path),
+        );
+
+      final PathLossCoefficients? coeffs = await GetPathLossCoefficients.fetchFromServer(api: api);
+
+      expect(coeffs, isNotNull);
+      expect(coeffs!.allComposite.length, 1);
+    });
+
+    test('pagination stops at the 50-page ceiling and keeps the rows collected so far',
+        () async {
+      // 51 chained pages of 1 row each, each linking to the next — one past _maxPages. The loop
+      // must stop after the 50th page rather than following the link forever, and must return
+      // the 50 rows already gathered rather than discarding them.
+      const int pagesAvailable = 51;
+      final Map<String, Map<String, dynamic>> responsesByPath = {};
+      String? path = firstPagePath;
+      for (int i = 0; i < pagesAvailable; i++) {
+        final String? nextHref =
+            i < pagesAvailable - 1 ? '/towers/pathloss_coefficients/page${i + 2}' : null;
+        responsesByPath[path!] = _page(_rows(1, startMnc: i), nextHref: nextHref);
+        path = nextHref;
+      }
+
+      final _FakeHttpClientAdapter adapter = _FakeHttpClientAdapter(responsesByPath);
+      final Api api = Api.initialize()..dio.httpClientAdapter = adapter;
+
+      final PathLossCoefficients? coeffs = await GetPathLossCoefficients.fetchFromServer(api: api);
+
+      expect(coeffs, isNotNull);
+      expect(coeffs!.allComposite.length, 50);
+      expect(adapter.requestedPaths.length, 50);
     });
   });
 }

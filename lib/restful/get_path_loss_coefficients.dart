@@ -32,13 +32,16 @@ class GetPathLossCoefficients {
   /// coefficient groups existed when this endpoint was first written, so `_count=100` alone
   /// never truncated — but with no paging, any stratum published past row 100 would silently
   /// vanish and those sites would fall back to analytic Okumura-Hata with no error surfaced.
-  /// Returns null if the fetch fails (caller falls back to the analytic model).
+  /// Returns null if the fetch fails before any page succeeds (caller falls back to the
+  /// analytic model). If a later page fails after at least one earlier page has already been
+  /// collected, the rows gathered so far are kept and returned rather than discarded — the
+  /// truncation is logged, but a mid-sequence hiccup no longer forces a full fallback.
   ///
   /// [api] is injectable for tests; production callers omit it and get a real [Api.initialize].
   static Future<PathLossCoefficients?> fetchFromServer({Api? api}) async {
     Api resolvedApi = api ?? Api.initialize();
+    List<Map<String, dynamic>> allRows = [];
     try {
-      List<Map<String, dynamic>> allRows = [];
       String? nextPath = _path;
       int pageCount = 0;
 
@@ -62,6 +65,11 @@ class GetPathLossCoefficients {
         if (response.statusCode == null ||
             response.statusCode! < 200 ||
             response.statusCode! >= 300) {
+          if (allRows.isNotEmpty) {
+            _logger.w('Server returned HTTP ${response.statusCode} on page $pageCount, '
+                'keeping the ${allRows.length} rows already collected from earlier pages');
+            return _rowsToCoefficients(allRows);
+          }
           _logger.w('Server returned HTTP ${response.statusCode}, falling back');
           return null;
         }
@@ -92,6 +100,11 @@ class GetPathLossCoefficients {
 
       return _rowsToCoefficients(allRows);
     } catch (e) {
+      if (allRows.isNotEmpty) {
+        _logger.w('Could not fetch coefficients from server: $e; '
+            'keeping the ${allRows.length} rows already collected from earlier pages');
+        return _rowsToCoefficients(allRows);
+      }
       _logger.w('Could not fetch coefficients from server: $e');
       return null;
     }
