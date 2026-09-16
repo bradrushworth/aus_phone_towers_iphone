@@ -157,4 +157,54 @@ void main() {
       expect(GetLicenceHRP.shouldKeepWaitingForElevation(site, deadline, deadline), isFalse);
     });
   });
+
+  group('GetLicenceHRP.isCancelledFor', () {
+    // bead 8uq item 2: the terrain waits in getLicenceHRPData must honour BOTH the Dio
+    // CancelToken and the stale-generation check (requestIsCurrent), not just the latter one
+    // that already existed. Pure and static so the combination is unit-testable with fakes,
+    // without a real CancelToken or async wait.
+
+    test('neither signal fired -> not cancelled', () {
+      expect(
+        GetLicenceHRP.isCancelledFor(
+            cancelTokenCancelled: false, requestIsCurrentResult: true),
+        isFalse,
+      );
+    });
+
+    test('the CancelToken alone fired -> cancelled', () {
+      expect(
+        GetLicenceHRP.isCancelledFor(
+            cancelTokenCancelled: true, requestIsCurrentResult: true),
+        isTrue,
+      );
+    });
+
+    test('requestIsCurrent alone says false -> cancelled', () {
+      expect(
+        GetLicenceHRP.isCancelledFor(
+            cancelTokenCancelled: false, requestIsCurrentResult: false),
+        isTrue,
+      );
+    });
+
+    test('no requestIsCurrent callback supplied (null) -> only the CancelToken matters', () {
+      expect(
+        GetLicenceHRP.isCancelledFor(cancelTokenCancelled: false, requestIsCurrentResult: null),
+        isFalse,
+      );
+      expect(
+        GetLicenceHRP.isCancelledFor(cancelTokenCancelled: true, requestIsCurrentResult: null),
+        isTrue,
+      );
+    });
+
+    test('both signals fired -> cancelled', () {
+      expect(
+        GetLicenceHRP.isCancelledFor(
+            cancelTokenCancelled: true, requestIsCurrentResult: false),
+        isTrue,
+      );
+    });
+  });
 }
