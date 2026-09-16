@@ -30,12 +30,15 @@ class DeviceDetails {
 
   /// Empirical offset applied after the Watts-to-dBm conversion in [getPowerAtBearing]. Not
   /// theoretically derived - kept because it best aligns the eirp-derived power path with the
-  /// separate licence_hrp.power reference path (see bead keen-moser-3c3ce6-aqw), and because
-  /// EirpScaleIT's replay of 42,838 real LTE observations (Android commit 941c8697, SETTLED
-  /// 2026-08-25) found the chain including this term scores closest to measured reality: median
-  /// residual -1.83 dB, vs -7.14 dB for a literal theoretical RSRP conversion (see
-  /// [widebandToRsrpConversionDb]) and +23.65 dB with no calibration terms at all. Mirrors the
-  /// Java app's DeviceDetails.EIRP_HRP_AGREEMENT_DB.
+  /// separate licence_hrp.power reference path (see bead keen-moser-3c3ce6-aqw). EirpScaleIT's
+  /// replay of real LTE observations found the chain including this term scores closest to
+  /// measured reality: median residual -1.83 dB (indicative, see caveat below), vs -7.14 dB for
+  /// a literal theoretical RSRP conversion (see [widebandToRsrpConversionDb]) and +23.65 dB
+  /// with no calibration terms at all. Caveat: these constants were fitted against
+  /// device_details.eirp data that mixes Watts and dB-scale values for approximately 1.85% of rows
+  /// (bead keen-moser-3c3ce6-aqw, still in progress). The quoted residuals are therefore
+  /// indicative, not settled, and reflect the current constant-chain calibration against
+  /// that mixed-unit dataset. Mirrors the Java app's DeviceDetails.EIRP_HRP_AGREEMENT_DB.
   static const double eirpHrpAgreementDb = 3.0;
 
   /// dBi to dBd conversion applied to directional antenna gain (dipole vs isotropic reference).
@@ -49,14 +52,14 @@ class DeviceDetails {
   /// that value explicitly and is unit-tested against the standard LTE resource-block table.
   /// For a 20 MHz carrier it comes to about -30.8 dB.
   ///
-  /// This constant is NOT that theoretical value. EirpScaleIT's replay against 42,838 real
-  /// observations (bead keen-moser-3c3ce6-aqw, SETTLED 2026-08-25, hypothesis B) found the
-  /// literal theoretical conversion scores WORSE than the status quo (median residual -7.14 dB
-  /// vs -1.83 dB), so the empirically correct offset is nearer -27 dB, not -30.8 dB, and the
-  /// remaining gap is the [eirpHrpAgreementDb] / antenna-pattern calibration this chain also
-  /// carries. Do not replace this constant with [widebandToRsrpConversionDb]'s output without
-  /// re-running that replay - it was tried and made predictions worse. Mirrors the Java app's
-  /// DeviceDetails.RSRP_CONVERSION_DB.
+  /// This constant is NOT that theoretical value. EirpScaleIT's replay against real observations
+  /// (bead keen-moser-3c3ce6-aqw, still in progress, hypothesis B) found the literal theoretical
+  /// conversion scores WORSE than the status quo (median residual -7.14 dB vs -1.83 dB, indicative,
+  /// see [eirpHrpAgreementDb] caveat), so the empirically correct offset is nearer -27 dB,
+  /// not -30.8 dB, and the remaining gap is the eirpHrpAgreementDb / antenna-pattern calibration
+  /// this chain also carries. Do not replace this constant with [widebandToRsrpConversionDb]'s
+  /// output without re-running that replay - it was tried and made predictions worse. Mirrors the
+  /// Java app's DeviceDetails.RSRP_CONVERSION_DB.
   /// https://www.phys.hawaii.edu/~anita/new/papers/militaryHandbook/antennas.pdf
   static const double rsrpConversionDb = -41.7;
 
