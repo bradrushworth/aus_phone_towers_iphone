@@ -113,14 +113,14 @@ appears once you allow location access.</p>
 except that non-carrier transmitters are drawn in a deeper rose than their pale pin so the shape stays visible
 on the map. Each transmitter's shape is built from up to <strong>four nested contour rings</strong> —
 <strong>Maximum</strong>, <strong>Strong</strong>, <strong>Good</strong> and <strong>Weak</strong>, innermost to
-outermost — each marking how far that signal level is predicted to reach. Which rings are drawn depends on the
+outermost — each marking where a phone is most likely to still measure that signal level. Which rings are drawn depends on the
 <strong>Signal strength</strong> filter (<a href="#s5">section 5</a>); the default is <em>Good</em>, so you get the Maximum,
 Strong and Good rings. While Follow GPS is on the app sets the filter aside and keeps all four rings visible.
 Their translucent fills stack, making the inner, stronger areas darker.</p>
 
 <p>Two different things are encoded in a coverage shape, and it is worth keeping them apart:</p>
 <ul>
-  <li><strong>Size</strong> is reach — how far the signal is predicted to travel. That depends on transmitter
+  <li><strong>Size</strong> is reach — how far a phone is likely to still measure that signal. That depends on transmitter
       power, frequency, antenna pattern, the surrounding environment, and the transmitter's height above the
       terrain around it — a hilltop tower reaches further and a valley tower less. Low frequencies travel
       much further.</li>
@@ -370,8 +370,9 @@ app.</p>
       unavailable.</li>
   <li><strong>The map reopens where you left it</strong> when you come back to the app, unless Follow GPS is
       on, in which case your live position wins.</li>
-  <li><strong>Coverage shapes are predictions</strong> from licence data, not measurements. Real coverage
-      depends on terrain, buildings and your device.</li>
+  <li><strong>Coverage rings are calibrated against real phone measurements</strong> (section 3) for 4G and
+      5G, but the shape still comes from licence data, not a live reading from your device. Real coverage
+      also depends on buildings, and on terrain unless Terrain mode is on.</li>
   <li><strong>Dark mode</strong> follows your system setting and styles the whole app — the toolbar, the
       panels, this guide and the messages that pop up — but Google only allows the <em>Normal</em> basemap to
       be darkened. In Terrain, Satellite or Hybrid the map itself stays light.</li>

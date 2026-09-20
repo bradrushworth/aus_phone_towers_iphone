@@ -12,7 +12,7 @@ publish_to: 'none'
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.15.1+160
+version: 1.16.0+161
 
 environment:
   sdk: '>=3.9.2 <4.0.0'
@@ -75,6 +75,9 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   # test/ui/widgets/user_guide_screen_test.dart installs a fake WebViewPlatform.
   webview_flutter_platform_interface: ^2.15.1
+  # test/pathloss/contour_coefficients_test.dart hashes the bundled table. Already resolved
+  # transitively (see pubspec.lock); listed directly because we import it ourselves now.
+  crypto: ^3.0.7
   # flutter_drive (the screenshots-workflow in codemagic.yaml) loads
   # test_driver/integration_test.dart, which imports package:flutter_driver. Without this
   # entry that import does not resolve and the driver cannot be compiled at all.
@@ -107,6 +110,9 @@ flutter:
     # (the Android app needs a Gradle copy task for the same thing; Flutter can declare the
     # file where it already lives).
     - docs/user-guide.html
+    # Path-loss model v2's coefficient table (pathloss/CONTOUR_COEFFICIENTS_v2 in the Android
+    # app). Bundled with the app, versioned with the code -- see ContourCoefficients.
+    - assets/pathloss/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
