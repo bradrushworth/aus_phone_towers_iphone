@@ -1,116 +1,420 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Aus Phone Towers (iPhone & Web) — User Guide</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.55; max-width: 760px; margin: 0 auto; padding: 1rem 1.25rem; color: #222; }
-    h1 { font-size: 1.55rem; margin-bottom: .25rem; }
-    h2 { font-size: 1.25rem; margin-top: 1.75rem; border-bottom: 1px solid #e0e0e0; padding-bottom: .35rem; }
-    h3 { font-size: 1.05rem; margin-top: 1.25rem; }
-    .note { background: #fff3cd; border-left: 4px solid #ffc107; padding: .75rem 1rem; margin: 1rem 0; }
-    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-    th, td { border: 1px solid #ddd; padding: .5rem .6rem; text-align: left; vertical-align: middle; }
-    th { background: #f5f5f5; }
-    .swatch { display: inline-block; width: 1.2rem; height: 1.2rem; border: 1px solid #aaa; border-radius: 3px; margin-right: .4rem; vertical-align: middle; }
-    ul { padding-left: 1.25rem; }
-    li { margin: .35rem 0; }
-    code { background: #f4f4f4; padding: .1rem .35rem; border-radius: 3px; font-size: .9em; }
-    a { color: #3F51B5; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aus Phone Towers — User Guide</title>
+<style>
+  /* Same look as the Android app's guide (aus_phone_towers_java docs/user-guide.html). The
+     colours are variables so the dark scheme can swap them: the guide is shown inside the app,
+     which follows the system light/dark setting, and fixed light backgrounds under the dark
+     scheme's light text would be unreadable. */
+  :root { color-scheme: light dark;
+          --bg: #ffffff; --fg: #1b1b1f; --accent: #3F51B5; --accent-2: #303F9F; --rule: #C5CAE9;
+          --th-bg: #C5CAE9; --cell-border: #888888; --code-bg: rgba(127,127,127,.18);
+          --tip-bg: #E8EAF6; --tip-edge: #3F51B5; --warn-bg: #E8F5E9; --warn-edge: #4CAF50;
+          --swatch-edge: #00000055; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #121318; --fg: #e4e2e9; --accent: #9FA8DA; --accent-2: #C5CAE9; --rule: #3A4066;
+            --th-bg: #2A2F52; --cell-border: #5C5F72; --code-bg: rgba(160,160,160,.22);
+            --tip-bg: #1E2340; --tip-edge: #9FA8DA; --warn-bg: #1B2E20; --warn-edge: #66BB6A;
+            --swatch-edge: #ffffff88; }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+         line-height: 1.6; max-width: 880px; margin: 0 auto; padding: 24px;
+         background: var(--bg); color: var(--fg);
+         -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  h1 { border-bottom: 3px solid var(--accent); padding-bottom: 8px; color: var(--accent); }
+  h2 { margin-top: 2em; border-bottom: 1px solid var(--rule); padding-bottom: 4px; color: var(--accent-2); }
+  h3 { color: var(--accent-2); }
+  a { color: var(--accent); }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; table-layout: fixed; }
+  th, td { border: 1px solid var(--cell-border); padding: 8px 10px; text-align: left; vertical-align: top;
+           word-wrap: break-word; overflow-wrap: break-word; }
+  th { background: var(--th-bg); }
+  .swatch { display: inline-block; width: 16px; height: 16px; border-radius: 3px;
+            border: 1px solid var(--swatch-edge); vertical-align: -3px; margin-right: 6px; }
+  .tip { background: var(--tip-bg); border-left: 4px solid var(--tip-edge); padding: 10px 14px; margin: 1em 0; }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-edge); padding: 10px 14px; margin: 1em 0; }
+  ul li { margin: 4px 0; }
+  @media (max-width: 480px) {
+    body { padding: 16px; }
+    th, td { padding: 6px 8px; }
+  }
+</style>
 </head>
 <body>
 
-<h1>Aus Phone Towers (iPhone & Web) — User Guide</h1>
+<h1>Aus Phone Towers — User Guide</h1>
+<p><em>Aus Phone Towers</em> maps the mobile phone towers — and, when you ask for them, the radio, TV and
+other licensed transmitters — anywhere in Australia. This guide covers the <strong>iPhone</strong> app and the
+<strong>web</strong> edition at ausphonetowers.com.au, which are the same app. It downloads each site from the
+ACMA licence register as you move around the map, and draws the tower, the transmitters licensed there and an
+estimate of how far their signal reaches.</p>
 
-<p><em>Aus Phone Towers</em> (<code>phonetowers</code>) is a Flutter app for <strong>iPhone</strong> and <strong>Web</strong> that maps the mobile phone towers across Australia. It downloads tower locations from ACMA / OpenCellID datasets and draws each transmitter on a Google Map together with its estimated coverage polygon.</p>
+<div class="tip"><strong>Where the data comes from:</strong> tower positions, frequencies, power and antenna
+details come from the ACMA licence and HRP (antenna radiation pattern) datasets.
+<strong>Coverage shapes are calculated estimates, not official carrier coverage maps</strong> — they are what
+the licensed transmitter power and antenna pattern predict, before buildings and trees.</div>
 
-<div class="note">
-  <strong>Note:</strong> This iPhone/Web edition is a port of the Android app and currently has <strong>fewer features</strong>. In particular it does <em>not</em> yet identify the specific tower your phone is connected to, so there is no "Cell Information" bar, no timing-advance ring and no crowd-sourced observation markers yet. Those features are planned but not ported.
-</div>
+<h2 id="s1">1. Finding your way around</h2>
 
-<h2>1. The map</h2>
-<ul>
-  <li><strong>Tower markers</strong> — one marker per transmitter. Instead of plain coloured pins, each tower is shown as the <strong>carrier's logo icon</strong> (Telstra, Optus, Vodafone, NBN, Dense Air, Other, or a generic non-telco icon). Tap a marker for details; the sheet names the carrier in a chip washed with its colour.</li>
-  <li><strong>Coverage polygons</strong> — coloured shaded areas showing the estimated coverage of each antenna. The colour matches the carrier (see the legend below). Toggle the outline with <strong>Show / Hide Borders</strong>. Follow GPS keeps every signal-strength contour visible; their translucent fills stack so stronger inner areas look darker, without changing camera zoom. Each ring also shows a small label at its centre with the <strong>frequency</strong> and <strong>network technology</strong>.</li>
-  <li><strong>Your location</strong> — a semi-transparent azure dot (requires Location permission). <strong>Follow GPS</strong> keeps the map centred on you at its current zoom as you move.</li>
-</ul>
+<p>The map is the app. Everything else opens as a panel that slides up from the bottom and slides away
+again. Close any panel by swiping it down or by tapping the map above it.</p>
 
-<h2>2. Colour & symbol legend</h2>
-<p>Tower markers use carrier logo icons. The colours below are used for the <strong>coverage polygons</strong> (fill and outline) and for the tower's icon where applicable.</p>
+<p>Across the top of the screen:</p>
 
 <table>
-  <thead>
-    <tr><th>Carrier / type</th><th>Polygon colour</th><th>Meaning</th></tr>
-  </thead>
-  <tbody>
-    <tr><td><span class="swatch" style="background:#0D54FF"></span> Telstra</td><td>Blue (13, 84, 255)</td><td>Telstra towers</td></tr>
-    <tr><td><span class="swatch" style="background:#007F87"></span> Optus</td><td>Teal / Cyan (0, 127, 135)</td><td>Optus towers</td></tr>
-    <tr><td><span class="swatch" style="background:#E60000"></span> Vodafone</td><td>Red (230, 0, 0)</td><td>Vodafone towers</td></tr>
-    <tr><td><span class="swatch" style="background:#11354F"></span> Dense Air</td><td>Navy (17, 53, 79)</td><td>Dense Air small cells</td></tr>
-    <tr><td><span class="swatch" style="background:#910F91"></span> NBN</td><td>Magenta / Violet (145, 15, 145)</td><td>NBN fixed-wireless & mobile</td></tr>
-    <tr><td><span class="swatch" style="background:#007FFF"></span> Other</td><td>Azure (0, 127, 255)</td><td>Other providers (TPG, Lycamobile, Vivid Wireless, ...)</td></tr>
-    <tr><td><span class="swatch" style="background:#E8639B"></span> Radio / TV / Civil / Pager / Aviation / CBRS</td><td>Rose (232, 99, 155)</td><td>Non-telco transmitters</td></tr>
-    <tr><td><span class="swatch" style="background:#007FFF;opacity:.6"></span> Your location</td><td>Azure dot</td><td>Your device's position (semi-transparent)</td></tr>
-  </tbody>
+  <tr><th style="width:32%">Control</th><th>What it does</th></tr>
+  <tr><td><strong>Filters</strong> (funnel)</td><td>Opens the filter panel. The little number on the icon
+      counts how many filter <em>groups</em> are hiding sites — not how many chips are off — so a brand-new
+      install shows no number at all. See <a href="#s5">section 5</a>.</td></tr>
+  <tr><td><strong>Follow GPS</strong></td><td>Starts or stops Follow GPS, which keeps the map centred on you
+      as you move. See <a href="#s4">section 4</a>.</td></tr>
+  <tr><td><strong>Map Layers</strong></td><td>Basemap style, the overlay switches and polygon precision.
+      See <a href="#s6">section 6</a>.</td></tr>
+  <tr><td><strong>Search</strong></td><td>Find a site by name or postcode. See <a href="#s7">section 7</a>.</td></tr>
+  <tr><td><strong>⋮ (overflow)</strong></td><td><strong>Refresh Data</strong> (clear the map and download the
+      current view again), <strong>Export Data</strong>, <strong>Settings</strong>, <strong>User Guide</strong>,
+      <strong>Report a Problem</strong> and <strong>Support the App</strong>.</td></tr>
 </table>
 
-<h2>3. Toolbar menu (top-right <code>⋯</code>)</h2>
-<ul>
-  <li><strong>Follow GPS</strong> — keep the map centred on your location at its current zoom. All signal-strength contours remain visible while it is on; turning it off restores the Signal Strength filter's outer contour.</li>
-  <li><strong>Show / Hide Borders</strong> — toggle the radiation polygon outlines.</li>
-  <li><strong>Search Sites</strong> — find a specific tower / site.</li>
-  <li><strong>Reload Everything</strong> — clear the map and re-download all towers for the current area.</li>
-  <li><strong>Map Mode</strong> — Terrain / Hybrid / Satellite / Normal base map.</li>
-  <li><strong>Hiding Menu</strong> — Hide / Show Radiation on Click (draw a tower's coverage polygon when you tap it).</li>
-  <li><strong>Remove Ads</strong> — subscribe to remove advertising (currently hidden from the menu; ads still show for non-subscribers).</li>
-  <li><strong>Donate</strong> — support development with an in-app purchase (not shown on the Web build).</li>
-  <li><strong>Developer / Regular Mode</strong> — show extra diagnostic overlays.</li>
-  <li><strong>Report Problem</strong> — take a screenshot to send feedback.</li>
-  <li><strong>Export</strong> — save the coverage polygons currently drawn on the map (with their tower and device details) to <strong>GeoJSON</strong>, <strong>CSV</strong> and <strong>KML</strong> files in the app's documents folder. The three files are timestamped and can be opened in GIS tools such as QGIS or Google Earth. If no polygons are drawn, nothing is exported.</li>
-  <li><strong>Links</strong> — Rate App, AusPhoneTowers.com.au, iOS App Store, Source Code.</li>
-  <li><strong>User Guide</strong> — opens this page.</li>
-</ul>
+<p>A <strong>ⓘ Legend</strong> chip sits at the top-left of the map at all times. It explains the pin colours,
+the coverage shading and the ring labels without leaving the map.</p>
 
-<h2>4. Navigation-drawer filters</h2>
-<p>Open the drawer (top-left) to control what is shown:</p>
-<ul>
-  <li><strong>Licencees</strong> — Telstra, Optus, Vodafone, NBN, Other. (Dense Air is downloaded but not yet a toggle.)</li>
-  <li><strong>2G / 3G / 4G / 5G</strong> — GSM, UMTS, LTE, NR.</li>
-  <li><strong>Multiplex Type</strong> — NOT LTE, FD-LTE, TD-LTE.</li>
-  <li><strong>Frequencies</strong> — < 700 MHz, 700–1000 MHz, 1.0–2.4 GHz, 2.4–3.8 GHz, &ge; 3.8 GHz.</li>
-  <li><strong>Radiation Models</strong> (city density) — Metropolitan, Urban, Suburban, Open.</li>
-  <li><strong>Signal Strength</strong> — Maximum, Strong, Good, Weak.</li>
-  <li><strong>Transmitter Type</strong> — Telecommunications, Radio, TV, Civil, Pager, CBRS, Aviation.</li>
-</ul>
+<div class="tip"><strong>Zoom in to load towers.</strong> Sites are downloaded for the area you are looking at,
+a tile at a time, as you pan. Zoomed out so far that a whole region is on screen, the app stops downloading
+and says <em>Zoom in further to download towers…</em> — zoom back in and they appear.</div>
 
-<h2>5. Important behaviours</h2>
-<ul>
-  <li><strong>Zoom to load</strong> — towers are downloaded in tiles as you pan / zoom. Zoom in ("Zoom in further to download towers…") to populate an area.</li>
-  <li><strong>Location is optional</strong> — the app works without granting location; you just won't see your position or get location-based centring.</li>
-  <li><strong>Web vs iPhone</strong> — the Web build hides the Donate buttons (App Store purchases aren't available in a browser) and uses web-optimised icon assets. Rate App uses the in-app review prompt where supported.</li>
-  <li><strong>Coverage polygons are estimates</strong> — generated from ACMA licence / HRP data and a radiation model, not official carrier coverage maps.</li>
-  <li><strong>No connected-tower features yet</strong> — unlike the Android app, this edition does not yet show which tower you are using, the Cell Information bar, the timing-advance ring, or crowd-sourced observation markers.</li>
-</ul>
+<h2 id="s2">2. Tower pins</h2>
 
-<h2>6. Differences from the Android app</h2>
+<p>Every transmitter site is a teardrop pin, coloured by the licensee that operates it and marked with its
+initial. Pins are also <strong>tilted at a different angle per carrier</strong>, so when several carriers share
+one tower the pins fan out from the same point and each one can still be seen and tapped.</p>
+
 <table>
-  <thead>
-    <tr><th>Feature</th><th>Android</th><th>iPhone / Web</th></tr>
-  </thead>
-  <tbody>
-    <tr><td>Tower markers</td><td>Coloured pins (rotated)</td><td>Carrier logo icons</td></tr>
-    <tr><td>Connected-tower / Cell Info bar</td><td>Yes</td><td>Not yet</td></tr>
-    <tr><td>Timing-advance ring</td><td>Yes</td><td>Not yet</td></tr>
-    <tr><td>Observation markers (yellow / orange)</td><td>Yes</td><td>Not yet</td></tr>
-    <tr><td>Follow-GPS drive mode</td><td>Yes</td><td>Yes</td></tr>
-    <tr><td>Shows your location dot</td><td>Yes</td><td>Yes (azure dot)</td></tr>
-  </tbody>
+  <tr><th style="width:34%">Pin</th><th>Who it is</th></tr>
+  <tr><td><span class="swatch" style="background:#0D54FF"></span><strong>Blue “T”</strong>, leaning left</td><td><strong>Telstra</strong> — including its resellers</td></tr>
+  <tr><td><span class="swatch" style="background:#007F87"></span><strong>Teal “O”</strong>, upright</td><td><strong>Optus</strong> — including Vivid Wireless</td></tr>
+  <tr><td><span class="swatch" style="background:#E60000"></span><strong>Red “V”</strong>, leaning right</td><td><strong>Vodafone</strong> — including TPG</td></tr>
+  <tr><td><span class="swatch" style="background:#910F91"></span><strong>Purple “N”</strong>, pointing down to the right</td><td><strong>NBN</strong> — fixed-wireless</td></tr>
+  <tr><td><span class="swatch" style="background:#11354F"></span><strong>Navy “D”</strong>, lying to the right</td><td><strong>Dense Air</strong> — small cells</td></tr>
+  <tr><td><span class="swatch" style="background:#007FFF"></span><strong>Azure “–”</strong>, pointing down to the left</td><td><strong>Other mobile carriers</strong> — MVNOs and private networks such as RailCorp and OptiTel</td></tr>
+  <tr><td><span class="swatch" style="background:#FFB1D8"></span><strong>Pale rose “–”</strong></td><td><strong>Everything that is not a mobile carrier</strong> — radio, TV, CBRS, civil, pager and aviation transmitters. Hidden until you switch them on in Filters.</td></tr>
 </table>
 
-<h2>7. Feedback & support</h2>
-<p>Use <strong>Report Problem</strong> (screenshot) or the <strong>Links</strong> menu (Rate App / AusPhoneTowers.com.au / iOS App Store / Source Code). The Web/iOS app is still under active development — feedback is welcome at <a href="mailto:bitbot@bitbot.com.au">bitbot@bitbot.com.au</a>.</p>
+<p>Your own position is the standard Google Maps <strong>blue dot</strong>, not one of the app's pins. It
+appears once you allow location access.</p>
+
+<h2 id="s3">3. Coverage polygons</h2>
+
+<p>Tap a tower and the app draws its estimated coverage in the carrier's colour — the same colours as the pins,
+except that non-carrier transmitters are drawn in a deeper rose than their pale pin so the shape stays visible
+on the map. Each transmitter's shape is built from up to <strong>four nested contour rings</strong> —
+<strong>Maximum</strong>, <strong>Strong</strong>, <strong>Good</strong> and <strong>Weak</strong>, innermost to
+outermost — each marking how far that signal level is predicted to reach. Which rings are drawn depends on the
+<strong>Signal strength</strong> filter (<a href="#s5">section 5</a>); the default is <em>Good</em>, so you get the Maximum,
+Strong and Good rings. While Follow GPS is on the app sets the filter aside and keeps all four rings visible.
+Their translucent fills stack, making the inner, stronger areas darker.</p>
+
+<p>Two different things are encoded in a coverage shape, and it is worth keeping them apart:</p>
+<ul>
+  <li><strong>Size</strong> is reach — how far the signal is predicted to travel. That depends on transmitter
+      power, frequency, antenna pattern, the surrounding environment, and the transmitter's height above the
+      terrain around it — a hilltop tower reaches further and a valley tower less. Low frequencies travel
+      much further.</li>
+  <li><strong>Depth of colour</strong> is capacity — a stronger tint means that transmitter can carry more
+      data. Overlapping shapes also stack up and look deeper.</li>
+</ul>
+
+<p>Each transmitter's outer ring carries a small label with its <strong>frequency and technology</strong> —
+<code>850 MHz 4G</code>, <code>3510 MHz 5G</code> and so on. The label sits on the ring's outer line at the
+point furthest from the tower, so on an irregular shape it can turn up at a different angle for every tower.
+That is expected.</p>
+
+<ul>
+  <li><strong>Tap the same tower again</strong> to take its coverage off the map.</li>
+  <li><strong>Tap a different tower</strong> and its coverage replaces the previous one — unless
+      <strong>Multi-tower coverage</strong> is on (<a href="#s6">section 6</a>), in which case each tower you tap is added to
+      what is already drawn, which is how you compare neighbouring sites.</li>
+</ul>
+
+<div class="tip">Not every transmitter has a published antenna pattern. A site without one gets a simple
+estimated shape from its licensed power, rather than nothing.</div>
+
+<p><strong>Polygon precision</strong> (Map Layers, <a href="#s6">section 6</a>) controls how many points make up each ring:
+<strong>Low</strong> (faster, blockier), <strong>Medium</strong> (default) or <strong>High</strong> (smoother,
+more points, slower to draw). It only applies to coverage drawn <em>after</em> you change it — shapes already
+on the map keep their existing detail.</p>
+
+<h2 id="s4">4. Follow GPS</h2>
+
+<p><strong>Follow GPS</strong> is drive mode. While it is on, the map stays centred on you as you move, at
+whatever zoom you have chosen, and a <strong>⦿ Driving · following GPS</strong> chip sits at the top of the map
+so the state is never in doubt. The toolbar icon is filled and tinted while it is on, and struck through while
+it is off.</p>
+
+<p><strong>What the map shows while you drive.</strong> Every tower whose coverage is on the map keeps all four
+nested signal contours from <a href="#s3">section 3</a>, drawn a little stronger than usual so they stay readable at a glance.
+Coverage never changes the camera zoom — only your position moves the map.</p>
+
+<p><strong>Which way is up.</strong> On iPhone, <em>Settings → Map rotation while driving</em> decides how the
+map turns while Follow GPS is on:</p>
+
+<table>
+  <tr><th style="width:32%">Setting</th><th>What it does</th></tr>
+  <tr><td><strong>Travel direction</strong> (default)</td><td>The map turns to face the way you are travelling,
+      from your GPS course. It only updates while you are actually moving, so it does not spin about when you
+      stop at the lights.</td></tr>
+  <tr><td><strong>Phone orientation</strong></td><td>The map turns to face the way you point the phone, from
+      its compass. Useful when you are standing still and lining the map up with a tower you can see. If the
+      phone reports no compass the app says so and leaves the map as it is.</td></tr>
+  <tr><td><strong>Off</strong></td><td>The app never turns the map for you.</td></tr>
+</table>
+
+<p>Rotation is only ever applied by Follow GPS, so these settings do nothing while it is off. The web edition
+has no rotation settings.</p>
+
+<div class="tip"><strong>Follow GPS is always started and stopped by you.</strong> Unlike the Android app, this
+edition never switches it on by itself when you start driving. It needs location access, keeps the GPS running
+and uses more battery, so turn it off when you arrive. It is not remembered between launches.</div>
+
+<h2 id="s5">5. Filters</h2>
+
+<p>The funnel icon opens the filter panel, which controls what the map draws. The count at the top —
+<em>“N sites shown”</em> — counts the sites already downloaded as you have moved around the map, not every site
+in Australia. Your choices are remembered between launches.</p>
+
+<table>
+  <tr><th style="width:26%">Group</th><th>What it does</th></tr>
+  <tr><td><strong>Carrier</strong></td><td>Telstra, Optus, Vodafone, NBN, Other.</td></tr>
+  <tr><td><strong>Generation</strong></td><td>2G GSM, 3G UMTS, 4G LTE, 5G NR. One site often carries several.</td></tr>
+  <tr><td><strong>Frequency</strong></td><td>Five bands from below 700 MHz to 3.8 GHz and above. Low bands
+      travel far and get inside buildings; high bands carry much more data but reach less far.</td></tr>
+  <tr><td><strong>City density</strong></td><td>Metropolitan, Urban, Suburban, Open — how built-up the area
+      around the site is, which is what the coverage model assumes about obstructions.</td></tr>
+  <tr><td><strong>Signal strength</strong></td><td>Maximum, Strong, Good, Weak. <strong>Pick one</strong> — this
+      is not a hide filter, it sets how far out the coverage rings are drawn. Default is <em>Good</em>. While
+      Follow GPS is on, all four contours are shown (<a href="#s4">section 4</a>).</td></tr>
+  <tr><td><strong>Transmitter type</strong></td><td>Telco, Radio, TV, Civil, Pager, CBRS, Aviation. Only
+      <strong>Telco</strong> is on to begin with, so broadcast and specialist transmitters are hidden until you
+      turn them on. <em>Telco</em> is a master switch for the Carrier chips.</td></tr>
+  <tr><td><strong>Advanced ▾</strong></td><td>Tap to expand. Holds <strong>Multiplex</strong> — whether a 4G
+      transmitter uses FD-LTE (separate send and receive frequencies, the common case) or TD-LTE (one
+      frequency shared in time slots, common on fixed-wireless and small cells). <em>NOT LTE</em> covers
+      every transmitter that is not 4G.</td></tr>
+</table>
+
+<div class="warn"><strong>Two things that surprise people.</strong> The filter badge does not count chips that
+are off; it counts the <em>groups</em> with something switched off. Switch off 5G NR and the badge reads
+<strong>1</strong>; switch off Optus as well and it reads <strong>2</strong>. Radio, TV, civil, pager, CBRS and
+aviation never add to it, on or off — they start off, and that <em>is</em> the default. And the
+<strong>Telco</strong> chip and the Carrier chips move together: turning Telco off turns every carrier off,
+turning any carrier back on turns Telco back on, and turning the last carrier off turns Telco off.</div>
+
+<h2 id="s6">6. Map Layers</h2>
+
+<table>
+  <tr><th style="width:32%">Setting</th><th>What it does</th></tr>
+  <tr><td><strong>Map mode</strong></td><td>Terrain, Hybrid, Satellite or Normal basemap. Terrain is the
+      default. On Satellite and Hybrid the coverage shapes are drawn slightly more opaque so they stay
+      readable over imagery.</td></tr>
+  <tr><td><strong>Terrain-aware coverage</strong></td><td>Off by default. Every coverage shape already allows
+      for the transmitter's height above the terrain around it, in both modes. This switch goes further and
+      walks the actual terrain along every bearing: a ridge casts a shadow, the far slope of a valley that sees
+      the tower again is covered, and the shadow behind the ridge shows as a hole in the shape. Terrain
+      profiles come from the app's server, with Google's elevation service as a fallback. More accurate and
+      noticeably slower.</td></tr>
+  <tr><td><strong>Polygon borders</strong></td><td>On by default. Outlines each transmitter's outermost
+      contour so you can see the edges where shapes overlap.</td></tr>
+  <tr><td><strong>Coverage on tap</strong></td><td>On by default. When off, tapping a tower opens its details
+      without drawing coverage, and any coverage already on the map is cleared.</td></tr>
+  <tr><td><strong>Multi-tower coverage</strong></td><td>Off by default. When on, each tower you tap
+      <em>adds</em> its coverage to the map instead of replacing the last one. Turning it off clears what has
+      built up.</td></tr>
+  <tr><td><strong>Lock map</strong></td><td>Freezes the camera: pan, zoom, rotate and tilt gestures, the
+      my-location button, Follow GPS's recentring and Search's jump-to-result all stop moving it. Handy for
+      taking a screenshot or comparing a fixed area of coverage without anything nudging the view — turn it
+      off again to get normal map control back. It is not remembered between launches.</td></tr>
+  <tr><td><strong>Polygon precision</strong></td><td>Low, Medium or High — see <a href="#s3">section 3</a>.</td></tr>
+</table>
+
+<h2 id="s7">7. Search</h2>
+
+<p>Search finds <strong>transmitter sites</strong> — not street addresses, not suburbs as places. Tap the
+magnifier, type part of a site name (site names usually contain the street and suburb), or a
+<strong>4-digit postcode</strong> for a postcode match, and press Search (Enter on the web). Results are ranked
+nearest first from the middle of the map, and each row shows the site name, its state and postcode, and how
+far away it is. Very broad searches are capped at the first 50 matches. The back arrow closes the search
+box.</p>
+
+<p>Tap a result and the map flies to that site and opens its details. If your device has
+<em>Reduce Motion</em> switched on, the map jumps there instead of flying. Your last ten searches are kept under
+<strong>Recent searches</strong> so you can repeat one with a tap; searching the same name again, in any letter
+case, moves it to the top rather than listing it twice, and <strong>Clear</strong> empties the list.</p>
+
+<div class="tip">If the map moves but no site panel opens, the tower data for that area had not finished
+downloading. Tap the pin once it appears. If the map does not move at all, check that
+<strong>Lock map</strong> is off.</div>
+
+<h2 id="s8">8. Tapping a tower — the site panel</h2>
+
+<p>Tapping any pin opens that site's panel from the bottom of the screen. It shows the site name, a chip
+naming the carrier in a wash of its colour, then the state, postcode and ACMA site ID. Below that are the
+site's latitude and longitude and, where the register has them, its ground elevation, the tower height and the
+<strong>city density</strong> class the coverage model uses for it (Metropolitan through to Open).</p>
+
+<p>Then comes the transmitter table, one row per band:</p>
+
+<table>
+  <tr><th style="width:22%">Column</th><th>Meaning</th></tr>
+  <tr><td><strong>Gen</strong></td><td>2G, 3G, 4G, 5G — or LP for narrowband IoT.</td></tr>
+  <tr><td><strong>Frequency</strong></td><td>The band's centre frequency.</td></tr>
+  <tr><td><strong>Bandwidth</strong></td><td>How much spectrum that transmitter uses. More bandwidth, more capacity.</td></tr>
+  <tr><td><strong>MIMO</strong></td><td>How many antenna paths serve that band — <code>4x</code>, <code>8x</code>
+      and so on. More paths means more simultaneous data streams.</td></tr>
+  <tr><td><strong>LTE</strong></td><td><code>FD</code> or <code>TD</code> duplexing, blank for non-4G.</td></tr>
+  <tr><td><strong>Capacity</strong></td><td>A theoretical peak for that band, shared by <em>everyone</em>
+      connected to that sector. It is not the speed you would get.</td></tr>
+</table>
+
+<div class="tip">Several antennas on the same frequency roll up into one row, and the <strong>MIMO</strong>
+column shows how many there are. Broadcast sites (radio, TV and so on) get a different table: frequency,
+emission designator, call sign and capacity. If the panel says <em>Device data still downloading…</em>, close
+it and tap the pin again in a moment.</div>
+
+<p>Two buttons sit at the bottom of the panel:</p>
+
+<table>
+  <tr><th style="width:24%">Button</th><th>What it does</th></tr>
+  <tr><td><strong>Directions</strong></td><td>Hands the site's coordinates to Google Maps.</td></tr>
+  <tr><td><strong>ACMA ↗</strong></td><td>Opens this site's official record in the ACMA Register of
+      Radiocommunications Licences, in your browser.</td></tr>
+</table>
+
+<h2 id="s9">9. Exporting map data</h2>
+
+<p><strong>⋮ → Export Data</strong> offers three exports:</p>
+
+<table>
+  <tr><th style="width:38%">Option</th><th>Contents</th></tr>
+  <tr><td>Export Towers (GeoJSON)<br>Export Towers (CSV)</td><td>Every tower gathered as you panned around —
+      not just what is on screen right now — one entry per band, with its carrier, generation, frequency,
+      bandwidth, power, azimuth and height. Either option writes both files.</td></tr>
+  <tr><td>Export Coverage (GeoJSON)</td><td>One polygon per coverage ring currently drawn, with its tower and
+      transmitter details, written as GeoJSON, CSV and KML for tools such as QGIS, CalTopo, ArcGIS Pro and
+      Google Earth. Tap a tower to draw its coverage first.</td></tr>
+</table>
+
+<p>The files are time-stamped and saved in the app's own documents folder; the message that follows lists each
+file's name. If there is nothing on the map to export, the app says so instead.</p>
+
+<div class="warn"><strong>Known limits.</strong> On iPhone the exported files stay inside the app's private
+storage and cannot yet be shared out to Files or another app, and the web edition cannot export at all. The
+Android app can do both today; bringing the same to this edition is planned.</div>
+
+<div class="tip"><strong>Why this exists:</strong> police search-and-rescue units export the tower position and
+antenna height into CalTopo or ArcGIS Pro and run a <em>viewshed</em> — a line-of-sight analysis that produces
+a realistic search area, often around half the area claimed by carrier coverage maps.</div>
+
+<h2 id="s10">10. Settings</h2>
+
+<table>
+  <tr><th style="width:32%">Setting</th><th>What it does</th></tr>
+  <tr><td><strong>Map rotation while driving</strong></td><td>iPhone only. See <a href="#s4">section 4</a>.</td></tr>
+  <tr><td><strong>Frequency refarming</strong></td><td>On by default. Carriers have moved many old 3G licences
+      over to 4G and 5G. With this on, those licences are shown as what they carry today (4G LTE); with it
+      off, they are shown as the licence literally reads (3G UMTS). Changing it reloads the towers.</td></tr>
+  <tr><td><strong>Developer Mode</strong></td><td>Outlines the map tiles that have been downloaded, draws plain
+      circular coverage in place of the antenna-pattern shapes, and adds store diagnostics to the Support
+      the App page. Ordinary users never need it.</td></tr>
+  <tr><td><strong>Remove ads &amp; donate</strong></td><td>iPhone only. Opens the Support the App page
+      (<a href="#s11">section 11</a>).</td></tr>
+  <tr><td><strong>Restore Purchases</strong></td><td>iPhone only. Checks with the App Store — which may ask you
+      to sign in — and tells you whether an ad-free purchase was found. Use it if ads are still showing after
+      you have paid, or on a new phone.</td></tr>
+  <tr><td><strong>Help</strong></td><td>This guide, Report a problem, the website, the store listings and the
+      source code.</td></tr>
+  <tr><td><strong>Version</strong></td><td>The exact build you are running. Tap it to copy the number for a
+      problem report.</td></tr>
+  <tr><td><strong>Rate the app</strong></td><td>iPhone only. Asks the App Store for its rating prompt and also
+      opens the store listing, because Apple does not always show the prompt.</td></tr>
+</table>
+
+<h2 id="s11">11. Supporting the app</h2>
+
+<p>This is a hobby project with real running costs. <strong>⋮ → Support the App</strong> is the one place in
+the app where anything is sold, and every price shown there comes live from the App Store:</p>
+
+<ul>
+  <li><strong>Donations</strong> — <em>Morning Coffee</em>, <em>Coffee and Cake</em> and <em>Thanks For
+      Lunch</em>. They can be repeated and they do <strong>not</strong> remove ads.</li>
+  <li><strong>One Year Ad Free</strong> — removes the banner for twelve months, after which ads return and it
+      can be bought again.</li>
+  <li><strong>Permanent Ad Free</strong> — removes the banner for good.</li>
+  <li><strong>Rate the app</strong> — costs nothing and helps a great deal.</li>
+</ul>
+
+<p>While you are ad-free the two ad-free options are hidden, so the app cannot sell you the same thing twice.
+Purchases are restored automatically on each launch; if ads ever come back when they should not, use
+<strong>Settings → Restore Purchases</strong>. About once a week the same page appears by itself;
+<em>Maybe later</em> dismisses it. The web edition has no ads, and purchases can only be made in the iPhone
+app.</p>
+
+<h2 id="s12">12. Things worth knowing</h2>
+
+<ul>
+  <li><strong>Location permission is optional.</strong> Without it you still get the whole map; you just do not
+      see your blue dot, the map does not start where you are, and Follow GPS and Phone orientation are
+      unavailable.</li>
+  <li><strong>The map reopens where you left it</strong> when you come back to the app, unless Follow GPS is
+      on, in which case your live position wins.</li>
+  <li><strong>Coverage shapes are predictions</strong> from licence data, not measurements. Real coverage
+      depends on terrain, buildings and your device.</li>
+  <li><strong>Dark mode</strong> follows your system setting and styles the whole app — the toolbar, the
+      panels, this guide and the messages that pop up — but Google only allows the <em>Normal</em> basemap to
+      be darkened. In Terrain, Satellite or Hybrid the map itself stays light.</li>
+  <li><strong>Ads</strong> appear as a banner at the bottom of the map on iPhone. <em>Support the App</em>
+      offers the ad-free purchases (<a href="#s11">section 11</a>).</li>
+  <li><strong>Refresh Data</strong> (⋮ menu) clears everything the app has downloaded this session and loads
+      the current view again. Use it if the map looks stale or a download was interrupted.</li>
+</ul>
+
+<h2 id="s13">13. What the Android app has that this edition does not</h2>
+
+<p>The Android app can read the mobile modem; iPhones and web browsers do not let an app see which cell it is
+connected to. Everything that depends on that is therefore Android-only. The rest — the tower map, coverage
+polygons, filters, search, legend, map layers, multi-tower coverage, lock map and polygon precision — works the
+same in both.</p>
+
+<table>
+  <tr><th style="width:50%">On Android</th><th>In this edition</th></tr>
+  <tr><td>Which tower you are connected to, the connection card and <em>My connection</em></td><td>Not available</td></tr>
+  <tr><td>Timing-advance ring and direction line</td><td>Not available</td></tr>
+  <tr><td>Observation trail and the Tower Spotter Leaderboard</td><td>Not available</td></tr>
+  <tr><td>Hypothetical-location pin (press and hold the map)</td><td>Not available</td></tr>
+  <tr><td>Driving Mode that starts itself when you drive</td><td>Follow GPS, started by hand; map rotation on iPhone only</td></tr>
+  <tr><td>Exports shared to any app</td><td>iPhone: saved inside the app only. Web: not available</td></tr>
+  <tr><td>Ads, ad-free purchases and donations</td><td>iPhone: the same. Web: no ads and no purchases</td></tr>
+</table>
+
+<h2 id="s14">14. Help and feedback</h2>
+
+<ul>
+  <li><strong>⋮ → User Guide</strong>, or <strong>Settings → Help → User Guide</strong>, reopens this guide at
+      any time. It is built into the app, so it works without a connection.</li>
+  <li><strong>⋮ → Report a Problem</strong> on iPhone opens an email to the developer with your phone model and
+      app version already filled in. Attach a screenshot of what looks wrong and describe what you expected.
+      It needs the Mail app to be set up; otherwise, or from the web edition, write to
+      <!-- email_off keeps Cloudflare's email obfuscation away from this address on the web build: it
+           swaps the text for a script-decoded placeholder, and scripts cannot run in the guide. -->
+      <!--email_off-->bitbot@bitbot.com.au<!--/email_off-->
+      and include the version number from Settings.</li>
+  <li><strong>Settings → Help → ausphonetowers.com.au</strong> opens the website, and the rows beneath it open
+      the app's store listing and its source code.</li>
+  <li><strong>Settings → Version</strong> shows the app version — tap it to copy the number for a report.</li>
+</ul>
 
 </body>
 </html>

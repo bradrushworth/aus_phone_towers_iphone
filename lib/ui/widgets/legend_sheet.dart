@@ -110,7 +110,7 @@ class LegendSheet {
                           'Estimated coverage, tinted by carrier',
                           'Deeper colour where coverage overlaps; larger polygons carry more capacity'),
                       row(TelcoHelper.getColor(Telco.Optus, 255), 'Ring labels',
-                          '“3510 MHz NR” marks each band\'s ring, drawn to your Signal Strength filter setting',
+                          '“3510 MHz 5G” marks each band\'s ring, drawn to your Signal Strength filter setting',
                           outlineOnly: true),
                       sectionTitle('Markers'),
                       row(const Color(0xFF03A9F4), 'Your location', ''),

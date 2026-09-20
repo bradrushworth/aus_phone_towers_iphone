@@ -12,7 +12,8 @@ These rules apply ONLY to this iPhone/iOS repository. The Android project
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
 project, you MUST also update the relevant documentation before considering the task complete:
 
-- `docs/USER_GUIDE.md` — the end-user guide (toolbar menu, map features, behaviours, legends).
+- `docs/user-guide.html` — the end-user guide, and the only copy: it is bundled as a Flutter asset
+  and shown in-app by `UserGuideScreen`. See `AGENTS.md` for the style and self-containment rules.
 - `README.md` — the developer/feature overview, including the Android-vs-iOS feature-comparison
   table and the signal-propagation notes.
 

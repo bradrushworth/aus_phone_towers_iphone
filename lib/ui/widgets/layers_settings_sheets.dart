@@ -11,9 +11,9 @@ import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/ui/map_common.dart';
-import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
+import 'package:phonetowers/ui/widgets/user_guide_screen.dart';
 import 'package:phonetowers/utils/strings.dart';
 import 'package:phonetowers/utils/utils.dart';
 import 'package:provider/provider.dart';
@@ -339,7 +339,12 @@ class SettingsSheet {
               }),
             ],
             _sectionTitle(bc, 'Help'),
-            _row(bc, 'User Guide', '›', () => Utils.launchURL(kUserGuideUrl)),
+            _row(bc, 'User Guide', '›', () {
+              // Close the sheet first so Back from the guide lands on the map, as the
+              // Remove ads & donate row above does.
+              Navigator.of(bc).pop();
+              UserGuideScreen.open(context);
+            }),
             _row(bc, 'Report a problem', '›', () {
               Navigator.of(bc).pop();
               takeScreenshot();

@@ -39,7 +39,6 @@ const int kRotatingMapMenu = 9;
 
 const String kAppleId = '1488594332';
 
-// User Guide link. The repository is public, so we point directly at the
-// GitHub-rendered Markdown page in the main branch.
-const String kUserGuideUrl =
-    'https://github.com/bradrushworth/aus_phone_towers_iphone/blob/main/docs/USER_GUIDE.md';
+// The in-app User Guide: docs/user-guide.html, bundled as an asset (see pubspec.yaml) and
+// rendered by UserGuideScreen. Mirrors the Android app's UserGuideActivity.USER_GUIDE_ASSET.
+const String kUserGuideAsset = 'docs/user-guide.html';

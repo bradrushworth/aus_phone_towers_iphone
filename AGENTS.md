@@ -32,9 +32,11 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
 - **Not ported (deliberately out of scope for this bead)**: the Android compass (java#105) and
   Lock Map/Polygon Precision (java#106, a *reverse* port — Android copying a feature this app
   already had) are follow-ups, not F-track parity gaps.
-- **Known gap, not fixed here**: `docs/user-guide.html` never got the F6 "Search that answers"
-  bullet that `docs/USER_GUIDE.md` has carried since `876fe42` — the two docs were already out of
-  sync before this audit; filed as a follow-up rather than expanded here.
+- **Known gap, since closed**: `docs/user-guide.html` never got the F6 "Search that answers"
+  bullet that `docs/USER_GUIDE.md` had carried since `876fe42` — the two docs were already out of
+  sync before this audit. Resolved 2026-09-20 (beads `aptios-8m1` / `aptios-n9m`): the HTML guide
+  was rewritten for the F0-F6 UI in the Android guide's style, became the in-app guide, and the
+  Markdown copy was deleted so there is nothing left to drift.
 
 ## Project basics
 - Flutter app (Dart), targeting iOS (primary) and Android (secondary). Package: `phonetowers`.
@@ -439,7 +441,13 @@ why), and leave pins, polygons and the signal ramp alone: they carry meaning.
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
 project, you MUST also update the relevant documentation before considering the task complete:
 
-- `docs/USER_GUIDE.md` — the end-user guide (toolbar menu, map features, behaviours, legends).
+- `docs/user-guide.html` — the end-user guide (toolbar, pins, coverage, filters, layers, search,
+  site panel, exporting, settings). It is the ONLY copy: the file is bundled as a Flutter asset
+  and shown in-app by `UserGuideScreen`, so an edit here ships in the next release. Keep it in the
+  style of the Android app's `docs/user-guide.html` (same CSS, numbered sections, tables, `.tip` /
+  `.warn` boxes) and self-contained — no scripts, no remote resources, no links other than
+  `#anchors`; `test/docs/user_guide_html_test.dart` enforces that. Every colour goes through the
+  CSS variables at the top of the file so the dark scheme stays readable.
 - `README.md` — the developer/feature overview, including the Android-vs-iOS feature-comparison
   table and the signal-propagation notes.
 

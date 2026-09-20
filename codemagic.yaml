@@ -129,7 +129,13 @@ workflows:
           #    build until the TTL expires. "no-cache" means revalidate, not "no-store": the
           #    multi-MB main.dart.js still gets a cheap 304 when unchanged.
           #    aws s3 cp preserves the auto-detected Content-Type and only overrides Cache-Control.
-          for f in index.html flutter_bootstrap.js flutter.js main.dart.js                    flutter_service_worker.js version.json manifest.json; do
+          #
+          #    assets/docs/user-guide.html (the in-app User Guide, shown in an iframe on web) is
+          #    on the list for the same reason. Flutter does NOT content-hash asset filenames, so
+          #    under pass 1's year of "immutable" a visitor not under service-worker control would
+          #    keep reading the guide from their first visit. The rest of assets/* has the same
+          #    exposure and is deliberately left alone here - see bead aptios-rk2.
+          for f in index.html flutter_bootstrap.js flutter.js main.dart.js                    flutter_service_worker.js version.json manifest.json                    assets/docs/user-guide.html; do
             if [ -f "build/web/$f" ]; then
               aws s3 cp "build/web/$f" "s3://$AWS_S3_BUCKET/$f" --cache-control "no-cache"
             fi

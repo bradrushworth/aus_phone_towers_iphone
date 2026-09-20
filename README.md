@@ -2,13 +2,20 @@
 
 ## User Guide
 
-For end users, a full **[User Guide](docs/USER_GUIDE.md)** is available covering the main
-features, what the map's colours and symbols mean (tower marker icons, coverage polygons,
-and the location dot), the toolbar menu, the navigation-drawer filters and important
-behaviours.
+For end users, the **[User Guide](docs/user-guide.html)** covers the toolbar, the tower pins and
+coverage polygons, Follow GPS, the filters, map layers, search, the site panel, exporting, settings
+and what the Android app can do that this edition cannot.
 
-The app also links to this guide from the toolbar menu (**⋯ → User Guide**). Because this
-repository is public, the link opens the GitHub-rendered page directly.
+That same file **is** the in-app guide. `docs/user-guide.html` is declared as a Flutter asset in
+`pubspec.yaml` and rendered by `UserGuideScreen` (`lib/ui/widgets/user_guide_screen.dart`) — a
+WebView with JavaScript off on iOS/Android, a sandboxed iframe on web — from **⋮ → User Guide** and
+**Settings → Help → User Guide**. It is bundled, so it works offline and needs no external host
+(it used to open the GitHub-rendered Markdown page in the browser). This mirrors the Android app's
+`UserGuideActivity`, and the guide is written in the same style as that app's
+`docs/user-guide.html`. Edit the file in `docs/`; there is no second copy to keep in step, and
+`test/docs/user_guide_html_test.dart` pins that it stays self-contained (no scripts, no remote
+resources, no links that leave the page). The web build also serves it at
+`https://ausphonetowers.com.au/assets/docs/user-guide.html`.
 
 ## Changelog
 
@@ -54,10 +61,11 @@ iOS. The table below lists each one and whether it can be brought to iOS.
 | --- | --- | --- |
 | Connected-cell info bar + tower lookup (`CellIdentity`, `CalculateConnectedTower`) | Not available (CoreTelephony only exposes carrier / MCC-MNC / radio type) | No |
 | Crowd-sourced cell observation upload (`PostObservedLocation`, OpenCellID) | Not available | Partial (GPS-only, no auto cell detection) |
-| Export towers / coverage as GeoJSON, CSV or KML (`ExportHelper`) | Available (GeoJSON / CSV / KMZ) | Yes (GeoJSON / CSV / KML) |
+| Export towers / coverage as GeoJSON, CSV or KML (`ExportHelper`) | Partial — files are written (GeoJSON / CSV / KML) but only into the app's private documents folder, with no share sheet, and the web build cannot export at all (bead `aptios-8x8`) | Yes (share sheet on iOS, browser download on web) |
 | User ranking / gamification (`GetUserRanking`) | Not available | Yes (pure API) |
 | Mozilla Location Service geolocation (`PostMlsGeolocate`) | Not available | Yes (network only) |
-| Follow-GPS map centring + heading rotation (`RotationVectorSensorEventListener`) | TODO in code | Yes (sensors plugin) |
+| Follow-GPS map centring + heading rotation (`RotationVectorSensorEventListener`) | Available — Follow GPS toolbar toggle, with Travel direction / Phone orientation / Off rotation in Settings (`flutter_compass`; rotation is not offered on web). Started by hand only: Android's self-starting Driving Mode is a deliberate non-port (see the comment on the toolbar button in `lib/ui/map_common.dart`) | Yes |
+| In-app User Guide (`UserGuideActivity`, bundled `docs/user-guide.html`) | Available — `UserGuideScreen`, same bundled-HTML approach | Yes |
 | Tower / contact list views (`ListsActivity`) | Not available (map only) | Yes |
 | Link-speed estimate (`LinkSpeedEstimator`) | Not available | No (Android-only API) |
 | Background tower service + notifications (`TowerService`) | Not available | No (iOS background limits) |
