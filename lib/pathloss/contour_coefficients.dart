@@ -41,7 +41,7 @@ class ContourCoefficients {
   /// may hold CRLF) -- the one place this value is written down; see the "bundled table hash"
   /// test. This is the FINAL, gated table (2026-09-20 5G calibration).
   static const String bundledTableSha256 =
-      'c1bde0f4876c1245b63fa5658b17e3bfaf8bf7e35e5e6268c444876a741a4f3c';
+      '35828a63dc20bb76756e8f501ab12a564461673bc8d9980a9cfb4d83e73bb366';
 
   /// Set by [loadBundled] (via [parseOrFallback]) when the bundled asset could not be read or
   /// parsed; `null` otherwise, including before the first load. This class has no Crashlytics
@@ -154,11 +154,11 @@ class ContourCoefficients {
     return const ContourCoefficients(
       classes: <String, ContourClassRow>{},
       pooled: <String, ContourClassRow>{
-        'LOW': ContourClassRow(0.78, 3.78),
-        'MID': ContourClassRow(0.82, -5.09),
-        'HIGH': ContourClassRow(0.82, -8.18),
+        'LOW': ContourClassRow(0.74, 3.68),
+        'MID': ContourClassRow(0.81, -4.34),
+        'HIGH': ContourClassRow(0.85, -8.49),
       },
-      nrTddOffsetByMnc: <String, double>{'default': 9.2},
+      nrTddOffsetByMnc: <String, double>{'default': 9.9},
       typicalPerReEirpDbmByTech: <String, Map<String, double>>{
         'LTE': <String, double>{'LOW': 36.1, 'MID': 34.6, 'HIGH': 30.6},
         'NR': <String, double>{'LOW': 36.5, 'MID': 30.5, 'HIGH': 46.2},

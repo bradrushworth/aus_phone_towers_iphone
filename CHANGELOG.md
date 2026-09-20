@@ -8,6 +8,14 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **Coverage ring sizes move by a few percent.** The Strong (-95 dBm) ring moves: suburban 807 m to
+  804 m below 1 GHz, 700 m to 655 m at 1 to 2.5 GHz, 418 m to 464 m above 2.5 GHz; open country
+  1.12 km to 1.19 km below 1 GHz, 637 m to 611 m at 1 to 2.5 GHz. The path-loss calibration now
+  counts every phone once, after one very active phone was found to supply a ninth of all readings.
+
 ## [1.16.0+161] — 2026-09-20
 
 ### Changed
