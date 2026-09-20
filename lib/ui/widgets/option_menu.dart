@@ -6,10 +6,10 @@ import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/ui/widgets/layers_settings_sheets.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
+import 'package:phonetowers/ui/widgets/user_guide_screen.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 import 'package:phonetowers/utils/shared_pref_helper.dart';
 import 'package:phonetowers/utils/strings.dart';
-import 'package:phonetowers/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:phonetowers/model/device_detail.dart';
 
@@ -141,7 +141,8 @@ class _OptionsMenuState extends State<OptionsMenu> {
             }
           case OptionMenuItem.userGuide:
             {
-              Utils.launchURL(kUserGuideUrl);
+              // Bundled in-app page, same as Android's UserGuideActivity; no external host.
+              UserGuideScreen.open(context);
               break;
             }
           case OptionMenuItem.reportProblem:

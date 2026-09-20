@@ -8,6 +8,49 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.15.1+160] — 2026-09-20
+
+### Added
+- **The User Guide now opens inside the app.** **⋮ → User Guide** and **Settings → Help → User
+  Guide** used to leave the app for the GitHub-rendered Markdown page, which needed a connection,
+  opened a browser over the map, and showed GitHub's chrome around the text. The guide is now a
+  page of the app itself (`UserGuideScreen`), the same way the Android app's `UserGuideActivity`
+  does it: `docs/user-guide.html` is bundled as a Flutter asset and rendered in a WebView with
+  JavaScript off on iOS/Android, and in a sandboxed iframe on the web build (webview_flutter has
+  no endorsed web implementation). It works offline, follows the system light/dark setting, and
+  Back returns to the map. From Settings the sheet closes first, so Back lands on the map rather
+  than on a stale sheet. `webview_flutter` and `web` are promoted from transitive to direct
+  dependencies at the versions already locked (webview_flutter arrives through
+  `google_mobile_ads`), so no new native code ships.
+
+### Changed
+- **The User Guide is rewritten in the style of the Android app's guide** — same layout, numbered
+  sections, tables and tip/warning boxes — and describes the app as it is after the F0-F6
+  interface overhaul. The old HTML guide still documented the navigation-drawer filters and an
+  overflow menu that no longer exist, and called the lettered, tilted carrier pins "logo icons"
+  (bead `aptios-8m1`). New sections cover the toolbar, the pins and their tilt, coverage rings and
+  labels, Follow GPS and map rotation, the filter panel and what its badge counts, Map Layers,
+  search, the site panel, exporting, Settings, Support the App, and what the Android app can do
+  that iPhone and web cannot. Section references are tappable. Unlike the Android guide it sets
+  every colour through CSS variables with a dark-scheme override; the Android file's fixed light
+  table headers and tip boxes turn unreadable under `color-scheme: dark`.
+- **`docs/USER_GUIDE.md` is deleted**, following the Android repo's precedent. It and the HTML
+  guide had drifted apart for months because nothing tied them together; with the HTML file now
+  shipping inside the app there is exactly one copy. `README.md`, `AGENTS.md` and `.clinerules`
+  point at `docs/user-guide.html`, and `test/docs/user_guide_html_test.dart` pins that it stays
+  declared as an asset and self-contained (no scripts, no remote resources, no links other than
+  its own `#anchors`).
+- **The web deploy uploads the guide with `Cache-Control: no-cache`**, alongside the other
+  non-hashed entry files. Flutter does not content-hash asset filenames, so the blanket
+  one-year `immutable` header would have pinned any visitor not under service-worker control to
+  the first copy of the guide they ever loaded. The web iframe is sandboxed with
+  `allow-same-origin` and nothing else: scripts, forms, popups and top-level navigation stay off
+  (the web equivalent of the WebView's JavaScript-off), while keeping the page's real origin so
+  the service worker can serve it offline and browsers that refuse opaque-origin sub-frames do
+  not show a blank page. The same exposure for the rest of `assets/*` is bead `aptios-rk2`.
+- **The legend's example ring label now matches what the map draws** — “3510 MHz 5G”, not
+  “3510 MHz NR”. Ring labels have always used the 2G/3G/4G/5G names.
+
 ## [1.15.0+159] — 2026-09-16
 
 ### Fixed
