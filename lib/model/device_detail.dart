@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
@@ -10,6 +8,7 @@ import 'package:phonetowers/helpers/translate_frequencies.dart';
 import 'package:phonetowers/model/antenna.dart';
 import 'package:phonetowers/model/license.dart';
 import 'package:phonetowers/model/site.dart';
+import 'package:phonetowers/pathloss/transmit_power.dart';
 import 'package:phonetowers/utils/app_constants.dart';
 
 import 'client.dart';
@@ -619,21 +618,20 @@ class DeviceDetails {
       return power_dBm;
     }
 
-    double referenceAngle = (bearing - azimuth!).abs();
-    // Gives approximately a 60-70 degree beamwidth... i.e. off 32 deg boresight is -3dB
-    double radiationPatternLoss =
-        (math.pow(1 - math.cos(GetLicenceHRP.toRadians(referenceAngle)), 1.15)).abs() *
-            frontToBackRatio;
-    if (radiationPatternLoss.isNaN) {
-      radiationPatternLoss = frontToBackRatio;
-    }
-    // The (1-cos)^1.15 curve is tuned for the MAIN lobe (-3 dB at 32 deg off boresight) but is
+    // Gives approximately a 60-70 degree beamwidth... i.e. off 32 deg boresight is -3dB. The
+    // (1-cos)^1.15 curve is tuned for the MAIN lobe (-3 dB at 32 deg off boresight) but is
     // unbounded behind the antenna: at 180 deg it reaches 2.22x the front-to-back ratio
     // (~55 dB instead of 25 dB). Physically the front-to-back ratio IS the rear attenuation,
     // so clamp there. Validated against 45 real licence_hrp patterns (2026-08-22): the
     // basic-polygon back-lobe error improves from -23.6 dB median to -1.1 dB, with the
     // boresight (+1.4 dB median) and side (-2.9 dB) sectors unchanged. Mirrors the Java app.
-    radiationPatternLoss = math.min(radiationPatternLoss, frontToBackRatio);
+    //
+    // Extracted into TransmitPower.estimatedPatternLossDb (path-loss model v2 spec, section 3)
+    // so this call site and the model's own P term share one definition; this call keeps
+    // returning exactly what it returned before (pinned in device_details_test.dart) -- this
+    // method still feeds tower matching unchanged.
+    double radiationPatternLoss =
+        TransmitPower.estimatedPatternLossDb(azimuth!.toDouble(), bearing, frontToBackRatio);
 
     if (AppConstants.isDebug)
       logger.d(

@@ -15,7 +15,12 @@ import '../model/height_distance_pair.dart';
 import '../model/overlay.dart';
 import '../model/site.dart';
 import '../networking/api.dart';
+import '../pathloss/contour_coefficients.dart';
+import '../pathloss/contour_model.dart';
+import '../pathloss/contour_power.dart';
+import '../pathloss/path_loss_key.dart';
 import '../pathloss/terrain_coverage.dart';
+import '../pathloss/transmit_power.dart';
 import '../restful/get_elevation.dart';
 import '../restful/get_licenceHRP.dart';
 import '../restful/get_site_terrain.dart';
@@ -765,37 +770,92 @@ class PolygonHelper with ChangeNotifier {
         <TerrainCoverageResult>[]
     ];
 
+    // Path-loss model v2 (model-v2-spec.md, section 3): for LTE/NR the estimated pattern draws
+    // from the transmitter's total power shared across its subcarriers, minus the SAME
+    // estimated-pattern loss device.getPowerAtBearing itself applies -- see
+    // TransmitPower.estimatedPatternLossDb. getPowerAtBearing keeps returning exactly what it
+    // always has (it still feeds tower matching); every other network type is unchanged.
+    final bool useModelV2 = ContourModel.supports(device.getNetworkType());
+    // Same carrier mnc the legacy calculateDistanceWithContext call below already receives; 0
+    // (TelcoHelper.getMnc's default) for an unknown carrier, which reads the table's "default"
+    // TDD loss.
+    final int mnc = TelcoHelper.getMnc(site.getTelco());
+    final double basePowerDbm = useModelV2
+        ? ContourPower.basePowerDbm(
+            device.getNetworkType(),
+            freqInMHz.toDouble(),
+            (device.bandwidth ?? 0).toDouble(),
+            device.eirp ?? 0.0,
+            null, // no HRP maximum on this path -- see ContourPower.basePowerDbm.
+            ContourCoefficients.current)
+        : 0.0;
+    if (useModelV2 && AppConstants.isDebug) {
+      final CityDensity density =
+          device.getRadiationModel() ?? GetLicenceHRP.defaultRadiationModel;
+      final String band = PathLossKey.bandBucket(freqInMHz.toDouble() * 1e6);
+      final ContourCoefficients coefficients = ContourCoefficients.current;
+      final ContourClassRow classRow = coefficients.forClass(density, band);
+      final ContourModel contourModel = ContourModel(coefficients);
+      final List<double> boresightKm = [
+        for (final int rung in polygons)
+          contourModel.distanceKm(device.getNetworkType(), mnc, density, freqInMHz.toDouble(),
+              towerHeight.toDouble(), basePowerDbm - rung)
+      ];
+      // The extra 5G loss actually applied (spec section 2): non-zero only for NR on a TDD band.
+      final double nrTddOffsetAppliedDb = (device.getNetworkType() == NetworkType.NR &&
+              TransmitPower.isTddBand(freqInMHz.toDouble()))
+          ? coefficients.nrTddOffsetDb(mnc)
+          : 0.0;
+      logger.d('PolygonHelper: model v2 (estimated) site=${site.siteId} device=${device.sddId} '
+          'tech=${device.getNetworkType().name} class=${density.name}|$band mnc=$mnc '
+          'baseDbm=${basePowerDbm.toStringAsFixed(1)} k=${classRow.k} '
+          'offsetDb=${classRow.offsetDb} nrTddOffsetAppliedDb=$nrTddOffsetAppliedDb '
+          'boresightKm=${boresightKm.map((d) => d.toStringAsFixed(2)).toList()}');
+    }
+
     for (double bearing = BEARING_START; bearing < 360; bearing += polygonBearingIncrement) {
       bearingsUsed.add(bearing);
 
       Set<HeightDistancePair> heightToDistance =
           PolygonHelper.calculateTerrain ? site.getHeightsAlongBearing(bearing) : {};
 
-      double power_dBm = device.getPowerAtBearing(bearing);
-
       // Antenna height above the average terrain toward this bearing (TerrainHeight) - the same
-      // quantity the trainer fitted the coefficients against, used in BOTH modes. Terrain mode
-      // used to add the site's height above the median profile here on top of coefficients that
-      // already averaged hilltop sites into the stratum (counted twice).
+      // quantity the trainer fitted the coefficients against, used in BOTH modes and BOTH
+      // path-loss model generations. Terrain mode used to add the site's height above the median
+      // profile here on top of coefficients that already averaged hilltop sites into the
+      // stratum (counted twice).
       final double effectiveHeight = site.effectiveHeightM(towerHeight.toDouble(), bearing);
 
-      // Use the composite (mnc + networkType + density + frequency-band) overload so the
-      // estimate is tuned to the SAME trained coefficients as the connected-tower path
-      // (learned from observed signal strengths), instead of only the density-only
-      // coefficients. The composite lookup degrades gracefully
-      // (composite -> density-only -> analytic Hata), identical to the mapping path.
-      CityDensity model = device.getRadiationModel() ??
-          GetLicenceHRP.defaultRadiationModel;
-      // The path-loss model with this transmitter's context bound, so calculateTerrainCoverage
-      // can re-solve the distance after charging terrain to the link budget.
-      double solver(double budgetDb) =>
-          GetLicenceHRP.calculateDistanceWithContext(
-              TelcoHelper.getMnc(site.getTelco()),
-              device.getNetworkType(),
-              model,
-              budgetDb,
-              freqInMHz.toDouble(),
-              effectiveHeight);
+      CityDensity model = device.getRadiationModel() ?? GetLicenceHRP.defaultRadiationModel;
+
+      double power_dBm;
+      double Function(double budgetDb) solver;
+      if (useModelV2) {
+        // P minus the estimated-pattern loss, shared verbatim with getPowerAtBearing -- see
+        // TransmitPower.estimatedPatternLossDb.
+        final double patternLossDb = TransmitPower.estimatedPatternLossDb(
+            device.azimuth?.toDouble(), bearing, device.antenna?.frontToBack ?? 25.0);
+        power_dBm = basePowerDbm - patternLossDb;
+        final ContourModel contourModel = ContourModel(ContourCoefficients.current);
+        solver = (budgetDb) => contourModel.distanceKm(
+            device.getNetworkType(), mnc, model, freqInMHz.toDouble(), effectiveHeight, budgetDb);
+      } else {
+        power_dBm = device.getPowerAtBearing(bearing);
+        // Use the composite (mnc + networkType + density + frequency-band) overload so the
+        // estimate is tuned to the SAME trained coefficients as the connected-tower path
+        // (learned from observed signal strengths), instead of only the density-only
+        // coefficients. The composite lookup degrades gracefully
+        // (composite -> density-only -> analytic Hata), identical to the mapping path.
+        // The path-loss model with this transmitter's context bound, so calculateTerrainCoverage
+        // can re-solve the distance after charging terrain to the link budget.
+        solver = (budgetDb) => GetLicenceHRP.calculateDistanceWithContext(
+            TelcoHelper.getMnc(site.getTelco()),
+            device.getNetworkType(),
+            model,
+            budgetDb,
+            freqInMHz.toDouble(),
+            effectiveHeight);
+      }
 
       // I2: one memoising terrain loss per bearing, shared by every rung below - see the
       // comment on GetLicenceHRP.terrainExcessLossForBearing.

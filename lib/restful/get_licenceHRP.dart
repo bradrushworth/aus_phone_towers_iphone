@@ -4,7 +4,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
+import 'package:phonetowers/pathloss/contour_coefficients.dart';
+import 'package:phonetowers/pathloss/contour_model.dart';
+import 'package:phonetowers/pathloss/contour_power.dart';
+import 'package:phonetowers/pathloss/path_loss_key.dart';
 import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
+import 'package:phonetowers/pathloss/transmit_power.dart';
 import 'package:phonetowers/restful/get_elevation.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
@@ -17,12 +22,53 @@ import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/networking/response/site_response.dart';
 import 'package:phonetowers/pathloss/terrain_coverage.dart';
 import 'package:phonetowers/helpers/shadow_holes.dart';
+import 'package:phonetowers/utils/app_constants.dart';
 
 typedef void ShowSnackBar({
   required String message,
   Duration duration,
   bool isDismissible,
 });
+
+/// One accumulated licence_hrp row (path-loss model v2, spec section 5): a page's raw
+/// `(start_angle, stop_angle, power)` triple, kept as-is until every page has arrived and the
+/// model v2 vertices (LTE/NR only) can be computed from the complete set -- see
+/// [GetLicenceHRP.computeModelV2Vertices].
+class HrpPowerRow {
+  final double startAngle;
+  final double? stopAngle;
+  final double powerDbm;
+
+  const HrpPowerRow(this.startAngle, this.stopAngle, this.powerDbm);
+}
+
+/// Summary of one transmitter's path-loss model v2 draw, returned by
+/// [GetLicenceHRP.computeModelV2Vertices] purely so the caller can log it once (F2 brief item 5:
+/// "one debug log line per drawn transmitter") without recomputing anything.
+class ModelV2DrawSummary {
+  final NetworkType networkType;
+  final String densityBand;
+  final double basePowerDbm;
+  final double maxHrpPowerDbm;
+  final double k;
+  final double offsetDb;
+  /// The extra 5G loss actually applied (spec section 2): `coefficients.nrTddOffsetDb(mnc)` when
+  /// [networkType] is NR on a TDD band ([TransmitPower.isTddBand]), else `0.0` -- LTE, and NR on
+  /// an FDD band, never carry it.
+  final double nrTddOffsetAppliedDb;
+  final List<double> boresightDistanceKmByRung;
+
+  const ModelV2DrawSummary({
+    required this.networkType,
+    required this.densityBand,
+    required this.basePowerDbm,
+    required this.maxHrpPowerDbm,
+    required this.k,
+    required this.offsetDb,
+    required this.nrTddOffsetAppliedDb,
+    required this.boresightDistanceKmByRung,
+  });
+}
 
 class GetLicenceHRP {
   static final double EARTH_MEAN_RADIUS_KILOMETERS = 6371.009;
@@ -53,6 +99,12 @@ class GetLicenceHRP {
   // instead of each page overwriting device's terrain holes in turn. Shared by reference across
   // the whole chain, the same way `list` already accumulates polygon points across pages.
   final List<ShadowHolesPage> terrainPages;
+  // Path-loss model v2 (LTE/NR only, see ContourModel.supports): every page's raw
+  // (start_angle, stop_angle, power) rows, accumulated across the chained per-page requests the
+  // same way terrainPages is, so this transmitter's vertices -- and the maximum power they need
+  // -- can be computed once from ALL of its rows rather than page by page. Stays empty, and is
+  // never read, for every other network type: that per-page loop is untouched.
+  final List<HrpPowerRow> hrpRows;
 
   GetLicenceHRP(
       {required this.url,
@@ -65,8 +117,10 @@ class GetLicenceHRP {
       this.requestKey,
       this.requestIsCurrent,
       this.onChainFinished,
-      List<ShadowHolesPage>? terrainPages})
-      : terrainPages = terrainPages ?? [];
+      List<ShadowHolesPage>? terrainPages,
+      List<HrpPowerRow>? hrpRows})
+      : terrainPages = terrainPages ?? [],
+        hrpRows = hrpRows ?? [];
 
   Future getLicenceHRPData() async {
     //logger.d('get licence HRP url $url');
@@ -204,113 +258,195 @@ class GetLicenceHRP {
           <TerrainCoverageResult>[]
       ];
 
-      for (int i = 0; i < totalRows; i += rowStep) {
-        //Get the row
-        Values? values = rawResponse!.restify!.rows![i].values;
-        double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
-        double? stop_angle = values.stopAngle == null
-            ? null
-            : double.tryParse(values.stopAngle!.value);
-        double power_dBm = double.tryParse(values.power!.value) ?? 0;
+      //onPostexecute
+      // rawResponse is non-null whenever fetchFailed is false, by definition of fetchFailed
+      // above -- the analyzer traces that relationship, so no `!` is needed on rawResponse here
+      // (pre-existing on the original line this was hoisted from; fixed while moving it).
+      NextPage? nextPage = fetchFailed ? null : rawResponse.restify!.nextPage;
+      final bool isLastPage = nextPage == null;
 
-        // Convert RSRP to RSSI to get more accurate results
-        if (NetworkTypeHelper.isRsrp(device.getNetworkType())) {
-          //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+      // Path-loss model v2 (model-v2-spec.md, section 5): LTE and NR draw from the
+      // transmitter's total power shared across its subcarriers, using the maximum licence_hrp
+      // power over EVERY page -- so this transmitter's vertices cannot be finalised until the
+      // last page has arrived. Every other network type keeps the per-page loop below exactly
+      // as it always has.
+      final bool useModelV2 = ContourModel.supports(device.getNetworkType());
+      final CityDensity densityForModelV2 = device.getRadiationModel() ?? defaultRadiationModel;
+
+      if (useModelV2) {
+        // Accumulate this page's rows unsampled; row-step sampling and the vertices themselves
+        // are computed once, over every page's rows together, below -- the maximum power P
+        // depends on is only known once every row has arrived.
+        for (int i = 0; i < totalRows; i++) {
+          Values? values = rawResponse!.restify!.rows![i].values;
+          double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
+          double? stop_angle = values.stopAngle == null
+              ? null
+              : double.tryParse(values.stopAngle!.value);
+          double power_dBm = double.tryParse(values.power!.value) ?? 0;
+          hrpRows.add(HrpPowerRow(start_angle, stop_angle, power_dBm));
         }
 
-        // Place the vertex at the middle of the sector this row measures, using the sector's
-        // own width rather than a constant. This used to add a fixed 1.25 degrees ("half of 2.5,
-        // the measurement resolution with ACMA"), but ACMA does not publish at a single
-        // resolution: of ~175M licence_hrp rows, 96.2% are 1 degree sectors and only 2.1% are
-        // actually 2.5 degrees (the rest run 0.5-6). So the constant was right for ~2% of rows
-        // and rotated the other 96% by 0.75 degrees. Mirrors the Java app's
-        // GetLicenceHRP.sectorHalfWidth. Measured against the live database 2026-08-24.
-        double bearing = start_angle + sectorHalfWidth(start_angle, stop_angle);
-        bearingToPower[bearing] = power_dBm;
-        bearingsUsed.add(bearing);
-
-        Set<HeightDistancePair> heights =
-            PolygonHelper.calculateTerrain ? site.getHeightsAlongBearing(bearing) : {};
-
-        // Antenna height above the average terrain toward this bearing (TerrainHeight) - the
-        // same quantity the trainer fitted the coefficients against, used in BOTH modes. Terrain
-        // mode used to add the site's height above the median profile here on top of coefficients
-        // that already averaged hilltop sites into the stratum (counted twice).
-        final double effectiveHeight = site.effectiveHeightM(towerHeight.toDouble(), bearing);
-
-        // Calculate the distance the signal will travel. Use the composite
-        // (mnc + networkType + density + band) lookup — see hrpDistanceKm.
-        CityDensity model = device.getRadiationModel() ?? defaultRadiationModel;
-        // The path-loss model with this transmitter's context bound, so calculateTerrainCoverage
-        // can re-solve the distance after charging terrain to the link budget.
-        double solver(double budgetDb) => hrpDistanceKm(
-            TelcoHelper.getMnc(site.getTelco()),
-            device.getNetworkType(),
-            model,
-            budgetDb,
-            freqInMHz,
-            effectiveHeight);
-
-        // I2: one memoising terrain loss per bearing, shared by every rung below - see the
-        // comment on terrainExcessLossForBearing.
-        final ExcessLoss? terrainLoss = PolygonHelper.calculateTerrain
-            ? terrainExcessLossForBearing(
-                site, heights, bearing, freqInMHz.toDouble(), towerHeight)
-            : null;
-
-        int pos = 0;
-        // The caller fixes the requested contour set before this asynchronous response arrives.
-        // Do not re-read Follow GPS or menu state mid-download or the result/list sizes can diverge.
-        for (int p = 0; p < list!.length && p < polygons.length; p++) {
-          int receiver_dBm = polygons[p];
-          double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
-
-          double distanceKm;
-          if (PolygonHelper.calculateTerrain) {
-            final TerrainCoverageResult coverage = TerrainCoverage.evaluate(
-                freeSpaceLoss_dBi, solver, terrainLoss!, GetElevation.SAMPLE_DISTANCES);
-            distanceKm = coverage.outerKm;
-            coverageByRung[p].add(coverage);
-          } else {
-            distanceKm = solver(freeSpaceLoss_dBi);
+        // Only trust the accumulated rows once this page's OWN fetch succeeded AND the server
+        // said no more pages follow. A "last page" forced by a failed fetch partway through the
+        // chain means the true maximum power might be on a page never received, so a partial
+        // model v2 polygon is deliberately not drawn from it -- see the dispatch below and the
+        // PR notes.
+        if (isLastPage && !fetchFailed) {
+          // Same carrier mnc the legacy calculateDistanceWithContext call below already
+          // receives; 0 (TelcoHelper.getMnc's default) for an unknown carrier, which reads the
+          // table's "default" TDD loss.
+          final int mnc = TelcoHelper.getMnc(site.getTelco());
+          final ModelV2DrawSummary? summary = computeModelV2Vertices(
+            rows: hrpRows,
+            rowStep: rowStep,
+            networkType: device.getNetworkType(),
+            mnc: mnc,
+            density: densityForModelV2,
+            freqInMHz: freqInMHz,
+            bandwidthHz: (device.bandwidth ?? 0).toDouble(),
+            eirpW: device.eirp ?? 0.0,
+            towerHeightM: towerHeight.toDouble(),
+            coefficients: ContourCoefficients.current,
+            rungs: polygons,
+            list: list!,
+            effectiveHeightForBearing: (bearing) =>
+                site.effectiveHeightM(towerHeight.toDouble(), bearing),
+            terrainLossForBearing: (bearing) => PolygonHelper.calculateTerrain
+                ? terrainExcessLossForBearing(site, site.getHeightsAlongBearing(bearing),
+                    bearing, freqInMHz.toDouble(), towerHeight)
+                : null,
+            travelTo: (bearing, distanceKm) => travel(site.getLatLng(), bearing, distanceKm),
+            bearingToPower: bearingToPower,
+            bearingsUsed: bearingsUsed,
+            coverageByRung: coverageByRung,
+          );
+          if (summary != null) {
+            if (AppConstants.isDebug) {
+              logger.d('GetLicenceHRP: model v2 site=${site.siteId} device=${device.sddId} '
+                  'tech=${summary.networkType.name} class=${summary.densityBand} mnc=$mnc '
+                  'baseDbm=${summary.basePowerDbm.toStringAsFixed(1)} '
+                  'maxHrpDbm=${summary.maxHrpPowerDbm.toStringAsFixed(1)} '
+                  'k=${summary.k} offsetDb=${summary.offsetDb} '
+                  'nrTddOffsetAppliedDb=${summary.nrTddOffsetAppliedDb} '
+                  'boresightKm=${summary.boresightDistanceKmByRung.map((d) => d.toStringAsFixed(2)).toList()}');
+            }
+            // Item 1 (bead 8uq): all of this transmitter's bearings arrive in a single "page" of
+            // the shadow-hole merge now, rather than one contribution per network page -- see
+            // the matching comment on the legacy branch below.
+            if (PolygonHelper.calculateTerrain) {
+              terrainPages.add(
+                  ShadowHolesPage(bearingsUsed: bearingsUsed, coverageByRung: coverageByRung));
+            }
           }
-
-          if (distanceKm > 100) {
-            distanceKm = 100;
-          }
-
-          LatLng latlng = travel(site.getLatLng(), bearing, distanceKm);
-          //Log.i("GetLicenceHRP", "2: algorithm=" + radiationModel + " power_dBm="+ power_dBm + " freeSpaceLoss_dBi+dBReduction=" + (freeSpaceLoss_dBi + dBReduction) + " distanceKm=" + distanceKm);
-
-          list![pos].add(latlng);
-          pos++;
         }
-      }
+      } else {
+        for (int i = 0; i < totalRows; i += rowStep) {
+          //Get the row
+          Values? values = rawResponse!.restify!.rows![i].values;
+          double start_angle = double.tryParse(values!.startAngle!.value) ?? 0;
+          double? stop_angle = values.stopAngle == null
+              ? null
+              : double.tryParse(values.stopAngle!.value);
+          double power_dBm = double.tryParse(values.power!.value) ?? 0;
 
-      // I3: only clear/rebuild shadow holes in terrain mode. Clearing them unconditionally, as
-      // before, wiped out a previous terrain pass's holes the moment terrain mode was toggled
-      // off. A terrain toggle itself never redraws from the polygon cache —
-      // switchTerrainAwareness() always calls refreshPolygons(false) — but a later same-mode
-      // refresh with cachingPolygons true (a signal-strength position or precision change from
-      // the layers sheet / option menu) redraws this device's polygon from cache (the cache
-      // path in PolygonHelper.queryForSignalPolygon) with no recomputation, so it would draw it
-      // with no holes at all.
-      // Item 1 (bead 8uq): accumulate this page's bearings/coverage into terrainPages, shared
-      // across the whole chained request, and only merge + rebuild the device's holes once the
-      // LAST page (nextPage == null, checked below after this block) is reached. Applying holes
-      // on every page used to mean each page's applyTerrainHoles call overwrote the previous
-      // page's holes outright, so a multi-page response (more sectors than fit in one
-      // _count=360 page) kept only the final page's shadow holes. See ShadowHoles.mergePages.
-      if (PolygonHelper.calculateTerrain) {
-        terrainPages.add(
-            ShadowHolesPage(bearingsUsed: bearingsUsed, coverageByRung: coverageByRung));
+          // Convert RSRP to RSSI to get more accurate results
+          if (NetworkTypeHelper.isRsrp(device.getNetworkType())) {
+            //power_dBm += TranslateFrequencies.convertLteRsrpToRssi(device.bandwidth);
+          }
+
+          // Place the vertex at the middle of the sector this row measures, using the sector's
+          // own width rather than a constant. This used to add a fixed 1.25 degrees ("half of 2.5,
+          // the measurement resolution with ACMA"), but ACMA does not publish at a single
+          // resolution: of ~175M licence_hrp rows, 96.2% are 1 degree sectors and only 2.1% are
+          // actually 2.5 degrees (the rest run 0.5-6). So the constant was right for ~2% of rows
+          // and rotated the other 96% by 0.75 degrees. Mirrors the Java app's
+          // GetLicenceHRP.sectorHalfWidth. Measured against the live database 2026-08-24.
+          double bearing = start_angle + sectorHalfWidth(start_angle, stop_angle);
+          bearingToPower[bearing] = power_dBm;
+          bearingsUsed.add(bearing);
+
+          Set<HeightDistancePair> heights =
+              PolygonHelper.calculateTerrain ? site.getHeightsAlongBearing(bearing) : {};
+
+          // Antenna height above the average terrain toward this bearing (TerrainHeight) - the
+          // same quantity the trainer fitted the coefficients against, used in BOTH modes. Terrain
+          // mode used to add the site's height above the median profile here on top of coefficients
+          // that already averaged hilltop sites into the stratum (counted twice).
+          final double effectiveHeight = site.effectiveHeightM(towerHeight.toDouble(), bearing);
+
+          // Calculate the distance the signal will travel. Use the composite
+          // (mnc + networkType + density + band) lookup — see hrpDistanceKm.
+          CityDensity model = device.getRadiationModel() ?? defaultRadiationModel;
+          // The path-loss model with this transmitter's context bound, so calculateTerrainCoverage
+          // can re-solve the distance after charging terrain to the link budget.
+          double solver(double budgetDb) => hrpDistanceKm(
+              TelcoHelper.getMnc(site.getTelco()),
+              device.getNetworkType(),
+              model,
+              budgetDb,
+              freqInMHz,
+              effectiveHeight);
+
+          // I2: one memoising terrain loss per bearing, shared by every rung below - see the
+          // comment on terrainExcessLossForBearing.
+          final ExcessLoss? terrainLoss = PolygonHelper.calculateTerrain
+              ? terrainExcessLossForBearing(
+                  site, heights, bearing, freqInMHz.toDouble(), towerHeight)
+              : null;
+
+          int pos = 0;
+          // The caller fixes the requested contour set before this asynchronous response arrives.
+          // Do not re-read Follow GPS or menu state mid-download or the result/list sizes can diverge.
+          for (int p = 0; p < list!.length && p < polygons.length; p++) {
+            int receiver_dBm = polygons[p];
+            double freeSpaceLoss_dBi = power_dBm - receiver_dBm;
+
+            double distanceKm;
+            if (PolygonHelper.calculateTerrain) {
+              final TerrainCoverageResult coverage = TerrainCoverage.evaluate(
+                  freeSpaceLoss_dBi, solver, terrainLoss!, GetElevation.SAMPLE_DISTANCES);
+              distanceKm = coverage.outerKm;
+              coverageByRung[p].add(coverage);
+            } else {
+              distanceKm = solver(freeSpaceLoss_dBi);
+            }
+
+            if (distanceKm > 100) {
+              distanceKm = 100;
+            }
+
+            LatLng latlng = travel(site.getLatLng(), bearing, distanceKm);
+            //Log.i("GetLicenceHRP", "2: algorithm=" + radiationModel + " power_dBm="+ power_dBm + " freeSpaceLoss_dBi+dBReduction=" + (freeSpaceLoss_dBi + dBReduction) + " distanceKm=" + distanceKm);
+
+            list![pos].add(latlng);
+            pos++;
+          }
+        }
+
+        // I3: only clear/rebuild shadow holes in terrain mode. Clearing them unconditionally, as
+        // before, wiped out a previous terrain pass's holes the moment terrain mode was toggled
+        // off. A terrain toggle itself never redraws from the polygon cache —
+        // switchTerrainAwareness() always calls refreshPolygons(false) — but a later same-mode
+        // refresh with cachingPolygons true (a signal-strength position or precision change from
+        // the layers sheet / option menu) redraws this device's polygon from cache (the cache
+        // path in PolygonHelper.queryForSignalPolygon) with no recomputation, so it would draw it
+        // with no holes at all.
+        // Item 1 (bead 8uq): accumulate this page's bearings/coverage into terrainPages, shared
+        // across the whole chained request, and only merge + rebuild the device's holes once the
+        // LAST page (nextPage == null, checked below after this block) is reached. Applying holes
+        // on every page used to mean each page's applyTerrainHoles call overwrote the previous
+        // page's holes outright, so a multi-page response (more sectors than fit in one
+        // _count=360 page) kept only the final page's shadow holes. See ShadowHoles.mergePages.
+        if (PolygonHelper.calculateTerrain) {
+          terrainPages.add(
+              ShadowHolesPage(bearingsUsed: bearingsUsed, coverageByRung: coverageByRung));
+        }
       }
 
       device.setBearingToPowerMap(bearingToPower);
 
-      //onPostexecute
-      NextPage? nextPage = fetchFailed ? null : rawResponse!.restify!.nextPage;
-      if (PolygonHelper.calculateTerrain && nextPage == null) {
+      if (PolygonHelper.calculateTerrain && isLastPage) {
         final ShadowHolesPage merged = ShadowHoles.mergePages(terrainPages);
         PolygonHelper.applyTerrainHoles(
           site.getLatLng(),
@@ -331,6 +467,7 @@ class GetLicenceHRP {
                 list: list,
                 url: nextPage.href,
                 terrainPages: terrainPages,
+                hrpRows: hrpRows,
                 // Carry "did any page so far have real rows" forward across pagination.
                 // dataFound defaults to false on a fresh instance, and this class only ever
                 // sets it true (never resets it), so without threading it through here, a
@@ -347,6 +484,18 @@ class GetLicenceHRP {
                 requestIsCurrent: requestIsCurrent,
                 onChainFinished: onChainFinished)
             .getLicenceHRPData();
+      } else if (useModelV2) {
+        // Model v2 collapses the legacy three-way dispatch below into two: either the deferred
+        // computation above produced real vertices, or it did not (no rows were ever found, OR
+        // some page's fetch failed and an incomplete row set was deliberately not trusted -- see
+        // the comment above). Either way there is no partial, unverified HRP polygon worth
+        // showing, so the safe estimated pattern is drawn instead -- a deliberate behaviour
+        // change from the legacy dispatch for LTE/NR only; see the PR notes.
+        if (modelV2HasVertices(list!)) {
+          PolygonHelper().createPolygon(list!, site, device);
+        } else {
+          PolygonHelper().createBasicPolygon(device, site, list!);
+        }
       } else {
         if (dataFound) {
           // Draw the polygon once the whole shape is downloaded
@@ -417,6 +566,122 @@ class GetLicenceHRP {
     }
     return width / 2;
   }
+
+  /// Computes one transmitter's path-loss model v2 vertices from every accumulated page's
+  /// [rows] (model-v2-spec.md, section 5): the maximum power is taken over ALL of [rows] BEFORE
+  /// row-step sampling, then every [rowStep]-th row -- sampled over the accumulated list, not a
+  /// single page -- contributes one vertex per rung of [rungs], via
+  /// `P = basePowerDbm + (power - maxPower)` and `budget = P - rung`. Returns `null` (and adds no
+  /// vertices) when [rows] is empty.
+  ///
+  /// [mnc] is the carrier's mobile network code (0 for an unknown carrier), used only for the
+  /// extra 5G loss on a TDD band -- see [ContourCoefficients.nrTddOffsetDb].
+  ///
+  /// Extracted as a static function taking only the values and callbacks it needs -- no Site,
+  /// DeviceDetails or network state -- so it is unit-testable directly with synthetic rows.
+  /// [effectiveHeightForBearing] and [terrainLossForBearing] isolate the Site/terrain lookups the
+  /// production caller ([getLicenceHRPData]) needs for each bearing (the latter returning `null`
+  /// outside terrain mode), and [travelTo] the lat/lng projection. [bearingToPower],
+  /// [bearingsUsed] and [coverageByRung] are filled in place -- the same collections
+  /// [getLicenceHRPData] already threads through the legacy per-page loop.
+  static ModelV2DrawSummary? computeModelV2Vertices({
+    required List<HrpPowerRow> rows,
+    required int rowStep,
+    required NetworkType networkType,
+    required int mnc,
+    required CityDensity density,
+    required double freqInMHz,
+    required double bandwidthHz,
+    required double eirpW,
+    required double towerHeightM,
+    required ContourCoefficients coefficients,
+    required List<int> rungs,
+    required List<List<LatLng>> list,
+    required double Function(double bearing) effectiveHeightForBearing,
+    required ExcessLoss? Function(double bearing) terrainLossForBearing,
+    required LatLng Function(double bearing, double distanceKm) travelTo,
+    required Map<double, double> bearingToPower,
+    required List<double> bearingsUsed,
+    required List<List<TerrainCoverageResult>> coverageByRung,
+  }) {
+    if (rows.isEmpty) return null;
+
+    // The maximum is over every accumulated row -- every page of the response, not just the
+    // rows the sampling pass below visits.
+    final double maxPower = ContourPower.maxPowerDbm(rows.map((r) => r.powerDbm));
+    final double basePower = ContourPower.basePowerDbm(
+        networkType, freqInMHz, bandwidthHz, eirpW, maxPower, coefficients);
+    final ContourModel model = ContourModel(coefficients);
+    final String band = PathLossKey.bandBucket(freqInMHz * 1e6);
+    final ContourClassRow classRow = coefficients.forClass(density, band);
+    // The extra 5G loss (spec section 2): non-zero only for NR on a TDD band, by carrier mnc.
+    final double nrTddOffsetAppliedDb =
+        (networkType == NetworkType.NR && TransmitPower.isTddBand(freqInMHz))
+            ? coefficients.nrTddOffsetDb(mnc)
+            : 0.0;
+
+    for (int i = 0; i < rows.length; i += rowStep) {
+      final HrpPowerRow row = rows[i];
+      final double bearing = row.startAngle + sectorHalfWidth(row.startAngle, row.stopAngle);
+      bearingToPower[bearing] = row.powerDbm;
+      bearingsUsed.add(bearing);
+
+      final double effectiveHeight = effectiveHeightForBearing(bearing);
+      final ExcessLoss? terrainLoss = terrainLossForBearing(bearing);
+      double solver(double budgetDb) =>
+          model.distanceKm(networkType, mnc, density, freqInMHz, effectiveHeight, budgetDb);
+
+      final double p = basePower + ContourPower.relativePatternDb(row.powerDbm, maxPower);
+
+      int pos = 0;
+      for (int r = 0; r < list.length && r < rungs.length; r++) {
+        final double budgetDb = p - rungs[r];
+
+        double distanceKm;
+        if (terrainLoss != null) {
+          final TerrainCoverageResult coverage = TerrainCoverage.evaluate(
+              budgetDb, solver, terrainLoss, GetElevation.SAMPLE_DISTANCES);
+          distanceKm = coverage.outerKm;
+          coverageByRung[r].add(coverage);
+        } else {
+          distanceKm = solver(budgetDb);
+        }
+
+        if (distanceKm > 100) {
+          distanceKm = 100;
+        }
+
+        list[pos].add(travelTo(bearing, distanceKm));
+        pos++;
+      }
+    }
+
+    return ModelV2DrawSummary(
+      networkType: networkType,
+      densityBand: '${density.name}|$band',
+      basePowerDbm: basePower,
+      maxHrpPowerDbm: maxPower,
+      k: classRow.k,
+      offsetDb: classRow.offsetDb,
+      nrTddOffsetAppliedDb: nrTddOffsetAppliedDb,
+      boresightDistanceKmByRung: [
+        for (final int rung in rungs)
+          model.distanceKm(networkType, mnc, density, freqInMHz, towerHeightM, basePower - rung)
+      ],
+    );
+  }
+
+  /// The model v2 dispatch decision in [getLicenceHRPData] (LTE/NR only): whether [list] -- as
+  /// left by [computeModelV2Vertices], which only ever runs once the chain has genuinely
+  /// finished -- holds any real vertices at all. `true` draws the real polygon
+  /// (`PolygonHelper.createPolygon`); `false` draws the safe estimated one
+  /// (`PolygonHelper.createBasicPolygon`) instead of a partial or empty one -- covering both "no
+  /// rows were ever found" and "a page's fetch failed partway through the chain, so the
+  /// accumulated rows were deliberately never turned into vertices" (see the caller). Extracted
+  /// as a pure function, the same way [computeModelV2Vertices] is, so this deliberate behaviour
+  /// change from the legacy three-way dispatch is unit-testable on its own.
+  static bool modelV2HasVertices(List<List<LatLng>> list) =>
+      list.any((List<LatLng> points) => points.isNotEmpty);
 
   // Distance in km.
   // The Okumura-Hata / COST-231-Hata analytic formulas are now delegated to the pluggable
