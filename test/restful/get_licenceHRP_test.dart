@@ -507,6 +507,43 @@ void main() {
       expect(result.nrTddOffsetAppliedDb, 0.0, reason: 'LTE never carries the extra 5G loss');
     });
   });
+
+  group('GetLicenceHRP.modelV2HasVertices', () {
+    // The one deliberate behaviour change from the legacy three-way dispatch (spec/PR notes):
+    // for LTE/NR, "no real vertices at all" -- whether because no rows were ever found, or
+    // because a page's fetch failed partway through the chain and the accumulated rows were
+    // deliberately never turned into vertices (see computeModelV2Vertices's caller) -- draws the
+    // safe estimated polygon, never a partial one.
+
+    test('every rung empty -> false (no rows were ever found, or the chain never trusted an '
+        'incomplete accumulation)', () {
+      expect(GetLicenceHRP.modelV2HasVertices(<List<LatLng>>[[], []]), isFalse);
+    });
+
+    test('an empty list of rungs -> false', () {
+      expect(GetLicenceHRP.modelV2HasVertices(<List<LatLng>>[]), isFalse);
+    });
+
+    test('at least one rung with a point -> true, even if others are still empty', () {
+      expect(
+        GetLicenceHRP.modelV2HasVertices(<List<LatLng>>[
+          [],
+          [const LatLng(0, 0)],
+        ]),
+        isTrue,
+      );
+    });
+
+    test('every rung with points -> true', () {
+      expect(
+        GetLicenceHRP.modelV2HasVertices(<List<LatLng>>[
+          [const LatLng(0, 0)],
+          [const LatLng(1, 1), const LatLng(2, 2)],
+        ]),
+        isTrue,
+      );
+    });
+  });
 }
 
 /// Matches a [LatLng] whose latitude and longitude are both within a small tolerance of

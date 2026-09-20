@@ -36,12 +36,23 @@ class ContourModel {
   /// exhausted, clamped to `[0.01, 100]` km. `null` [density] is treated as SUBURBAN. [mnc] is
   /// the carrier's mobile network code (an unknown carrier is passed as `0`, which gets the
   /// table's `default` TDD loss whenever it applies -- see [ContourCoefficients.nrTddOffsetDb]).
+  ///
+  /// A non-finite [budgetDb] or [effectiveHeightM] (division by a zero slope is not possible --
+  /// [AnalyticPathLossModel.hataSlopeDb] cannot return zero -- but a NaN input propagates through
+  /// the exponent) floors to `0.01` km rather than reaching the ordinary clamp below: `num.clamp`
+  /// does not rescue NaN the way it rescues an out-of-range finite value, and Dart's `clamp` on
+  /// this SDK resolves a NaN receiver to its UPPER bound (100 km) -- silently drawing the
+  /// largest possible circle for a garbage input, worse than either leaving it NaN or flooring
+  /// it. Matches the Android app (commit 74feac86 on pathloss-v2/a3-switch).
   double distanceKm(NetworkType networkType, int mnc, CityDensity? density, double freqMHz,
       double effectiveHeightM, double budgetDb) {
     final _ClassLookup c = _classify(networkType, mnc, density, freqMHz, effectiveHeightM);
     final double exponent =
         (budgetDb - c.aUrbanDb - c.row.offsetDb - c.nrTddOffsetDb) / (c.row.k * c.slopeDb);
     final double raw = math.pow(10, exponent).toDouble();
+    if (raw.isNaN) {
+      return 0.01;
+    }
     return raw.clamp(0.01, 100.0).toDouble();
   }
 

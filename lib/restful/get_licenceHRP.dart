@@ -491,7 +491,7 @@ class GetLicenceHRP {
         // the comment above). Either way there is no partial, unverified HRP polygon worth
         // showing, so the safe estimated pattern is drawn instead -- a deliberate behaviour
         // change from the legacy dispatch for LTE/NR only; see the PR notes.
-        if (list!.any((points) => points.isNotEmpty)) {
+        if (modelV2HasVertices(list!)) {
           PolygonHelper().createPolygon(list!, site, device);
         } else {
           PolygonHelper().createBasicPolygon(device, site, list!);
@@ -670,6 +670,18 @@ class GetLicenceHRP {
       ],
     );
   }
+
+  /// The model v2 dispatch decision in [getLicenceHRPData] (LTE/NR only): whether [list] -- as
+  /// left by [computeModelV2Vertices], which only ever runs once the chain has genuinely
+  /// finished -- holds any real vertices at all. `true` draws the real polygon
+  /// (`PolygonHelper.createPolygon`); `false` draws the safe estimated one
+  /// (`PolygonHelper.createBasicPolygon`) instead of a partial or empty one -- covering both "no
+  /// rows were ever found" and "a page's fetch failed partway through the chain, so the
+  /// accumulated rows were deliberately never turned into vertices" (see the caller). Extracted
+  /// as a pure function, the same way [computeModelV2Vertices] is, so this deliberate behaviour
+  /// change from the legacy three-way dispatch is unit-testable on its own.
+  static bool modelV2HasVertices(List<List<LatLng>> list) =>
+      list.any((List<LatLng> points) => points.isNotEmpty);
 
   // Distance in km.
   // The Okumura-Hata / COST-231-Hata analytic formulas are now delegated to the pluggable

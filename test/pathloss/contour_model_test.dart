@@ -170,6 +170,18 @@ void main() {
       expect(veryLong, 100.0);
     });
 
+    test('a NaN budget floors to 0.01 km rather than the clamp\'s upper bound', () {
+      final double distance =
+          model.distanceKm(NetworkType.LTE, 0, CityDensity.SUBURBAN, 1865.0, 30.0, double.nan);
+      expect(distance, 0.01);
+    });
+
+    test('a NaN effective height floors to 0.01 km rather than the clamp\'s upper bound', () {
+      final double distance = model.distanceKm(
+          NetworkType.LTE, 0, CityDensity.SUBURBAN, 1865.0, double.nan, 130.0);
+      expect(distance, 0.01);
+    });
+
     test('effective height is floored at 1 metre', () {
       final double atHalfMetre =
           model.distanceKm(NetworkType.LTE, 0, CityDensity.SUBURBAN, 1865.0, 0.5, 130.0);
