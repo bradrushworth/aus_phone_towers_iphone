@@ -124,7 +124,11 @@ billing" section of `AGENTS.md` and `test/ui/widgets/ad_banner_container_test.da
 
 The coverage-polygon math was checked against the Android implementation and is now consistent:
 
-- Both apps use the same Okumura-Hata / COST-231-Hata path-loss model (`calculateDistance`), the
+- Since 1.16.0 (Android 7.9.0) both apps size 4G and 5G polygons with the same path-loss model v2
+  (`TransmitPower`, `ContourModel`, and a byte-identical bundled table `pathloss_v2.json` whose
+  SHA-256 is pinned in both test suites; shared unit-test vectors hold the arithmetic to the same
+  numbers). Other transmitter types still use the same legacy Okumura-Hata / COST-231-Hata model
+  (`calculateDistance`) in both apps. Both also share the
   same terrain-loss (`calculateTerrainLosses`), the same spherical `travel` destination-point
   formula, and the same ring generation (`BEARING_START = 1.25`, `BEARING_INCREMENT = 2.5`,
   10 m tower-height floor, 100 km distance cap).

@@ -69,7 +69,14 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   `find /home/openhands/tools/flutter/bin/cache/artifacts -type f -name "impellerc" -o -name "font_subset" -o -name "gen_snapshot" | xargs chmod +x`
 
 ## Path loss module (lib/pathloss/)
-**Model v2 (2026-09-20 switch).** `lib/restful/get_licenceHRP.dart` (the live `licence_hrp` path)
+**Model v2 (shipped in 1.16.0+161, 2026-09-20; Android 7.9.0 (352) is the same release).** A ring is
+the perimeter for one signal bar, drawn at the most likely distance at which a moving phone measures
+that level (owner ruling, 2026-09-20; not a reach, not a serving area).
+`distance_km = 10 ^ ((P - ring - A_urban(f, h) - offset_c - nrTddOffset) / (k_c * s(h)))`, clamped to
+0.01..100 km, where `P` is the licence's total EIRP shared across its subcarriers plus the relative
+pattern, `A_urban` and `s` are the existing `hataInterceptDb(URBAN, ...)` and `hataSlopeDb`, and
+`k_c`, `offset_c` come per `density|band` from the bundled table.
+`lib/restful/get_licenceHRP.dart` (the live `licence_hrp` path)
 and `lib/helpers/polygon_helper.dart` (the estimated pattern) draw LTE and NR contours with
 `TransmitPower` + `ContourModel`, calibrated against the bundled `assets/pathloss/pathloss_v2.json`
 table — see `model-v2-spec.md` in the Android repo (`bradrushworth/aus_phone_towers_java`) for the
@@ -82,7 +89,18 @@ LTE carrier get none. The coefficient table is produced by
 byte-identical in both apps — its SHA-256 is pinned in both repositories' test suites
 (`ContourCoefficients.bundledTableSha256` here); never hand-edit it. Every other network type
 (GSM/UMTS/CDMA/NB_IOT/OTHER) still uses the legacy model and `licence_hrp.power` as a raw,
-self-contained level per row, exactly as before.
+self-contained level per row, exactly as before. This app has no signal-based tower matching and no
+offline-area loader, so those two are the only drawing paths. The table is loaded once at start-up
+(`ContourCoefficients.loadBundled()` in `main.dart`); until it resolves, or if it fails (reported
+once to Crashlytics), built-in band values are used. The table is re-issued only by a deliberate
+calibration run in the Android repository, never nightly and never in response to one field report;
+when it changes, both apps ship it in one release. When a later page of a pattern fails to download,
+LTE and NR draw the estimated polygon (before 1.16.0 a partial polygon was drawn).
+
+Everything below this paragraph describes the LEGACY model. Since 1.16.0 it sizes polygons only for
+transmitters that are not LTE or NR. It stays because those types still use it and because released
+versions up to 1.15.1 read the same REST table and take the model form from its FIRST row, so the
+table's shape must not change.
 
 The path loss algorithm estimates the distance a radio signal travels given a measured path-loss in
 dB. It is ported from the Java Android app's `au.com.bitbot.phonetowers.pathloss` package.
@@ -105,14 +123,21 @@ dB. It is ported from the Java Android app's `au.com.bitbot.phonetowers.pathloss
 - **`PathLossKey`**: Builds composite lookup keys and band buckets (LOW/MID/HIGH).
 - **`PathLossModelProvider`**: Singleton. On app startup, fetches coefficients from the REST API
   (`/api/towers/pathloss_coefficients/`). Until the fetch completes (or if it fails), falls back to
-  the analytic model. The provider is the single entry point used by `GetLicenceHRP` and
-  `PolygonHelper`.
+  the analytic model. The provider is the entry point `GetLicenceHRP` and `PolygonHelper` use for
+  transmitters that are not LTE or NR.
+- **`TransmitPower`**, **`ContourCoefficients`**, **`ContourModel`** (model v2, above): the
+  per-subcarrier transmit power and relative pattern, the bundled table, and the closed-form
+  distance. Same names and arithmetic as the Android classes; the shared vectors in
+  `test/pathloss/test_vectors.json` hold both apps to the same numbers.
 - **`LinearRegression`**: OLS solver (used by tests; the actual training happens server-side in the
   Java app).
 
 ### Published propagation semantics
-- The Android trainer is the only writer. Since 2026-09-12 it publishes the **central propagation
-  curve**, not a typical-observer distance and not a p90 outer reach. It bins by independently
+- (Legacy model.) The Android trainer is the only writer, and only when someone runs it with
+  `PATHLOSS_PUBLISH=true` after a reviewed dry run (last 2026-09-17); it is not published nightly.
+  Since 2026-09-17 it publishes the gain fixed at 1 and fits only the offset. Since 2026-09-12 it
+  publishes the **central propagation curve**, not a typical-observer distance and not a p90 outer
+  reach. It bins by independently
   mapped true log-distance, takes median true/anchor distance per supported bin, fits the physical
   forward relation with equal bin weights, then converts it to the existing
   `log10(d)=b0+b1*log10(anchorDistance)` form. The Flutter evaluator remains line-for-line
