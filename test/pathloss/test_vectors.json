@@ -1,0 +1,149 @@
+{
+ "table": {
+  "SUBURBAN|MID": {
+   "k": 0.85,
+   "offset_db": -4.0
+  },
+  "OPEN|LOW": {
+   "k": 0.75,
+   "offset_db": 4.5
+  },
+  "URBAN|HIGH": {
+   "k": 0.8,
+   "offset_db": -10.0
+  }
+ },
+ "nr_offset_db": {
+  "LOW": 0.0,
+  "MID": 3.0,
+  "HIGH": 9.0
+ },
+ "vectors": [
+  {
+   "technology": "LTE",
+   "class": "SUBURBAN|MID",
+   "frequency_mhz": 1865.0,
+   "bandwidth_hz": 20000000,
+   "eirp_w": 13489.6,
+   "pattern_db": 0.0,
+   "effective_height_m": 30.0,
+   "rung_dbm": -95,
+   "k": 0.85,
+   "offset_db": -4.0,
+   "nr_offset_db": 0.0,
+   "subcarriers": 1200,
+   "power_per_re_dbm": 40.508178,
+   "hata_urban_intercept_db": 136.001837,
+   "hata_slope_db": 35.224856,
+   "distance_km": 1.309507
+  },
+  {
+   "technology": "LTE",
+   "class": "SUBURBAN|MID",
+   "frequency_mhz": 1865.0,
+   "bandwidth_hz": 20000000,
+   "eirp_w": 13489.6,
+   "pattern_db": -12.5,
+   "effective_height_m": 30.0,
+   "rung_dbm": -105,
+   "k": 0.85,
+   "offset_db": -4.0,
+   "nr_offset_db": 0.0,
+   "subcarriers": 1200,
+   "power_per_re_dbm": 28.008178,
+   "hata_urban_intercept_db": 136.001837,
+   "hata_slope_db": 35.224856,
+   "distance_km": 1.080465
+  },
+  {
+   "technology": "LTE",
+   "class": "OPEN|LOW",
+   "frequency_mhz": 763.0,
+   "bandwidth_hz": 10000000,
+   "eirp_w": 3981.07,
+   "pattern_db": -3.0,
+   "effective_height_m": 45.0,
+   "rung_dbm": -115,
+   "k": 0.75,
+   "offset_db": 4.5,
+   "nr_offset_db": 0.0,
+   "subcarriers": 600,
+   "power_per_re_dbm": 35.218486,
+   "hata_urban_intercept_db": 123.414139,
+   "hata_slope_db": 34.071458,
+   "distance_km": 7.461838
+  },
+  {
+   "technology": "LTE",
+   "class": "URBAN|HIGH",
+   "frequency_mhz": 2650.0,
+   "bandwidth_hz": 40000000,
+   "eirp_w": 5011.87,
+   "pattern_db": 0.0,
+   "effective_height_m": 22.5,
+   "rung_dbm": -85,
+   "k": 0.8,
+   "offset_db": -10.0,
+   "nr_offset_db": 0.0,
+   "subcarriers": 2400,
+   "power_per_re_dbm": 33.197886,
+   "hata_urban_intercept_db": 141.719644,
+   "hata_slope_db": 36.043205,
+   "distance_km": 0.33967
+  },
+  {
+   "technology": "NR",
+   "class": "URBAN|HIGH",
+   "frequency_mhz": 3510.0,
+   "bandwidth_hz": 60000000,
+   "eirp_w": 97723.7,
+   "pattern_db": -6.0,
+   "effective_height_m": 25.0,
+   "rung_dbm": -90,
+   "k": 0.8,
+   "offset_db": -10.0,
+   "nr_offset_db": 9.0,
+   "subcarriers": 1896,
+   "power_per_re_dbm": 41.121616,
+   "hata_urban_intercept_db": 144.280397,
+   "hata_slope_db": 35.743493,
+   "distance_km": 0.375656
+  },
+  {
+   "technology": "NR",
+   "class": "OPEN|LOW",
+   "frequency_mhz": 885.0,
+   "bandwidth_hz": 10000000,
+   "eirp_w": 3981.07,
+   "pattern_db": 0.0,
+   "effective_height_m": 40.0,
+   "rung_dbm": -110,
+   "k": 0.75,
+   "offset_db": 4.5,
+   "nr_offset_db": 0.0,
+   "subcarriers": 624,
+   "power_per_re_dbm": 38.048152,
+   "hata_urban_intercept_db": 125.806261,
+   "hata_slope_db": 34.406507,
+   "distance_km": 4.870125
+  },
+  {
+   "technology": "NR",
+   "class": "SUBURBAN|MID",
+   "frequency_mhz": 2350.0,
+   "bandwidth_hz": 40000000,
+   "eirp_w": 39810.7,
+   "pattern_db": -1.5,
+   "effective_height_m": 18.0,
+   "rung_dbm": -100,
+   "k": 0.85,
+   "offset_db": -4.0,
+   "nr_offset_db": 3.0,
+   "subcarriers": 1260,
+   "power_per_re_dbm": 43.496293,
+   "hata_urban_intercept_db": 141.693963,
+   "hata_slope_db": 36.677965,
+   "distance_km": 1.229948
+  }
+ ]
+}

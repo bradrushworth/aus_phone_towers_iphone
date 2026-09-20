@@ -758,5 +758,78 @@ void main() {
       expect(DeviceDetails.rsrpConversionDb,
           lessThan(DeviceDetails.widebandToRsrpConversionDb(20000000)));
     });
+
+    // --- path-loss v2 brief F1: TransmitPower.estimatedPatternLossDb (lib/pathloss/
+    // transmit_power.dart) is extracted from this method's inline radiation-pattern-loss
+    // computation (spec section 3), and getPowerAtBearing is changed to call it instead of
+    // computing the loss inline. These pin the exact numeric output of the CURRENT (pre-
+    // refactor) formula -- computed independently from the literal formula, not guessed -- so
+    // the refactor cannot change what tower matching sees (spec section 1: getPowerAtBearing
+    // "keeps the legacy power and the legacy model"). Mirrors the Android app's DeviceDetailsTest
+    // pin for the same call.
+    test('getPowerAtBearing_patternLossPin_boresight', () {
+      final device = new DeviceDetails(networkType: NetworkType.LTE);
+      device.setSite(site);
+      device.eirp = 1000.0;
+      device.azimuth = 0;
+      expect(device.getPowerAtBearing(0), closeTo(35.150000000000, 1e-9));
+    });
+
+    test('getPowerAtBearing_patternLossPin_midLobe45', () {
+      final device = new DeviceDetails(networkType: NetworkType.LTE);
+      device.setSite(site);
+      device.eirp = 1000.0;
+      device.azimuth = 0;
+      expect(device.getPowerAtBearing(45), closeTo(29.059461076611, 1e-9));
+    });
+
+    test('getPowerAtBearing_patternLossPin_quarter90', () {
+      final device = new DeviceDetails(networkType: NetworkType.LTE);
+      device.setSite(site);
+      device.eirp = 1000.0;
+      device.azimuth = 0;
+      expect(device.getPowerAtBearing(90), closeTo(10.150000000000, 1e-9));
+    });
+
+    test('getPowerAtBearing_patternLossPin_backLobe180_clamped', () {
+      final device = new DeviceDetails(networkType: NetworkType.LTE);
+      device.setSite(site);
+      device.eirp = 1000.0;
+      device.azimuth = 0;
+      // Raw (1-cos(180deg))^1.15 * 25 = 2^1.15 * 25 = ~55.6 dB, clamped to frontToBackRatio
+      // (25) -- same net result as quarter90 above, which sits exactly at the clamp boundary.
+      expect(device.getPowerAtBearing(180), closeTo(10.150000000000, 1e-9));
+    });
+
+    test('getPowerAtBearing_patternLossPin_unwrappedAngleMatchesWrapped', () {
+      // referenceAngle is not reduced to [0, 180] before cos() -- 340 deg is not wrapped to 20
+      // deg -- but cos()'s own periodicity/evenness makes the two bearings physically
+      // equivalent anyway. Pins that TransmitPower.estimatedPatternLossDb must not "fix" this
+      // by adding a wraparound step that was never there.
+      final unwrapped = new DeviceDetails(networkType: NetworkType.LTE);
+      unwrapped.setSite(site);
+      unwrapped.eirp = 1000.0;
+      unwrapped.azimuth = 350;
+
+      final wrapped = new DeviceDetails(networkType: NetworkType.LTE);
+      wrapped.setSite(site);
+      wrapped.eirp = 1000.0;
+      wrapped.azimuth = 0;
+
+      expect(unwrapped.getPowerAtBearing(10), closeTo(34.160613380367, 1e-9));
+      expect(wrapped.getPowerAtBearing(20), closeTo(34.160613380367, 1e-9));
+    });
+
+    test('getPowerAtBearing_patternLossPin_customAntenna', () {
+      final device = new DeviceDetails(networkType: NetworkType.LTE);
+      device.setSite(site);
+      device.eirp = 1000.0;
+      device.azimuth = 0;
+      device.antenna = new Antenna()
+        ..gain = 10.0
+        ..frontToBack = 18.0
+        ..horizontalBeamwidth = 65.0;
+      expect(device.getPowerAtBearing(60), closeTo(21.038745836503, 1e-9));
+    });
   });
 }

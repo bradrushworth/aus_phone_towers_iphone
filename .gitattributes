@@ -1,0 +1,2 @@
+assets/pathloss/*.json text eol=lf
+test/pathloss/*.json text eol=lf
