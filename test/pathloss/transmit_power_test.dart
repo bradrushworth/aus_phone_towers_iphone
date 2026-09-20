@@ -29,6 +29,31 @@ void main() {
       test('a vanishingly small bandwidth still returns at least one resource block', () {
         expect(TransmitPower.subcarriers(NetworkType.LTE, 1865.0, 1), 12 * 1);
       });
+
+      test('a standard bandwidth within 1 Hz still matches (ACMA records are not bit-exact)', () {
+        expect(TransmitPower.subcarriers(NetworkType.LTE, 1865.0, 1400000.4), 12 * 6);
+      });
+
+      test('just outside the 1 Hz tolerance falls through to the formula, not the table', () {
+        // floor(0.9 * 1400002 / 180000) = floor(7.0000099...) = 7, not the table's 6.
+        expect(TransmitPower.subcarriers(NetworkType.LTE, 1865.0, 1400002), 12 * 7);
+      });
+    });
+
+    group('subcarriers - unsupported network types', () {
+      test('throws ArgumentError for anything but LTE and NR', () {
+        for (final NetworkType nt in <NetworkType>[
+          NetworkType.GSM,
+          NetworkType.UMTS,
+          NetworkType.CDMA,
+          NetworkType.NB_IOT,
+          NetworkType.OTHER,
+          NetworkType.UNKNOWN,
+        ]) {
+          expect(() => TransmitPower.subcarriers(nt, 1865.0, 20000000),
+              throwsArgumentError, reason: '$nt');
+        }
+      });
     });
 
     group('subcarriers - NR', () {
@@ -53,6 +78,26 @@ void main() {
 
       test('sub-1 GHz bands use 15 kHz SCS', () {
         expect(TransmitPower.subcarriers(NetworkType.NR, 885.0, 10000000), 12 * 52);
+      });
+    });
+
+    group('isTddBand', () {
+      test('n40 (2300-2400 MHz), inclusive of the lower edge, exclusive of the upper', () {
+        expect(TransmitPower.isTddBand(2300.0), isTrue);
+        expect(TransmitPower.isTddBand(2399.0), isTrue);
+        expect(TransmitPower.isTddBand(2400.0), isFalse);
+      });
+
+      test('n78 (>= 3300 MHz), inclusive of the lower edge', () {
+        expect(TransmitPower.isTddBand(3299.0), isFalse);
+        expect(TransmitPower.isTddBand(3300.0), isTrue);
+        expect(TransmitPower.isTddBand(3510.0), isTrue);
+      });
+
+      test('everything else (sub-1 GHz, and the 2400-3300 MHz gap) is FDD', () {
+        expect(TransmitPower.isTddBand(700.0), isFalse);
+        expect(TransmitPower.isTddBand(1865.0), isFalse);
+        expect(TransmitPower.isTddBand(2650.0), isFalse);
       });
     });
 

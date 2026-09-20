@@ -1,4 +1,4 @@
-import 'dart:convert' show utf8;
+import 'dart:convert' show jsonEncode, utf8;
 import 'dart:io';
 
 import 'package:crypto/crypto.dart' show sha256;
@@ -32,9 +32,15 @@ void main() {
       expect(bundled.classes, hasLength(15));
     });
 
-    test('parses 3 pooled rows and 3 NR offsets, one per band', () {
+    test('parses 3 pooled rows and a default TDD loss', () {
       expect(bundled.pooled.keys.toSet(), <String>{'LOW', 'MID', 'HIGH'});
-      expect(bundled.nrOffsetByBand.keys.toSet(), <String>{'LOW', 'MID', 'HIGH'});
+      expect(bundled.nrTddOffsetByMnc, contains('default'));
+    });
+
+    test('nr_tdd_offset_db: every value (including default) is between 0 and 20 dB', () {
+      for (final MapEntry<String, double> entry in bundled.nrTddOffsetByMnc.entries) {
+        expect(entry.value, inInclusiveRange(0.0, 20.0), reason: entry.key);
+      }
     });
 
     test('parses both typical-power maps (LTE and NR), one entry per band', () {
@@ -59,14 +65,17 @@ void main() {
       expect(bundled.gatePassed, isTrue);
     });
 
-    test('the hard-coded fallback equals the bundled table\'s pooled rows, NR offsets and '
-        'typical powers, so it cannot silently drift', () {
+    test('the hard-coded fallback equals the bundled table\'s pooled rows, its default TDD '
+        'loss and its typical powers, so none of them can silently drift', () {
       final ContourCoefficients fallback = ContourCoefficients.fallback();
       expect(fallback.pooled, bundled.pooled);
-      expect(fallback.nrOffsetByBand, bundled.nrOffsetByBand);
+      expect(fallback.nrTddOffsetByMnc['default'], bundled.nrTddOffsetByMnc['default']);
       expect(fallback.typicalPerReEirpDbmByTech, bundled.typicalPerReEirpDbmByTech);
-      // The fallback deliberately has no per-class rows -- every density falls back to pooled.
+      // The fallback deliberately has no per-class rows -- every density falls back to pooled --
+      // and no per-carrier TDD losses, only default -- an unknown carrier gets that anyway.
       expect(fallback.classes, isEmpty);
+      expect(fallback.nrTddOffsetByMnc.keys, hasLength(1));
+      expect(fallback.nrTddOffsetByMnc, contains('default'));
     });
 
     test('the bundled asset\'s SHA-256, with every carriage return removed, matches the '
@@ -85,24 +94,51 @@ void main() {
       const ContourCoefficients sparse = ContourCoefficients(
         classes: <String, ContourClassRow>{},
         pooled: <String, ContourClassRow>{'MID': ContourClassRow(0.9, -1.0)},
-        nrOffsetByBand: <String, double>{},
+        nrTddOffsetByMnc: <String, double>{},
         typicalPerReEirpDbmByTech: <String, Map<String, double>>{},
         gatePassed: false,
       );
       expect(sparse.forClass(CityDensity.URBAN, 'MID'), const ContourClassRow(0.9, -1.0));
     });
 
-    test('nrOffsetDb and typicalPerReEirpDbm default to zero for an unmodelled band', () {
-      const ContourCoefficients empty = ContourCoefficients(
+    test('nrTddOffsetDb: carrier value if present, else default, else zero if the table has '
+        'neither', () {
+      const ContourCoefficients carrierAndDefault = ContourCoefficients(
         classes: <String, ContourClassRow>{},
         pooled: <String, ContourClassRow>{},
-        nrOffsetByBand: <String, double>{},
+        nrTddOffsetByMnc: <String, double>{'default': 9.2, '1': 13.2},
         typicalPerReEirpDbmByTech: <String, Map<String, double>>{},
         gatePassed: false,
       );
-      expect(empty.nrOffsetDb('MID'), 0.0);
-      expect(empty.typicalPerReEirpDbm(NetworkType.LTE, 'MID'), 0.0);
-      expect(empty.typicalPerReEirpDbm(NetworkType.NR, 'MID'), 0.0);
+      expect(carrierAndDefault.nrTddOffsetDb(1), 13.2); // Telstra's own value.
+      expect(carrierAndDefault.nrTddOffsetDb(2), 9.2); // unknown carrier -> default.
+      expect(carrierAndDefault.nrTddOffsetDb(0), 9.2); // conventional "unknown" sentinel.
+
+      const ContourCoefficients neither = ContourCoefficients(
+        classes: <String, ContourClassRow>{},
+        pooled: <String, ContourClassRow>{},
+        nrTddOffsetByMnc: <String, double>{},
+        typicalPerReEirpDbmByTech: <String, Map<String, double>>{},
+        gatePassed: false,
+      );
+      expect(neither.nrTddOffsetDb(1), 0.0);
+    });
+
+    test('typicalPerReEirpDbm throws StateError when the table has no entry for it (a hand-built '
+        'table that bypassed the validation parse() enforces)', () {
+      const ContourCoefficients missingNr = ContourCoefficients(
+        classes: <String, ContourClassRow>{},
+        pooled: <String, ContourClassRow>{},
+        nrTddOffsetByMnc: <String, double>{'default': 9.2},
+        typicalPerReEirpDbmByTech: <String, Map<String, double>>{
+          'LTE': <String, double>{'LOW': 36.1, 'MID': 34.6, 'HIGH': 30.6},
+        },
+        gatePassed: false,
+      );
+      expect(() => missingNr.typicalPerReEirpDbm(NetworkType.LTE, 'MID'), returnsNormally);
+      expect(() => missingNr.typicalPerReEirpDbm(NetworkType.NR, 'MID'), throwsStateError);
+      expect(() => missingNr.typicalPerReEirpDbm(NetworkType.LTE, 'NONEXISTENT_BAND'),
+          throwsStateError);
     });
 
     test('parse throws FormatException when "format" is not pathloss-v2', () {
@@ -116,6 +152,25 @@ void main() {
 
     test('parse throws FormatException when a required section is missing', () {
       expect(() => ContourCoefficients.parse('{"format": "pathloss-v2"}'), throwsFormatException);
+    });
+
+    test('parse throws FormatException when nr_tdd_offset_db has no "default"', () {
+      final Map<String, dynamic> json = _validTableJson();
+      (json['nr_tdd_offset_db'] as Map<String, dynamic>).remove('default');
+      expect(() => ContourCoefficients.parse(jsonEncode(json)), throwsFormatException);
+    });
+
+    test('parse throws FormatException when typical_per_re_eirp_dbm is missing a technology or '
+        'a band (a missing entry would otherwise silently draw a bogus contour)', () {
+      final Map<String, dynamic> missingTech = _validTableJson();
+      (missingTech['typical_per_re_eirp_dbm'] as Map<String, dynamic>).remove('NR');
+      expect(() => ContourCoefficients.parse(jsonEncode(missingTech)), throwsFormatException);
+
+      final Map<String, dynamic> missingBand = _validTableJson();
+      ((missingBand['typical_per_re_eirp_dbm'] as Map<String, dynamic>)['LTE']
+              as Map<String, dynamic>)
+          .remove('MID');
+      expect(() => ContourCoefficients.parse(jsonEncode(missingBand)), throwsFormatException);
     });
 
     test('parseOrFallback returns fallback() and records a non-null bundledLoadError on '
@@ -140,4 +195,27 @@ void main() {
       expect(ContourCoefficients.current.pooled, loaded.pooled);
     });
   });
+}
+
+/// A minimal but structurally complete table, for tests that break exactly one piece of it and
+/// confirm [ContourCoefficients.parse] rejects the result. A fresh, independent set of nested
+/// maps every call, so callers can mutate their own copy freely.
+Map<String, dynamic> _validTableJson() {
+  return <String, dynamic>{
+    'format': 'pathloss-v2',
+    'classes': <String, dynamic>{
+      'SUBURBAN|MID': <String, dynamic>{'k': 0.85, 'offset_db': -4.0},
+    },
+    'pooled': <String, dynamic>{
+      'LOW': <String, dynamic>{'k': 0.78, 'offset_db': 3.78},
+      'MID': <String, dynamic>{'k': 0.82, 'offset_db': -5.09},
+      'HIGH': <String, dynamic>{'k': 0.82, 'offset_db': -8.18},
+    },
+    'nr_tdd_offset_db': <String, dynamic>{'default': 9.2, '1': 13.2, '3': 4.3},
+    'typical_per_re_eirp_dbm': <String, dynamic>{
+      'LTE': <String, dynamic>{'LOW': 36.1, 'MID': 34.6, 'HIGH': 30.6},
+      'NR': <String, dynamic>{'LOW': 36.5, 'MID': 30.5, 'HIGH': 46.2},
+    },
+    'evidence': <String, dynamic>{'gate_passed': true},
+  };
 }

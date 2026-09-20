@@ -2,72 +2,72 @@
  "anchor": "okumura-hata-urban, receiver height 1.0 m",
  "classes": {
   "MEDIUM|HIGH": {
-   "k": 0.862,
-   "offset_db": -7.05
+   "k": 0.851,
+   "offset_db": -7.09
   },
   "MEDIUM|LOW": {
-   "k": 0.826,
+   "k": 0.819,
    "offset_db": 4.14
   },
   "MEDIUM|MID": {
-   "k": 0.848,
-   "offset_db": -4.86
+   "k": 0.843,
+   "offset_db": -4.87
   },
   "METRO|HIGH": {
-   "k": 0.715,
-   "offset_db": -9.98
+   "k": 0.82,
+   "offset_db": -8.18
   },
   "METRO|LOW": {
-   "k": 0.746,
-   "offset_db": 3.21
+   "k": 0.763,
+   "offset_db": 3.46
   },
   "METRO|MID": {
-   "k": 0.676,
-   "offset_db": -8.36
+   "k": 0.737,
+   "offset_db": -8.09
   },
   "OPEN|HIGH": {
-   "k": 0.725,
-   "offset_db": -9.82
+   "k": 0.82,
+   "offset_db": -8.18
   },
   "OPEN|LOW": {
-   "k": 0.709,
-   "offset_db": 4.16
+   "k": 0.705,
+   "offset_db": 4.19
   },
   "OPEN|MID": {
-   "k": 0.884,
-   "offset_db": -2.53
+   "k": 0.864,
+   "offset_db": -2.12
   },
   "SUBURBAN|HIGH": {
-   "k": 0.862,
-   "offset_db": -7.05
+   "k": 0.851,
+   "offset_db": -7.09
   },
   "SUBURBAN|LOW": {
-   "k": 0.826,
+   "k": 0.819,
    "offset_db": 4.14
   },
   "SUBURBAN|MID": {
-   "k": 0.848,
-   "offset_db": -4.86
+   "k": 0.843,
+   "offset_db": -4.87
   },
   "URBAN|HIGH": {
-   "k": 0.715,
-   "offset_db": -9.98
+   "k": 0.82,
+   "offset_db": -8.18
   },
   "URBAN|LOW": {
-   "k": 0.746,
-   "offset_db": 3.21
+   "k": 0.763,
+   "offset_db": 3.46
   },
   "URBAN|MID": {
-   "k": 0.676,
-   "offset_db": -8.36
+   "k": 0.737,
+   "offset_db": -8.09
   }
  },
  "evidence": {
   "classes": {
    "OPEN|HIGH": {
     "drawn_m": {
-     "-105": 2873,
-     "-115": 9515,
+     "-105": 1829,
+     "-115": 6537,
      "-85": null,
      "-95": null
     },
@@ -82,20 +82,22 @@
      "-85": null,
      "-95": 332
     },
+    "own_calibration": false,
+    "own_offset_weight": 0.0,
     "passed": null,
     "sites": 379
    },
    "OPEN|LOW": {
     "drawn_m": {
-     "-105": 4157,
-     "-115": 13335,
-     "-85": 261,
-     "-95": 1127
+     "-105": 4185,
+     "-115": 13535,
+     "-85": 256,
+     "-95": 1124
     },
     "gated": true,
     "heldout_ratio": {
-     "-85": 0.797,
-     "-95": 1.009
+     "-85": 0.82,
+     "-95": 1.002
     },
     "measured_m": {
      "-105": 4198,
@@ -103,20 +105,22 @@
      "-85": 297,
      "-95": 1124
     },
+    "own_calibration": true,
+    "own_offset_weight": 1.0,
     "passed": true,
     "sites": 3075
    },
    "OPEN|MID": {
     "drawn_m": {
-     "-105": 1753,
-     "-115": 4847,
-     "-85": 267,
-     "-95": 670
+     "-105": 1707,
+     "-115": 4871,
+     "-85": 249,
+     "-95": 637
     },
     "gated": true,
     "heldout_ratio": {
-     "-85": 1.475,
-     "-95": 1.085
+     "-85": 1.477,
+     "-95": 1.113
     },
     "measured_m": {
      "-105": 2905,
@@ -124,20 +128,22 @@
      "-85": 247,
      "-95": 637
     },
+    "own_calibration": true,
+    "own_offset_weight": 1.0,
     "passed": true,
     "sites": 1216
    },
    "SUBURBAN|HIGH": {
     "drawn_m": {
-     "-105": 1174,
-     "-115": 2749,
-     "-85": 163,
-     "-95": 423
+     "-105": 1181,
+     "-115": 2795,
+     "-85": 158,
+     "-95": 418
     },
     "gated": true,
     "heldout_ratio": {
      "-85": null,
-     "-95": 1.015
+     "-95": 1.008
     },
     "measured_m": {
      "-105": 4098,
@@ -145,20 +151,22 @@
      "-85": null,
      "-95": 418
     },
+    "own_calibration": true,
+    "own_offset_weight": 1.0,
     "passed": true,
     "sites": 1577
    },
    "SUBURBAN|LOW": {
     "drawn_m": {
-     "-105": 2151,
-     "-115": 5359,
-     "-85": 318,
-     "-95": 808
+     "-105": 2170,
+     "-115": 5443,
+     "-85": 314,
+     "-95": 807
     },
     "gated": true,
     "heldout_ratio": {
-     "-85": 1.085,
-     "-95": 1.002
+     "-85": 1.063,
+     "-95": 1.001
     },
     "measured_m": {
      "-105": 3804,
@@ -166,20 +174,22 @@
      "-85": 293,
      "-95": 807
     },
+    "own_calibration": true,
+    "own_offset_weight": 1.0,
     "passed": true,
     "sites": 3477
    },
    "SUBURBAN|MID": {
     "drawn_m": {
-     "-105": 1748,
-     "-115": 3952,
-     "-85": 277,
+     "-105": 1755,
+     "-115": 3982,
+     "-85": 276,
      "-95": 700
     },
     "gated": true,
     "heldout_ratio": {
-     "-85": 1.099,
-     "-95": 1.003
+     "-85": 1.086,
+     "-95": 1.0
     },
     "measured_m": {
      "-105": 3672,
@@ -187,20 +197,22 @@
      "-85": 246,
      "-95": 700
     },
+    "own_calibration": true,
+    "own_offset_weight": 1.0,
     "passed": true,
     "sites": 3573
    },
    "URBAN|HIGH": {
     "drawn_m": {
-     "-105": 1113,
+     "-105": 929,
      "-115": null,
      "-85": null,
-     "-95": 372
+     "-95": 363
     },
     "gated": false,
     "heldout_ratio": {
      "-85": null,
-     "-95": 0.848
+     "-95": 0.828
     },
     "measured_m": {
      "-105": null,
@@ -208,20 +220,22 @@
      "-85": null,
      "-95": 385
     },
+    "own_calibration": false,
+    "own_offset_weight": 0.0,
     "passed": null,
     "sites": 298
    },
    "URBAN|LOW": {
     "drawn_m": {
-     "-105": 1856,
+     "-105": 1792,
      "-115": null,
      "-85": null,
-     "-95": 730
+     "-95": 716
     },
     "gated": false,
     "heldout_ratio": {
      "-85": null,
-     "-95": 0.95
+     "-95": 0.903
     },
     "measured_m": {
      "-105": null,
@@ -229,20 +243,22 @@
      "-85": 261,
      "-95": 759
     },
+    "own_calibration": true,
+    "own_offset_weight": 0.38,
     "passed": null,
     "sites": 384
    },
    "URBAN|MID": {
     "drawn_m": {
-     "-105": 1954,
+     "-105": 1838,
      "-115": null,
-     "-85": 301,
-     "-95": 795
+     "-85": 325,
+     "-95": 790
     },
     "gated": false,
     "heldout_ratio": {
-     "-85": 1.317,
-     "-95": 0.813
+     "-85": 1.34,
+     "-95": 0.762
     },
     "measured_m": {
      "-105": 2383,
@@ -250,6 +266,8 @@
      "-85": 225,
      "-95": 922
     },
+    "own_calibration": true,
+    "own_offset_weight": 0.65,
     "passed": null,
     "sites": 650
    }
@@ -257,21 +275,62 @@
   "gate": "mean drawn/measured within 15% at -95 dBm (and -85 dBm where measurable in every split), classes with at least 1,000 sites",
   "gate_passed": true,
   "heldout_splits": 6,
+  "nr_tdd": {
+   "1": {
+    "ci90": [
+     11.3,
+     15.0
+    ],
+    "offset_db": 13.2,
+    "phones": 73,
+    "rows": 1535,
+    "shipped": true,
+    "sites": 204
+   },
+   "2": {
+    "ci90": [
+     6.1,
+     14.3
+    ],
+    "offset_db": 8.9,
+    "phones": 21,
+    "rows": 426,
+    "shipped": false,
+    "sites": 38
+   },
+   "3": {
+    "ci90": [
+     2.0,
+     6.1
+    ],
+    "offset_db": 4.3,
+    "phones": 18,
+    "rows": 922,
+    "shipped": true,
+    "sites": 134
+   },
+   "default": {
+    "ci90": [
+     7.9,
+     10.3
+    ],
+    "offset_db": 9.2,
+    "phones": 108,
+    "rows": 2883,
+    "shipped": true,
+    "sites": 362
+   }
+  },
   "rows": 914656,
-  "shrink_sites": 300,
-  "sites": 9882
+  "sites": 9882,
+  "slope_shrink_sites": 1000
  },
  "fitted": "2026-09-20",
  "format": "pathloss-v2",
- "nr_offset_calibrated": {
-  "HIGH": false,
-  "LOW": false,
-  "MID": false
- },
- "nr_offset_db": {
-  "HIGH": 0.0,
-  "LOW": 0.0,
-  "MID": 0.0
+ "nr_tdd_offset_db": {
+  "1": 13.2,
+  "3": 4.3,
+  "default": 9.2
  },
  "pin_rung_dbm": {
   "LTE": -95,
@@ -298,9 +357,9 @@
    "MID": 34.6
   },
   "NR": {
-   "HIGH": 30.6,
-   "LOW": 36.1,
-   "MID": 34.6
+   "HIGH": 46.2,
+   "LOW": 36.5,
+   "MID": 30.5
   }
  },
  "version": 1

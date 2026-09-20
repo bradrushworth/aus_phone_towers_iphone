@@ -14,34 +14,52 @@ class TransmitPower {
   TransmitPower._();
 
   /// Number of subcarriers sharing the transmitter's wideband EIRP -- the divisor in
-  /// [perReEirpDbm]. [ContourModel.supports] restricts the whole v2 model to LTE and NR, so a
-  /// [networkType] that is not NR always takes the LTE formula.
+  /// [perReEirpDbm]. [ContourModel.supports] restricts the whole v2 model to LTE and NR;
+  /// [networkType] must be one of those two, or this throws [ArgumentError] (matching the
+  /// Android twin, which cannot silently mis-handle a GSM/UMTS/other transmitter here).
   ///
-  /// LTE: `12 * N_RB`, with `N_RB` the standard resource-block count for an exact-width licence
-  /// (1.4/3/5/10/15/20 MHz), else `max(1, floor(0.9 * bandwidthHz / 180000))` -- ACMA licences of
-  /// 25-40+ MHz are several carriers folded into one record, not one of the standard widths.
+  /// LTE: `12 * N_RB`, with `N_RB` the standard resource-block count for a licence within 1 Hz of
+  /// an exact width (1.4/3/5/10/15/20 MHz -- ACMA's own records are not always bit-exact), else
+  /// `max(1, floor(0.9 * bandwidthHz / 180000))` -- ACMA licences of 25-40+ MHz are several
+  /// carriers folded into one record, not one of the standard widths.
   ///
-  /// NR: `12 * max(1, floor(0.95 * bandwidthHz / (12 * scsHz)))`, with `scsHz` 30 kHz for the TDD
-  /// bands n40 (2300-2400 MHz) and n78 (>= 3300 MHz), else 15 kHz.
+  /// NR: `12 * max(1, floor(0.95 * bandwidthHz / (12 * scsHz)))`, with `scsHz` 30 kHz on a TDD
+  /// band ([isTddBand]), else 15 kHz.
   static int subcarriers(NetworkType networkType, double freqMHz, double bandwidthHz) {
     if (networkType == NetworkType.NR) {
-      final bool tdd = (freqMHz >= 2300 && freqMHz < 2400) || freqMHz >= 3300;
-      final double scsHz = tdd ? 30000 : 15000;
+      final double scsHz = isTddBand(freqMHz) ? 30000 : 15000;
       final int resourceBlocks = math.max(1, (0.95 * bandwidthHz / (12 * scsHz)).floor());
       return 12 * resourceBlocks;
+    }
+    if (networkType != NetworkType.LTE) {
+      throw ArgumentError.value(
+          networkType, 'networkType', 'TransmitPower.subcarriers only supports LTE and NR');
     }
     return 12 * _lteResourceBlocks(bandwidthHz);
   }
 
-  /// LTE resource blocks for [bandwidthHz]: the standard table for an exact-width licence, else
-  /// the formula for a wider ACMA record that packs several carriers into one licence row.
+  /// True when [freqMHz] is one of the 5G TDD bands: n40 (2300-2400 MHz) or n78 (>= 3300 MHz).
+  /// ONE predicate shared by the NR subcarrier spacing above and the extra 5G loss in
+  /// `ContourModel` -- TDD 5G uses beamforming antennas, so the registered EIRP is the envelope
+  /// of the narrow traffic beams (spec section 2).
+  static bool isTddBand(double freqMHz) {
+    return (freqMHz >= 2300 && freqMHz < 2400) || freqMHz >= 3300;
+  }
+
+  /// LTE resource blocks for [bandwidthHz]: the standard table for a licence within 1 Hz of an
+  /// exact width, else the formula for a wider ACMA record that packs several carriers into one
+  /// licence row. The 1 Hz tolerance (not exact `==`) matches the Android twin: ACMA licence
+  /// bandwidths are not always bit-exact, and a stricter match silently fell through to the
+  /// formula for a licence like 1,400,000.4 Hz, drawing a 0.67 dB narrower contour than Android's
+  /// for the same tower.
   static int _lteResourceBlocks(double bandwidthHz) {
-    if (bandwidthHz == 1400000) return 6;
-    if (bandwidthHz == 3000000) return 15;
-    if (bandwidthHz == 5000000) return 25;
-    if (bandwidthHz == 10000000) return 50;
-    if (bandwidthHz == 15000000) return 75;
-    if (bandwidthHz == 20000000) return 100;
+    const double toleranceHz = 1.0;
+    if ((bandwidthHz - 1400000).abs() <= toleranceHz) return 6;
+    if ((bandwidthHz - 3000000).abs() <= toleranceHz) return 15;
+    if ((bandwidthHz - 5000000).abs() <= toleranceHz) return 25;
+    if ((bandwidthHz - 10000000).abs() <= toleranceHz) return 50;
+    if ((bandwidthHz - 15000000).abs() <= toleranceHz) return 75;
+    if ((bandwidthHz - 20000000).abs() <= toleranceHz) return 100;
     return math.max(1, (0.9 * bandwidthHz / 180000).floor());
   }
 
@@ -75,7 +93,7 @@ class TransmitPower {
   ///
   /// Extracted verbatim from `DeviceDetails.getPowerAtBearing` so that call site and this model's
   /// `P` term share one definition -- this function must keep reproducing exactly what that
-  /// method already returned (pinned in test/model/device_detail_test.dart), never the other way
+  /// method already returned (pinned in test/device_details_test.dart), never the other way
   /// round; `getPowerAtBearing` itself still feeds tower matching unchanged (spec section 1).
   static double estimatedPatternLossDb(double? azimuth, double bearing, double frontToBackDb) {
     if (azimuth == null) {
