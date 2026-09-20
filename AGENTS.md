@@ -69,6 +69,11 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   `find /home/openhands/tools/flutter/bin/cache/artifacts -type f -name "impellerc" -o -name "font_subset" -o -name "gen_snapshot" | xargs chmod +x`
 
 ## Path loss module (lib/pathloss/)
+**Known faults, 2026-09-20 (read before changing anything here).** The full analysis lives in the Android repo: `aus_phone_towers_java/docs/pathloss/2026-09-20-reassessment.md` (bead epic `keen-moser-3c3ce6-27e` there). The same faults exist in this app because the code is a port:
+- `lib/restful/get_licenceHRP.dart` budgets with raw `licence_hrp.power`, which is a power density in a per-licence reference bandwidth (30 kHz, 1 MHz or 5 MHz, fixed by the emission designator suffix), while the published coefficients were trained against total EIRP. Contours are drawn at 0.67 down to 0.15 of the radius the trainer intended, differently per transmitter. Replayed over 1.2 million observations the app under-predicts by a median 33 dB (radius 9.5x too small); with the trainer's power quantity it is 8.7 dB (1.8x).
+- 5G is effectively uncalibrated: one NR coefficient row exists; other NR borrows an LTE-derived multiplier, and the 3GPP anchor's solver is silently bounded to 5 km, which caps every Urban NR contour at 580 m. The RMa formula is mis-transcribed and borrowing a density also swaps the 3GPP scenario.
+- Rules: do not change a path-loss constant, clamp, threshold or density boundary in response to a field report; training, drawing and tower matching must share one transmit-power definition and change together in both apps in one release; `licence_hrp.power` is a relative antenna pattern only.
+
 The path loss algorithm estimates the distance a radio signal travels given a measured path-loss in
 dB. It is ported from the Java Android app's `au.com.bitbot.phonetowers.pathloss` package.
 
