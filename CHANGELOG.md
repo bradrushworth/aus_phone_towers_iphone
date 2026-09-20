@@ -8,6 +8,26 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **Coverage polygons are now drawn where phones actually measure each signal level.** Each ring
+  of a 4G or 5G coverage polygon marks one of the signal bars (for 4G: -85, -95, -105 and
+  -115 dBm). Until now the rings were drawn far too close to the tower: the "Strong" (-95 dBm)
+  ring of a typical suburban tower sat under 120 m away, when phones measure that level about 700
+  to 800 m away. The app had been reading the licence's radiation pattern as an absolute power. It
+  is a power density whose reference differs from licence to licence, by 6 to 28 dB, while the
+  distances had been tuned against the transmitter's total power. Distances now come from the
+  transmitter's total power shared across its subcarriers, which is what a phone's signal reading
+  measures, with the licence pattern used only for the shape, calibrated so that each ring sits
+  where 914,656 moving phone readings at 9,882 sites measured that level. On sites held out of the
+  calibration the Strong ring falls within 1% of the measured distance for suburban and
+  open-country towers. Expect polygons several times larger than before, and the same tower to
+  look the same size whichever licence record describes it. 5G on the beamforming bands (2.3 GHz,
+  and 3.3 GHz and up) is drawn with an extra loss measured per carrier, because those transmitters
+  are licensed on their narrow traffic beams while a phone measures the broader broadcast beams.
+  Terrain mode and the timing advance ring are unchanged.
+
 ## [1.15.1+160] — 2026-09-20
 
 ### Added

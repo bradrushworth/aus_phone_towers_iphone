@@ -1,14 +1,18 @@
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:phonetowers/helpers/network_type_helper.dart';
 import 'package:phonetowers/helpers/polygon_helper.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/pathloss/analytic_path_loss_model.dart';
+import 'package:phonetowers/pathloss/contour_coefficients.dart';
+import 'package:phonetowers/pathloss/contour_model.dart';
 import 'package:phonetowers/pathloss/nr3gpp_path_loss_model.dart';
 import 'package:phonetowers/pathloss/path_loss_coefficients.dart';
 import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
+import 'package:phonetowers/pathloss/terrain_coverage.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
 
 void main() {
@@ -207,4 +211,308 @@ void main() {
       );
     });
   });
+
+  group('GetLicenceHRP.computeModelV2Vertices', () {
+    // Path-loss model v2 (LTE/NR only). A small synthetic table, not the bundled one, so these
+    // numbers don't move if the table is recalibrated -- see contour_power_test.dart for the
+    // worked example pinned against the real bundled table.
+    final ContourCoefficients coefficients = ContourCoefficients(
+      classes: const <String, ContourClassRow>{
+        'SUBURBAN|MID': ContourClassRow(0.85, -4.0),
+      },
+      pooled: const <String, ContourClassRow>{
+        'MID': ContourClassRow(0.85, -4.0),
+      },
+      nrTddOffsetByMnc: const <String, double>{'default': 0.0},
+      typicalPerReEirpDbmByTech: const <String, Map<String, double>>{},
+      gatePassed: true,
+    );
+    const LatLng origin = LatLng(0, 0);
+    LatLng travelTo(double bearing, double distanceKm) =>
+        GetLicenceHRP.travel(origin, bearing, distanceKm);
+
+    // Common fixture values shared by most cases below: usable LTE EIRP, MID band (not a TDD
+    // band, so the carrier mnc is irrelevant to these), SUBURBAN.
+    const NetworkType networkType = NetworkType.LTE;
+    const int mnc = 0;
+    const CityDensity density = CityDensity.SUBURBAN;
+    const double freqInMHz = 1865.0;
+    const double bandwidthHz = 20000000;
+    const double eirpW = 1000.0;
+    const double towerHeightM = 30.0;
+
+    test('an empty row list returns null and adds nothing to any of the output collections',
+        () {
+      final List<List<LatLng>> list = [[]];
+      final Map<double, double> bearingToPower = {};
+      final List<double> bearingsUsed = [];
+      final List<List<TerrainCoverageResult>> coverageByRung = [[]];
+
+      final ModelV2DrawSummary? result = GetLicenceHRP.computeModelV2Vertices(
+        rows: const [],
+        rowStep: 1,
+        networkType: networkType,
+        mnc: mnc,
+        density: density,
+        freqInMHz: freqInMHz,
+        bandwidthHz: bandwidthHz,
+        eirpW: eirpW,
+        towerHeightM: towerHeightM,
+        coefficients: coefficients,
+        rungs: const [-95],
+        list: list,
+        effectiveHeightForBearing: (_) => 30.0,
+        terrainLossForBearing: (_) => null,
+        travelTo: travelTo,
+        bearingToPower: bearingToPower,
+        bearingsUsed: bearingsUsed,
+        coverageByRung: coverageByRung,
+      );
+
+      expect(result, isNull);
+      expect(list[0], isEmpty);
+      expect(bearingToPower, isEmpty);
+      expect(bearingsUsed, isEmpty);
+      expect(coverageByRung[0], isEmpty);
+    });
+
+    test('two pages whose strongest bearing is on the second page: the first page\'s vertex '
+        'is computed against the OVERALL maximum, not its own page\'s maximum', () {
+      // Row 0 stands in for a row from the first page; row 1 (stronger) for a row from the
+      // second, accumulated into one list exactly as getLicenceHRPData now does before calling
+      // this function.
+      const HrpPowerRow firstPageRow = HrpPowerRow(0.0, 1.0, -70.0);
+      const HrpPowerRow secondPageStrongestRow = HrpPowerRow(180.0, 181.0, -50.0);
+      final List<List<LatLng>> list = [[]];
+
+      final ModelV2DrawSummary? result = GetLicenceHRP.computeModelV2Vertices(
+        rows: [firstPageRow, secondPageStrongestRow],
+        rowStep: 1,
+        networkType: networkType,
+        mnc: mnc,
+        density: density,
+        freqInMHz: freqInMHz,
+        bandwidthHz: bandwidthHz,
+        eirpW: eirpW,
+        towerHeightM: towerHeightM,
+        coefficients: coefficients,
+        rungs: const [-95],
+        list: list,
+        effectiveHeightForBearing: (_) => 30.0,
+        terrainLossForBearing: (_) => null,
+        travelTo: travelTo,
+        bearingToPower: {},
+        bearingsUsed: [],
+        coverageByRung: [[]],
+      );
+
+      expect(result, isNotNull);
+      expect(result!.maxHrpPowerDbm, -50.0, reason: 'the maximum must be the SECOND page\'s row');
+
+      final ContourModel model = ContourModel(coefficients);
+      const double firstPageBearing = 0.5; // 0.0 + sectorHalfWidth(0.0, 1.0)
+      final double correctDistanceKm = model.distanceKm(networkType, mnc, density, freqInMHz,
+          30.0, result.basePowerDbm + (-70.0 - -50.0) - (-95.0));
+      // What the first row's distance would have been had its OWN power wrongly been treated
+      // as this transmitter's maximum (relativePatternDb == 0) -- the bug this deferral fixes.
+      final double wrongDistanceIfOwnPageWereMax = model.distanceKm(
+          networkType, mnc, density, freqInMHz, 30.0, result.basePowerDbm - (-95.0));
+
+      expect(correctDistanceKm, lessThan(wrongDistanceIfOwnPageWereMax));
+      expect(
+          list[0][0], _closeToLatLng(travelTo(firstPageBearing, correctDistanceKm)));
+    });
+
+    test('the row step samples the ACCUMULATED list (what were originally separate pages), '
+        'not a per-page index', () {
+      final List<HrpPowerRow> rows = [
+        const HrpPowerRow(0.0, 1.0, -70.0),
+        const HrpPowerRow(90.0, 91.0, -71.0),
+        const HrpPowerRow(180.0, 181.0, -72.0),
+        const HrpPowerRow(270.0, 271.0, -73.0),
+      ];
+      final List<double> bearingsUsed = [];
+
+      GetLicenceHRP.computeModelV2Vertices(
+        rows: rows,
+        rowStep: 2,
+        networkType: networkType,
+        mnc: mnc,
+        density: density,
+        freqInMHz: freqInMHz,
+        bandwidthHz: bandwidthHz,
+        eirpW: eirpW,
+        towerHeightM: towerHeightM,
+        coefficients: coefficients,
+        rungs: const [-95],
+        list: [[]],
+        effectiveHeightForBearing: (_) => 30.0,
+        terrainLossForBearing: (_) => null,
+        travelTo: travelTo,
+        bearingToPower: {},
+        bearingsUsed: bearingsUsed,
+        coverageByRung: [[]],
+      );
+
+      // Only rows[0] and rows[2] are visited (step 2 over 4 accumulated rows) -- rows[1] and
+      // rows[3], which would have been the second row of each original page, are skipped.
+      expect(bearingsUsed, [closeTo(0.5, 1e-9), closeTo(180.5, 1e-9)]);
+    });
+
+    test('a directional site whose GSM/UMTS/other transmitter uses the untouched legacy loop: '
+        'ContourModel.supports (the predicate getLicenceHRPData branches on) is false for '
+        'every network type except LTE and NR, so those types never reach this function and '
+        'keep exactly the legacy hrpDistanceKm arithmetic tested above', () {
+      for (final NetworkType nt in <NetworkType>[
+        NetworkType.GSM,
+        NetworkType.UMTS,
+        NetworkType.CDMA,
+        NetworkType.NB_IOT,
+        NetworkType.OTHER,
+        NetworkType.UNKNOWN,
+      ]) {
+        expect(ContourModel.supports(nt), isFalse, reason: '$nt');
+      }
+    });
+
+    test(
+        'call-site level: an NR transmitter at 3510 MHz (a TDD band, n78) is drawn smaller for '
+        'Telstra (mnc 1, +13.2 dB) than for Vodafone (mnc 3, +4.3 dB), while an LTE transmitter '
+        'at the same frequency is identical for both -- the extra loss never applies to LTE',
+        () {
+      // The real carrier-specific TDD losses from the bundled table (spec section 7). A small
+      // standalone table here, not the bundled one, so this pins the MECHANISM -- which carrier
+      // gets more loss, and that LTE never sees it -- rather than the exact calibrated numbers,
+      // which contour_power_test.dart's worked example already pins against the real table.
+      final ContourCoefficients tddCoefficients = ContourCoefficients(
+        classes: const <String, ContourClassRow>{'SUBURBAN|HIGH': ContourClassRow(0.82, -8.18)},
+        pooled: const <String, ContourClassRow>{'HIGH': ContourClassRow(0.82, -8.18)},
+        nrTddOffsetByMnc: const <String, double>{'default': 9.2, '1': 13.2, '3': 4.3},
+        typicalPerReEirpDbmByTech: const <String, Map<String, double>>{},
+        gatePassed: true,
+      );
+      const double freqInMHz3510 = 3510.0; // >= 3300 MHz: n78, a TDD band.
+      const int telstraMnc = 1;
+      const int vodafoneMnc = 3;
+
+      double distanceFor(NetworkType nt, int forMnc) {
+        final ModelV2DrawSummary summary = GetLicenceHRP.computeModelV2Vertices(
+          rows: const [HrpPowerRow(0.0, 1.0, -70.0)],
+          rowStep: 1,
+          networkType: nt,
+          mnc: forMnc,
+          density: density,
+          freqInMHz: freqInMHz3510,
+          bandwidthHz: bandwidthHz,
+          eirpW: eirpW,
+          towerHeightM: towerHeightM,
+          coefficients: tddCoefficients,
+          rungs: const [-95],
+          list: [[]],
+          effectiveHeightForBearing: (_) => 30.0,
+          terrainLossForBearing: (_) => null,
+          travelTo: travelTo,
+          bearingToPower: {},
+          bearingsUsed: [],
+          coverageByRung: [[]],
+        )!;
+        return summary.boresightDistanceKmByRung.single;
+      }
+
+      final double nrTelstraKm = distanceFor(NetworkType.NR, telstraMnc);
+      final double nrVodafoneKm = distanceFor(NetworkType.NR, vodafoneMnc);
+      expect(nrTelstraKm, lessThan(nrVodafoneKm),
+          reason: 'Telstra\'s larger extra loss (+13.2 dB) must draw a smaller NR contour than '
+              'Vodafone\'s (+4.3 dB)');
+
+      final double lteTelstraKm = distanceFor(NetworkType.LTE, telstraMnc);
+      final double lteVodafoneKm = distanceFor(NetworkType.LTE, vodafoneMnc);
+      expect(lteTelstraKm, closeTo(lteVodafoneKm, 1e-9),
+          reason: 'the extra loss never applies to LTE, regardless of carrier');
+    });
+
+    test('when terrainLossForBearing returns a loss, each rung is resolved through '
+        'TerrainCoverage.evaluate and recorded in coverageByRung', () {
+      final List<List<TerrainCoverageResult>> coverageByRung = [[]];
+
+      final ModelV2DrawSummary? result = GetLicenceHRP.computeModelV2Vertices(
+        rows: const [HrpPowerRow(0.0, 1.0, -70.0)],
+        rowStep: 1,
+        networkType: networkType,
+        mnc: mnc,
+        density: density,
+        freqInMHz: freqInMHz,
+        bandwidthHz: bandwidthHz,
+        eirpW: eirpW,
+        towerHeightM: towerHeightM,
+        coefficients: coefficients,
+        rungs: const [-95],
+        list: [[]],
+        effectiveHeightForBearing: (_) => 30.0,
+        terrainLossForBearing: (_) => (double distanceKm) => 0.0, // clear path, zero loss
+        travelTo: travelTo,
+        bearingToPower: {},
+        bearingsUsed: [],
+        coverageByRung: coverageByRung,
+      );
+
+      expect(result, isNotNull);
+      expect(coverageByRung[0], hasLength(1));
+    });
+
+    test('the summary reports base power, max HRP power, k, offset, class and one boresight '
+        'distance per rung', () {
+      final ModelV2DrawSummary result = GetLicenceHRP.computeModelV2Vertices(
+        rows: const [HrpPowerRow(0.0, 1.0, -70.0), HrpPowerRow(180.0, 181.0, -50.0)],
+        rowStep: 1,
+        networkType: networkType,
+        mnc: mnc,
+        density: density,
+        freqInMHz: freqInMHz,
+        bandwidthHz: bandwidthHz,
+        eirpW: eirpW,
+        towerHeightM: towerHeightM,
+        coefficients: coefficients,
+        rungs: const [-95, -105],
+        list: [[], []],
+        effectiveHeightForBearing: (_) => 30.0,
+        terrainLossForBearing: (_) => null,
+        travelTo: travelTo,
+        bearingToPower: {},
+        bearingsUsed: [],
+        coverageByRung: [[], []],
+      )!;
+
+      expect(result.densityBand, 'SUBURBAN|MID');
+      expect(result.k, 0.85);
+      expect(result.offsetDb, -4.0);
+      expect(result.maxHrpPowerDbm, -50.0);
+      expect(result.boresightDistanceKmByRung, hasLength(2));
+
+      final ContourModel model = ContourModel(coefficients);
+      expect(
+        result.boresightDistanceKmByRung[0],
+        closeTo(
+            model.distanceKm(
+                networkType, mnc, density, freqInMHz, towerHeightM, result.basePowerDbm - -95),
+            1e-9),
+      );
+      expect(
+        result.boresightDistanceKmByRung[1],
+        closeTo(
+            model.distanceKm(
+                networkType, mnc, density, freqInMHz, towerHeightM, result.basePowerDbm - -105),
+            1e-9),
+      );
+      expect(result.nrTddOffsetAppliedDb, 0.0, reason: 'LTE never carries the extra 5G loss');
+    });
+  });
 }
+
+/// Matches a [LatLng] whose latitude and longitude are both within a small tolerance of
+/// [expected] -- floating-point equality on the two independently-derived doubles that make up
+/// a lat/lng pair is too strict.
+Matcher _closeToLatLng(LatLng expected, {double delta = 1e-9}) => predicate<LatLng>((actual) {
+      return (actual.latitude - expected.latitude).abs() < delta &&
+          (actual.longitude - expected.longitude).abs() < delta;
+    }, 'is close to $expected');

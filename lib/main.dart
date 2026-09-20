@@ -13,6 +13,7 @@ import 'package:phonetowers/helpers/map_helper.dart';
 import 'package:phonetowers/helpers/purchase_helper.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
 import 'package:phonetowers/helpers/site_helper.dart';
+import 'package:phonetowers/pathloss/contour_coefficients.dart';
 import 'package:phonetowers/pathloss/path_loss_model_provider.dart';
 import 'package:phonetowers/ui/app_theme.dart';
 import 'package:phonetowers/ui/map_common.dart';
@@ -107,6 +108,20 @@ Future<void> main() async {
     // continues with the analytic Hata/COST-231 fallback until the fetch completes, then
     // the learned model is swapped in — matching the Android app's behaviour.
     PathLossModelProvider.initProvider();
+
+    // Load the bundled path-loss model v2 coefficient table (fire-and-forget, like the learned
+    // model above): ContourCoefficients.current falls back safely to the hard-coded pooled rows
+    // until this completes. Report a load/parse failure once, the same way other non-fatals are
+    // reported below, rather than leaving it silent.
+    ContourCoefficients.loadBundled().then((_) {
+      final Object? error = ContourCoefficients.bundledLoadError;
+      if (error == null) return;
+      logger.e('ContourCoefficients.loadBundled: using the hard-coded fallback table: $error');
+      if (useFirebase && !Foundation.kDebugMode) {
+        FirebaseCrashlytics.instance.recordError(error, StackTrace.current,
+            reason: 'ContourCoefficients bundled table failed to load');
+      }
+    });
 
     /*
   * runZoned Provides monitoring on whole app and reporting to the FireBase.
