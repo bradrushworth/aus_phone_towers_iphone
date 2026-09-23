@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.16.1+162] — 2026-09-23
 
 ### Changed
 - **Coverage ring sizes move, by up to a third for two classes.** The path-loss calibration now
