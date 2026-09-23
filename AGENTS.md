@@ -87,7 +87,9 @@ carrier mnc (`nr_tdd_offset_db` in the table; `default` for an unknown carrier) 
 LTE carrier get none. The coefficient table is produced by
 `docs/pathloss/calibration/calibrate_v2.py` in the Android repository and committed
 byte-identical in both apps — its SHA-256 is pinned in both repositories' test suites
-(`ContourCoefficients.bundledTableSha256` here); never hand-edit it. Every other network type
+(`ContourCoefficients.bundledTableSha256` here); never hand-edit it. The calibration counts each
+PHONE once ("phone-outer"), not each row or each site, so one very active device cannot swing a
+class — see `2026-09-20-phone-balance.md` in the Android repo. Every other network type
 (GSM/UMTS/CDMA/NB_IOT/OTHER) still uses the legacy model and `licence_hrp.power` as a raw,
 self-contained level per row, exactly as before. This app has no signal-based tower matching and no
 offline-area loader, so those two are the only drawing paths. The table is loaded once at start-up
