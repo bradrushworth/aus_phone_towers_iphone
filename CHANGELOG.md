@@ -8,6 +8,19 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.16.2+163] — 2026-11-01
+
+### Changed
+- **Dependency refresh, no feature changes.** Every dependency moves to the newest version its
+  existing constraint allows (`flutter pub upgrade`; `pubspec.yaml` constraints unchanged). Among
+  them: Google Maps 2.19.0 (iOS SDK 9 plugin 2.19.0), Google Mobile Ads 9.2.0, Firebase Core
+  4.15.2 / Analytics 12.6.1 / Crashlytics 5.4.1, `in_app_purchase` 3.3.1 with
+  `in_app_purchase_storekit` 0.4.16 (still past the 0.4.11+1 StoreKit2 date fix described in
+  AGENTS.md), `dio` 5.11.1, `shared_preferences` 2.5.6 and `url_launcher` 6.3.3. The lockfile now
+  needs Dart 3.13.0 / Flutter 3.47.0, below Codemagic's stable 3.47.8. Majors left for a separate
+  release: `device_info_plus` 13, `location` 10, `package_info_plus` 10, `permission_handler` 13
+  and the Firebase 5/6/13 line.
+
 ## [1.16.1+162] — 2026-09-23
 
 ### Changed
