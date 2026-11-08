@@ -8,6 +8,17 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.16.3+164] — 2026-11-08
+
+### Removed
+- **The 3G UMTS filter.** Every Australian 3G network has closed, and with frequency refarming on
+  (the default) the app shows its old bands as the 4G/5G they now carry, so the 3G chip never
+  changed the map. Production data agrees: no registered 3G observation from any Australian carrier
+  since January 2026, and no active 3G-style licence outside the refarmed bands. 3G is now never
+  hidden, so turning refarming off still shows the literal 3G licences, and a 3G choice saved by an
+  older version is ignored. Same change as the Android app's 7.11.0. The user guide's Generation
+  row says why there is no 3G.
+
 ## [1.16.2+163] — 2026-11-01
 
 ### Changed

@@ -26,7 +26,6 @@ class FilterSheet {
         NavigationMenu.isNBNVisible &&
         NavigationMenu.isOtherVisible)) count++;
     if (!(NavigationMenu.is2GVisible &&
-        NavigationMenu.is3GVisible &&
         NavigationMenu.is4GVisible &&
         NavigationMenu.is5GVisible)) count++;
     if (!(NavigationMenu.isLess700Visible &&
@@ -141,18 +140,15 @@ class FilterSheet {
                   (v) => toggleCarrier(Telco.Other, SharedPreferencesHelper.kisOtherVisible, v,
                       (x) => NavigationMenu.isOtherVisible = x)),
             ]),
-            // Generation
+            // Generation. There is no 3G chip (removed 2026-11-08, as Android 7.11.0 did): with
+            // refarming on no transmitter is ever UMTS, so it did nothing, and UMTS is never
+            // hidden so that turning refarming off always shows the literal 3G licences.
             title('Generation'),
             Wrap(spacing: 6, runSpacing: 0, children: [
               chip('2G GSM', NavigationMenu.is2GVisible, (v) {
                 NavigationMenu.is2GVisible = v;
                 savePref(SharedPreferencesHelper.kis2GVisible, v);
                 SiteHelper().toggleTelcoNetwork(NetworkType.GSM, v);
-              }),
-              chip('3G UMTS', NavigationMenu.is3GVisible, (v) {
-                NavigationMenu.is3GVisible = v;
-                savePref(SharedPreferencesHelper.kis3GVisible, v);
-                SiteHelper().toggleTelcoNetwork(NetworkType.UMTS, v);
               }),
               chip('4G LTE', NavigationMenu.is4GVisible, (v) {
                 NavigationMenu.is4GVisible = v;

@@ -11,7 +11,6 @@ class SharedPreferencesHelper {
   static final String kisOtherVisible = 'isOtherVisible';
 
   static final String kis2GVisible = 'is2GVisible';
-  static final String kis3GVisible = 'is3GVisible';
   static final String kis4GVisible = 'is4GVisible';
   static final String kis5GVisible = 'is5GVisible';
 
