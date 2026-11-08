@@ -11,7 +11,6 @@ class NavigationMenu {
   static bool isOtherVisible = true;
 
   static bool is2GVisible = true;
-  static bool is3GVisible = true;
   static bool is4GVisible = true;
   static bool is5GVisible = true;
 

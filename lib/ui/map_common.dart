@@ -764,7 +764,8 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       listen: false,
     ).toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
 
-    //2G/3G4G/5G
+    //2G/4G/5G. There is no 3G chip any more: a saved 'is3GVisible' from an older version is
+    //ignored, so UMTS is never hidden (see FilterSheet).
     NavigationMenu.is2GVisible = SharedPreferencesHelper.getMenuStatus(
       key: SharedPreferencesHelper.kis2GVisible,
       prefs: prefs,
@@ -773,14 +774,6 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       context,
       listen: false,
     ).toggleTelcoNetwork(NetworkType.GSM, NavigationMenu.is2GVisible);
-    NavigationMenu.is3GVisible = SharedPreferencesHelper.getMenuStatus(
-      key: SharedPreferencesHelper.kis3GVisible,
-      prefs: prefs,
-    );
-    Provider.of<SiteHelper>(
-      context,
-      listen: false,
-    ).toggleTelcoNetwork(NetworkType.UMTS, NavigationMenu.is3GVisible);
     NavigationMenu.is4GVisible = SharedPreferencesHelper.getMenuStatus(
       key: SharedPreferencesHelper.kis4GVisible,
       prefs: prefs,

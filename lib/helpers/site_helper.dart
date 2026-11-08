@@ -26,6 +26,9 @@ class SiteHelper with ChangeNotifier {
   static final int RECURSION_LIMIT = 3;
   static List<MapOverlay> globalListMapOverlay = [];
   static Set<Telco> hideTelco = Set<Telco>();
+  // There is no 3G filter chip (removed 2026-11-08, as Android 7.11.0 did): with refarming on no
+  // transmitter is ever UMTS, and UMTS is never added here so that turning refarming off always
+  // shows the literal 3G licences.
   static Set<NetworkType> hideNetworkType = Set<NetworkType>();
 
   static int GEOHASH_LENGTH = 5;

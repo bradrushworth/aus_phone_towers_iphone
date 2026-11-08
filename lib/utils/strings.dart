@@ -18,7 +18,6 @@ class Strings {
   static String dismiss = "Dismiss";
 
   static String twoG_GSM = '2G GSM';
-  static String threeG_UMTS = '3G UMTS';
   static String fourG_LTE = '4G LTE';
   static String fiveG_NR = '5G NR';
 
@@ -82,9 +81,6 @@ class Strings {
   static String hiding_menu_hide_radiation = 'Hide Radiation on Click';
   static String hiding_menu_draw_radiation = 'Draw Radiation on Click';
   static String hiding_menu_multi_tower = 'Multi-Tower Coverage';
-  static String disable_refarming = 'Disable frequency refarming';
-  static String disable_refarming_summary =
-      'When on, legacy 3G (UMTS) licences in bands now run as 4G/5G are shown at their current reuse (4G LTE).';
 
   static String polygon_precision = 'Polygon Precision';
   static String polygon_precision_low = 'Low (faster)';
