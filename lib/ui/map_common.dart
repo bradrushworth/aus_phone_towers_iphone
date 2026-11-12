@@ -1096,7 +1096,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         state.mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-              target: LatLng(location.latitude!, location.longitude!),
+              target: LatLng(location.latitude, location.longitude),
               zoom: last?.zoom ?? kDefaultZoom,
               tilt: last?.tilt ?? 0,
               bearing: _rotatingMapBearing(fallback: last?.bearing ?? 0),
@@ -1247,8 +1247,8 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           //get actual lat long from actual user's location and download towers for the area
           LocationData location = await _locationService.getLocation();
           //create GeoHash for Actual location
-          lat = location.latitude!;
-          long = location.longitude!;
+          lat = location.latitude;
+          long = location.longitude;
           logger.d("lat $lat and long is $long");
           geoHash = Geohash.encode(lat, long, codeLength: 5);
         } else {

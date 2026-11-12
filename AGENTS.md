@@ -66,6 +66,39 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   `C:/Users/Brad/flutter/bin/flutter`). Dart is bundled inside it under `bin/cache/dart-sdk`.
   On another machine, use wherever the SDK is installed.
 
+## Android toolchain (AGP 9, bead aptios-zmk, 2026-11-13)
+- **The versions follow the app template of the Flutter version `codemagic.yaml` pins** (3.50.0):
+  AGP 9.3.1 and Kotlin Gradle plugin 2.4.20 in `android/settings.gradle`, Gradle 9.5.0 in
+  `android/gradle/wrapper/gradle-wrapper.properties`. `android/build.gradle` holds the SDK levels:
+  compileSdk 37 (permission_handler_android 14 compiles against 37, and Flutter warns when a
+  plugin's compileSdk is above the app's), targetSdk 36, minSdk 24.
+- **Why not newer.** Flutter 3.50's `packages/flutter_tools/lib/src/android/gradle_utils.dart`
+  names AGP 9.4, Gradle 9.5.0 and Kotlin 2.4.20 as the newest it knows and supports. Its
+  `packages/flutter_tools/gradle/src/main/kotlin/DependencyVersionChecker.kt` fails the build
+  below Gradle 9.3.1, AGP 9.1.1 or Kotlin 2.4.10, and warns below 9.5.0, 9.3.1 and 2.4.20. The
+  native Java app runs AGP 9.5 on Gradle 9.8.2; that is no reason to take this app past what
+  Flutter supports. When `codemagic.yaml` moves to a new Flutter, read both files at that tag and
+  move `android/` to match in the same change.
+- **Do not reintroduce `ext.kotlin_version` in `android/build.gradle`.** Flutter's
+  `VersionFetcher.getKGPVersion` reads a `kotlin_version` project property before it looks at the
+  applied Kotlin plugin, so a stale value there (it said `2.3.0`) is what the version check sees.
+- **`android.builtInKotlin=false` and `android.newDsl=false` stay**, as in Flutter 3.50's own
+  template. Built-in Kotlin is blocked only by `in_app_review` 2.0.12 (the latest), which applies
+  `kotlin-android` and `kotlinOptions` unconditionally, and AGP 9 rejects that once built-in
+  Kotlin is on (upstream britannio/in_app_review#190). Every other plugin either checks
+  `android.builtInKotlin` or leaves Kotlin to Flutter; checked over `.dart_tool/package_config.json`
+  on 2026-11-13. When in_app_review is fixed: set `android.builtInKotlin=true`, delete
+  `id "kotlin-android"` from `android/app/build.gradle` (its top-level `kotlin {}` block is
+  already where built-in Kotlin expects it) and the Kotlin plugin line from `settings.gradle`,
+  then build a release bundle (bead aptios-8mo). Until then every build prints Flutter's KGP
+  warning.
+- **Reproducing a Codemagic Android build locally.** `C:/Users/Brad/flutter` is a July 2026
+  master build, not the pinned stable; use a checkout of the pinned tag. Put it at a short path:
+  under the session scratchpad, Windows' 260-character path limit left files out of the checkout
+  and broke `flutter analyze`. A release bundle needs `android/key.properties` (git-ignored);
+  without it `signReleaseBundle` fails with a bare `NullPointerException`. A throwaway keystore
+  is enough to prove the bundle builds.
+
 ## Path loss module (lib/pathloss/)
 **Model v2 (shipped in 1.16.0+161, 2026-09-20; Android 7.9.0 (352) is the same release).** A ring is
 the perimeter for one signal bar, drawn at the most likely distance at which a moving phone measures

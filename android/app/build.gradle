@@ -42,18 +42,14 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace 'au.com.bitbot.phonetowers.flutter'
 
-    compileSdkVersion rootProject.ext.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    compileSdk = rootProject.ext.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
 
     sourceSets {
         main.java.srcDirs += 'src/main/java'
         main.kotlin.srcDirs += 'src/main/kotlin'
     }
 
-
-    kotlin {
-        jvmToolchain(21)
-    }
 
     java {
         toolchain {
@@ -63,8 +59,8 @@ android {
 
     defaultConfig {
         applicationId "au.com.bitbot.phonetowers.flutter"
-        minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion rootProject.ext.targetSdkVersion
+        minSdk = rootProject.ext.minSdkVersion
+        targetSdk = rootProject.ext.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -84,6 +80,12 @@ android {
     lint {
         disable 'InvalidPackage'
     }
+}
+
+// Top-level, not inside android {}: this is where Flutter's built-in Kotlin migration guide puts it,
+// so the block needs no change when android.builtInKotlin is turned on.
+kotlin {
+    jvmToolchain(21)
 }
 
 flutter {
