@@ -65,10 +65,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>io.flutter.embedded_views_preview</key>
-	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
-	<string>NO</string>
+	<false/>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier is used to deliver personalized advertisements and measure ad performance within Aus Phone Towers. For example, the app may show ads relevant to your interests and track how many users interact with those ads.</string>
 	<!-- iOS 18+: list finished consumable purchases in StoreKit's Transaction.all. "One Year Ad
