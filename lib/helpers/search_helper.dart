@@ -59,6 +59,11 @@ class SearchHelper with ChangeNotifier {
     notifyListeners();
   }
 
+  /// True when the search request itself failed (no response at all, e.g. a network error).
+  /// A null response must take the "Could not reach the tower database" branch, not read as
+  /// zero rows ("No sites match").
+  static bool searchFailed(SiteResponse? r) => r == null;
+
   void executeSiteSearch(String query,
       void Function(String geoHash, bool expandGeohash) downloadTowers) {
     // A blank query would build a wildcard-only filter (and a blank postcode an
@@ -96,6 +101,11 @@ class SearchHelper with ChangeNotifier {
     final List<SearchResult> results = [];
     try {
       SiteResponse? rawResponse = await api.getSearchedData(url);
+      if (searchFailed(rawResponse)) {
+        // Api.getSearchedData returns null on any network error or bad status; route it to the
+        // error branch below rather than reporting zero rows.
+        throw StateError('search request returned no response');
+      }
 
       int totalRows = rawResponse?.restify?.rows?.length ?? 0;
       for (int i = 0; i < totalRows; i++) {
