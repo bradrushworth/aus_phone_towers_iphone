@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.16.4+165] — 2026-11-12
 
 ### Fixed
 - **5G coverage rings mark the same signal levels as the Android app** (-80, -90, -100 and -110 dBm).
