@@ -1308,6 +1308,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           downloadTowersForSingleTelco(
             telco,
             geoHash,
+            requestedGeohashes: [geoHash],
             expansionAmount: expansionAmount,
             recursionDepth: recursionDepth,
             expandGeohash: expandGeohash,
@@ -1321,6 +1322,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     Telco telco,
     String geoHash, {
     String? nextPageURL,
+    List<String> requestedGeohashes = const [],
     required int expansionAmount,
     required int recursionDepth,
     required bool expandGeohash,
@@ -1346,7 +1348,20 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash',
     );
 
-    int totalLatLong = rawResponse!.restify?.rows?.length ?? 0;
+    if (rawResponse == null) {
+      // The request failed (timeout, no coverage, bad status). Forget the areas so the next
+      // scroll or refresh asks again, instead of leaving them blank for the session.
+      SiteHelper.forgetGeohashes(requestedGeohashes, telco);
+      final DateTime now = DateTime.now();
+      if (_lastServerUnreachableSnackbar == null ||
+          now.difference(_lastServerUnreachableSnackbar!) >= const Duration(seconds: 30)) {
+        _lastServerUnreachableSnackbar = now;
+        if (mounted) showSnackbar(message: 'Server is unreachable!');
+      }
+      return;
+    }
+
+    int totalLatLong = rawResponse.restify?.rows?.length ?? 0;
 
     //If no data found for this telco then don't do anything
     if (totalLatLong == 0) {
@@ -1436,6 +1451,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       downloadTowersForSingleTelco(
         telco,
         geoHash,
+        requestedGeohashes: requestedGeohashes,
         nextPageURL: nextPage.href,
         expansionAmount: expansionAmount,
         recursionDepth: recursionDepth,
@@ -1508,7 +1524,8 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     if (expandGeohash &&
         expansionAmount < SiteHelper.EXPANSION_LIMIT &&
         recursionDepth < SiteHelper.RECURSION_LIMIT) {
-      String filter = getNeighbourRing(recursionDepth + 1, geoHash, telco).toString();
+      final ring = getNeighbourRing(recursionDepth + 1, geoHash, telco);
+      String filter = ring.filter.toString();
       if (filter.length > 2) {
         // Trim the last two "||" characters
         filter = filter.substring(0, filter.length - 2);
@@ -1522,6 +1539,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         downloadTowersForSingleTelco(
           telco,
           geoHash,
+          requestedGeohashes: ring.geohashes,
           nextPageURL: neightbourURL,
           expansionAmount: expansionAmount,
           recursionDepth: recursionDepth + 1,
@@ -1531,8 +1549,17 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     }
   }
 
-  StringBuffer getNeighbourRing(int ringNumber, String geohash, Telco telco) {
+  /// Time of the last "Server is unreachable!" snackbar, so a burst of failed downloads (one per
+  /// carrier and page) shows it at most once every 30 seconds.
+  DateTime? _lastServerUnreachableSnackbar;
+
+  ({StringBuffer filter, List<String> geohashes}) getNeighbourRing(
+    int ringNumber,
+    String geohash,
+    Telco telco,
+  ) {
     StringBuffer filter = new StringBuffer();
+    final List<String> geohashes = [];
 
     // Move to the starting position
     for (int i = 0; i < ringNumber; i++) {
@@ -1554,12 +1581,13 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         if (!SiteHelper.downloadedGeohashAlready(geohash, telco)) {
           //Log.d("GetSites", "getNeighbourRing: geohash="+geohash);
           filter.write("geohash%3D%3D" + geohash + "||");
+          geohashes.add(geohash);
         }
         geohash = GeoHashUtil().neighbor(geohash, direction);
       }
     });
 
-    return filter;
+    return (filter: filter, geohashes: geohashes);
   }
 
   void showSnackbar({
