@@ -23,6 +23,53 @@ import 'telco_helper.dart';
 /// ExportKMZAsyncTask behaviour, where every polygon (each signal-strength
 /// ring) is exported along with the site and device properties.
 class ExportHelper {
+  /// Subfolder of the documents directory that exports are written into. iOS shows it under
+  /// Files → On My iPhone → Aus Phone Towers (UIFileSharingEnabled in Info.plist).
+  static const String kExportsFolderName = 'Exports';
+
+  /// Exports older than this are deleted before each new export is written.
+  static const Duration kExportRetention = Duration(days: 30);
+
+  /// True when a file last modified at [modified] is past [kExportRetention] at [now].
+  static bool isExpired(DateTime modified, DateTime now) =>
+      now.difference(modified) > kExportRetention;
+
+  /// The message shown after a successful export: the file names only (never the sandbox path),
+  /// with the Files-app location on iPhone.
+  static String describeSavedFiles(List<String> paths, {required bool isIOS}) {
+    final StringBuffer sb = StringBuffer();
+    if (isIOS) {
+      sb.write('Saved to Files → On My iPhone → Aus Phone Towers → Exports:\n');
+    } else {
+      sb.write("Saved to the app's $kExportsFolderName folder:\n");
+    }
+    for (final String path in paths) {
+      sb.write('${p.basename(path)}\n');
+    }
+    return sb.toString().trimRight();
+  }
+
+  /// Returns the Exports folder, creating it if needed and first deleting any export older than
+  /// [kExportRetention]. A file that cannot be inspected or removed is skipped, not fatal.
+  static Future<Directory> _exportsDirectory() async {
+    final Directory docs = await getApplicationDocumentsDirectory();
+    final Directory dir = Directory(p.join(docs.path, kExportsFolderName));
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
+    final DateTime now = DateTime.now();
+    await for (final FileSystemEntity entity in dir.list()) {
+      if (entity is! File) continue;
+      try {
+        if (isExpired(await entity.lastModified(), now)) {
+          await entity.delete();
+        }
+      } on FileSystemException {
+        // Locked or already gone: leave it for a later export.
+      }
+    }
+    return dir;
+  }
   /// Exports all signal polygons currently on the map.
   /// Returns the list of written file paths (GeoJSON, CSV, KML).
   static Future<List<String>> exportSignalPolygons() async {
@@ -42,7 +89,7 @@ class ExportHelper {
 
     if (entries.isEmpty) return <String>[];
 
-    final Directory dir = await getApplicationDocumentsDirectory();
+    final Directory dir = await _exportsDirectory();
     final String stamp = _timeStamp();
     final List<String> paths = <String>[];
 
@@ -87,7 +134,7 @@ class ExportHelper {
 
     if (siteDevices.isEmpty) return <String>[];
 
-    final Directory dir = await getApplicationDocumentsDirectory();
+    final Directory dir = await _exportsDirectory();
     final String stamp = _timeStamp();
     final List<String> paths = <String>[];
 

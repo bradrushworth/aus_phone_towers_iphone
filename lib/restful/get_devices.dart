@@ -19,6 +19,24 @@ typedef void ShowSnackBar({
 });
 
 class GetDevices {
+  /// The marker a site should have once its transmitters are known.
+  ///
+  /// Visibility comes from `Site.shouldBeVisible()`, and an inactive site (no active transmitter)
+  /// is drawn at half of its telco's base alpha, as Android does. Both are computed from the
+  /// caller's base values, never from the marker already on the map, so calling this again on its
+  /// own output does not halve the alpha a second time.
+  static Marker markerAfterDevices(
+    Marker m, {
+    required bool visible,
+    required bool active,
+    required double baseAlpha,
+  }) {
+    return m.copyWith(
+      visibleParam: visible,
+      alphaParam: active ? baseAlpha : baseAlpha / 2,
+    );
+  }
+
   /// Antenna height in metres from an ACMA `height` value.
   ///
   /// ACMA publishes decimals ("20.41"). `int.tryParse` returns null for those, so every such
@@ -135,15 +153,12 @@ class GetDevices {
               SiteHelper.globalListMapOverlay[i].site!.getTelco() == telco) {
             final Marker? marker = SiteHelper.globalListMapOverlay[i].marker;
 
-            SiteHelper.globalListMapOverlay[i].marker = marker!.copyWith(
-              visibleParam: site.shouldBeVisible(),
+            SiteHelper.globalListMapOverlay[i].marker = markerAfterDevices(
+              marker!,
+              visible: site.shouldBeVisible(),
+              active: site.active,
+              baseAlpha: site.alpha,
             );
-
-            if (!site.active) {
-              SiteHelper.globalListMapOverlay[i].marker = marker.copyWith(
-                alphaParam: marker.alpha / 2,
-              );
-            }
 
             break;
           }

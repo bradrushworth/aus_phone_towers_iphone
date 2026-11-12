@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/export_helper.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
@@ -102,7 +103,10 @@ class _OptionsMenuState extends State<OptionsMenu> {
     return PopupMenuButton<OptionMenuItem>(
       icon: Icon(Icons.more_vert),
       itemBuilder: (BuildContext context) {
-        return OptionMenuItem.values.map<PopupMenuItem<OptionMenuItem>>((OptionMenuItem item) {
+        // dart:io cannot write files on web, so Export Data is not offered there.
+        final Iterable<OptionMenuItem> items = OptionMenuItem.values
+            .where((OptionMenuItem item) => !(kIsWeb && item == OptionMenuItem.exportData));
+        return items.map<PopupMenuItem<OptionMenuItem>>((OptionMenuItem item) {
           return PopupMenuItem<OptionMenuItem>(
             value: item,
             child: Row(
@@ -214,12 +218,10 @@ class _OptionsMenuState extends State<OptionsMenu> {
           message:
               'There are no $what on the map to export. Load some towers${what == "coverage polygons" ? " and tap one to draw its coverage" : ""} first...');
     } else {
-      final StringBuffer message = StringBuffer();
-      message.write('Exported ${paths.length} files to the app documents folder:\n');
-      for (final String path in paths) {
-        message.write('$path\n');
-      }
-      widget.showSnackBar(message: message.toString(), duration: const Duration(seconds: 10));
+      widget.showSnackBar(
+          message: ExportHelper.describeSavedFiles(paths,
+              isIOS: !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS),
+          duration: const Duration(seconds: 10));
     }
   }
 

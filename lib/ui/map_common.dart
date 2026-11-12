@@ -50,6 +50,7 @@ import 'package:phonetowers/ui/widgets/entitlement_gated_ad_banner.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
 import 'package:phonetowers/ui/widgets/filter_sheet.dart';
+import 'package:phonetowers/ui/widgets/search_back_scope.dart';
 import 'package:phonetowers/ui/widgets/layers_settings_sheets.dart';
 import 'package:phonetowers/ui/widgets/legend_sheet.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
@@ -77,7 +78,16 @@ enum RotatingMapMode {
 
   /// No forced bearing changes; the camera keeps whatever bearing it currently has
   /// (Android's "Disable Rotation").
-  disableRotation,
+  disableRotation;
+
+  /// The mode for a persisted enum index; a missing or out-of-range value gives the default
+  /// (Travel direction).
+  static RotatingMapMode fromIndex(int? index) {
+    if (index == null || index < 0 || index >= RotatingMapMode.values.length) {
+      return RotatingMapMode.travelDirection;
+    }
+    return RotatingMapMode.values[index];
+  }
 }
 
 class MapScreen extends StatefulWidget {
@@ -316,6 +326,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
+  bool _prefsLoaded = false;
   final TextEditingController _searchTextFilter = new TextEditingController();
   bool isShowCancelSearch = false;
 
@@ -371,6 +382,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    return SearchBackScope(child: _buildMapStack(context));
+  }
+
+  Widget _buildMapStack(BuildContext context) {
     return Stack(
       children: <Widget>[
         Stack(
@@ -643,32 +658,29 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       // Persist camera position as a single JSON blob (one atomic write) so we
       // can restore it if the OS reclaims memory and cold-restarts the app
       // while backgrounded.
-      if (lastCameraPosition != null) {
+      if (lastCameraPosition != null && _prefsLoaded) {
         SharedPreferencesHelper.setString(
           SharedPreferencesHelper.kCameraPosition,
           encodeCameraPosition(lastCameraPosition!),
           prefs,
         );
       }
-    } else if (state == AppLifecycleState.resumed) {
-      // AppLifecycleState.resumed fires on every return to the foreground,
-      // warm or cold restart alike -- it is not restricted to cold restarts.
-      // Restoring here is safe to call unconditionally because
-      // _restoreCameraIfAvailable() is a no-op unless there's a saved
-      // position and Follow GPS isn't active.
-      _restoreCameraIfAvailable();
     }
+    // No camera restore on `resumed`: iOS sends inactive -> resumed WITHOUT paused for Notification
+    // Centre, purchase sheets and permission dialogs, so a restore here threw the map back to the
+    // last real backgrounding. The cold-restart case is handled in onMapCreated.
   }
 
   /// Restores the last-saved camera position (persisted above when the app is
-  /// paused), used both for a cold OS restart (via [onMapCreated]) and for a
-  /// plain foreground resume. Skips restoring when Follow GPS is active, since
+  /// paused), used for a cold OS restart (via [onMapCreated]); no longer on resume. Skips restoring when Follow GPS is active, since
   /// live GPS tracking should win over a stale pre-background position.
   ///
   /// Returns the restored position (or null if nothing was restored) so
   /// callers -- notably [askForLocationPermission] -- can tell whether they
   /// need to avoid clobbering it with their own GPS-centering camera move.
   CameraPosition? _restoreCameraIfAvailable() {
+    // `prefs` is a late field; it may not be assigned yet on a very early call.
+    if (!_prefsLoaded) return null;
     final String storedJson = SharedPreferencesHelper.getString(
         SharedPreferencesHelper.kCameraPosition, prefs);
     final CameraPosition? restored = resolveRestoredCameraPosition(
@@ -713,6 +725,12 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   void _loadNavigationSavedState() async {
     prefs = await SharedPreferences.getInstance();
+    _prefsLoaded = true;
+
+    // Saved only; the compass for Phone orientation starts when Follow GPS is turned on, so
+    // launch never asks for anything.
+    MapBodyState.rotatingMapMode =
+        RotatingMapMode.fromIndex(prefs.getInt(SharedPreferencesHelper.krotatingMapMode));
 
     //Licences
     NavigationMenu.isTelstraVisible = SharedPreferencesHelper.getMenuStatus(
@@ -1058,6 +1076,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       if (!await state._locationService.serviceEnabled()) {
         await state._locationService.requestService();
       }
+      // A saved Phone orientation mode has no compass listener yet (nothing is started at launch).
+      if (rotatingMapMode == RotatingMapMode.phoneOrientation && _compassSubscription == null) {
+        _startCompassListening(state, announce: false);
+      }
       _followGpsSubscription = state._locationService.onLocationChanged.listen((LocationData location) {
         if (!MapHelper.followGPS) return;
         if (lockMap) return;
@@ -1110,6 +1132,37 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         return _lastCompassHeading ?? fallback;
       case RotatingMapMode.disableRotation:
         return fallback;
+    }
+  }
+
+  /// Start caching the compass heading for Phone Orientation. Location permission has already been
+  /// granted by the caller. [announce] shows the mode snackbar (when the user just chose the mode).
+  static void _startCompassListening(MapBodyState state, {required bool announce}) {
+    final Stream<CompassEvent>? events = FlutterCompass.events;
+    if (events == null) {
+      // Mirrors Android's RotationVectorSensorEventListener check for
+      // Sensor.TYPE_ROTATION_VECTOR / "Unfortunately, your device has no compass!".
+      state.showSnackbar(
+          message: 'Unfortunately, your device has no compass!', isDismissible: true);
+    } else {
+      _lastCompassHeading = null;
+      _compassSubscription = events.listen((CompassEvent event) {
+        if (rotatingMapMode != RotatingMapMode.phoneOrientation) return;
+        if (event.heading != null) _lastCompassHeading = event.heading;
+      });
+      // flutter_compass has no synchronous "has compass" check (unlike Android's
+      // SensorManager.getDefaultSensor() == null), so detect it the way Android's message is
+      // surfaced to the user: if no heading has arrived shortly after subscribing, assume
+      // there's no usable compass sensor on this device.
+      _compassAvailabilityTimer = Timer(const Duration(seconds: 3), () {
+        if (rotatingMapMode == RotatingMapMode.phoneOrientation && _lastCompassHeading == null) {
+          state.showSnackbar(
+              message: 'Unfortunately, your device has no compass!', isDismissible: true);
+        }
+      });
+      state.showSnackbar(
+          message: 'Rotating Map: Phone Orientation. While Follow GPS is on, the map will '
+              'face where you point the phone.');
     }
   }
 
@@ -1166,32 +1219,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           await state._locationService.requestService();
         }
 
-        final Stream<CompassEvent>? events = FlutterCompass.events;
-        if (events == null) {
-          // Mirrors Android's RotationVectorSensorEventListener check for
-          // Sensor.TYPE_ROTATION_VECTOR / "Unfortunately, your device has no compass!".
-          state.showSnackbar(
-              message: 'Unfortunately, your device has no compass!', isDismissible: true);
-        } else {
-          _lastCompassHeading = null;
-          _compassSubscription = events.listen((CompassEvent event) {
-            if (rotatingMapMode != RotatingMapMode.phoneOrientation) return;
-            if (event.heading != null) _lastCompassHeading = event.heading;
-          });
-          // flutter_compass has no synchronous "has compass" check (unlike Android's
-          // SensorManager.getDefaultSensor() == null), so detect it the way Android's message is
-          // surfaced to the user: if no heading has arrived shortly after subscribing, assume
-          // there's no usable compass sensor on this device.
-          _compassAvailabilityTimer = Timer(const Duration(seconds: 3), () {
-            if (rotatingMapMode == RotatingMapMode.phoneOrientation && _lastCompassHeading == null) {
-              state.showSnackbar(
-                  message: 'Unfortunately, your device has no compass!', isDismissible: true);
-            }
-          });
-          state.showSnackbar(
-              message: 'Rotating Map: Phone Orientation. While Follow GPS is on, the map will '
-                  'face where you point the phone.');
-        }
+        _startCompassListening(state, announce: true);
         break;
     }
     state.setState(() {});
@@ -1308,6 +1336,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           downloadTowersForSingleTelco(
             telco,
             geoHash,
+            requestedGeohashes: [geoHash],
             expansionAmount: expansionAmount,
             recursionDepth: recursionDepth,
             expandGeohash: expandGeohash,
@@ -1321,6 +1350,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     Telco telco,
     String geoHash, {
     String? nextPageURL,
+    List<String> requestedGeohashes = const [],
     required int expansionAmount,
     required int recursionDepth,
     required bool expandGeohash,
@@ -1346,7 +1376,20 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           : '/towers/${TelcoHelper.getNameForApi(telco)}/?_view=json&_expand=yes&_count=50&_filter=geohash%3D%3D$geoHash',
     );
 
-    int totalLatLong = rawResponse!.restify?.rows?.length ?? 0;
+    if (rawResponse == null) {
+      // The request failed (timeout, no coverage, bad status). Forget the areas so the next
+      // scroll or refresh asks again, instead of leaving them blank for the session.
+      SiteHelper.forgetGeohashes(requestedGeohashes, telco);
+      final DateTime now = DateTime.now();
+      if (_lastServerUnreachableSnackbar == null ||
+          now.difference(_lastServerUnreachableSnackbar!) >= const Duration(seconds: 30)) {
+        _lastServerUnreachableSnackbar = now;
+        if (mounted) showSnackbar(message: 'Server is unreachable!');
+      }
+      return;
+    }
+
+    int totalLatLong = rawResponse.restify?.rows?.length ?? 0;
 
     //If no data found for this telco then don't do anything
     if (totalLatLong == 0) {
@@ -1436,6 +1479,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       downloadTowersForSingleTelco(
         telco,
         geoHash,
+        requestedGeohashes: requestedGeohashes,
         nextPageURL: nextPage.href,
         expansionAmount: expansionAmount,
         recursionDepth: recursionDepth,
@@ -1508,7 +1552,8 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     if (expandGeohash &&
         expansionAmount < SiteHelper.EXPANSION_LIMIT &&
         recursionDepth < SiteHelper.RECURSION_LIMIT) {
-      String filter = getNeighbourRing(recursionDepth + 1, geoHash, telco).toString();
+      final ring = getNeighbourRing(recursionDepth + 1, geoHash, telco);
+      String filter = ring.filter.toString();
       if (filter.length > 2) {
         // Trim the last two "||" characters
         filter = filter.substring(0, filter.length - 2);
@@ -1522,6 +1567,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         downloadTowersForSingleTelco(
           telco,
           geoHash,
+          requestedGeohashes: ring.geohashes,
           nextPageURL: neightbourURL,
           expansionAmount: expansionAmount,
           recursionDepth: recursionDepth + 1,
@@ -1531,8 +1577,17 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     }
   }
 
-  StringBuffer getNeighbourRing(int ringNumber, String geohash, Telco telco) {
+  /// Time of the last "Server is unreachable!" snackbar, so a burst of failed downloads (one per
+  /// carrier and page) shows it at most once every 30 seconds.
+  DateTime? _lastServerUnreachableSnackbar;
+
+  ({StringBuffer filter, List<String> geohashes}) getNeighbourRing(
+    int ringNumber,
+    String geohash,
+    Telco telco,
+  ) {
     StringBuffer filter = new StringBuffer();
+    final List<String> geohashes = [];
 
     // Move to the starting position
     for (int i = 0; i < ringNumber; i++) {
@@ -1554,12 +1609,13 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         if (!SiteHelper.downloadedGeohashAlready(geohash, telco)) {
           //Log.d("GetSites", "getNeighbourRing: geohash="+geohash);
           filter.write("geohash%3D%3D" + geohash + "||");
+          geohashes.add(geohash);
         }
         geohash = GeoHashUtil().neighbor(geohash, direction);
       }
     });
 
-    return filter;
+    return (filter: filter, geohashes: geohashes);
   }
 
   void showSnackbar({

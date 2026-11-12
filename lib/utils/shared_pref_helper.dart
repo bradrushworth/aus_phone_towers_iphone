@@ -6,7 +6,7 @@ class SharedPreferencesHelper {
   static final String kisTelstraVisible = 'isTelstraVisible';
   static final String kisOptusVisible = 'isOptusVisible';
   static final String kisVodafoneVisible = 'isVodafoneVisible';
-  static final String kisDenseAirVisible = 'isNBNVisible';
+  static final String kisDenseAirVisible = 'isDenseAirVisible';
   static final String kisNBNVisible = 'isNBNVisible';
   static final String kisOtherVisible = 'isOtherVisible';
 
@@ -47,6 +47,8 @@ class SharedPreferencesHelper {
   static final String krefarmEnabled = 'refarmEnabled';
   static final String kpolygonPrecision = 'polygonPrecision';
   static final String kfollowGPS = 'followGPS';
+  // Index of the RotatingMapMode enum (Lock Map is session-only on purpose and has no key).
+  static final String krotatingMapMode = 'rotatingMapMode';
 
   // Epoch millis the "Support the App" prompt was last shown/seeded — see
   // lib/helpers/support_prompt_helper.dart.

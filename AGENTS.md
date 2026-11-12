@@ -62,11 +62,9 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
 - Integration tests: `flutter drive --driver=test_driver/integration_test.dart --target=integration_test/better_test.dart`
 
 ## Flutter SDK
-- Flutter SDK is installed at `/home/openhands/tools/flutter` (stable channel).
-- Dart SDK is bundled inside Flutter at `/home/openhands/tools/flutter/bin/cache/dart-sdk`.
-- If binary permissions are missing after extraction, run:
-  `chmod +x /home/openhands/tools/flutter/bin/cache/dart-sdk/bin/dart*` and
-  `find /home/openhands/tools/flutter/bin/cache/artifacts -type f -name "impellerc" -o -name "font_subset" -o -name "gen_snapshot" | xargs chmod +x`
+- On the development machine the Flutter SDK is at `C:/Users/Brad/flutter` (run it as
+  `C:/Users/Brad/flutter/bin/flutter`). Dart is bundled inside it under `bin/cache/dart-sdk`.
+  On another machine, use wherever the SDK is installed.
 
 ## Path loss module (lib/pathloss/)
 **Model v2 (shipped in 1.16.0+161, 2026-09-20; Android 7.9.0 (352) is the same release).** A ring is
@@ -272,7 +270,9 @@ default) and generation-rank tie-breaking (`generationRank`, newest genuine capa
   Lyneham Vodafone CMTS site showed both a "4G 873 MHz" and a spurious "5G 873 MHz" row for the same
   carrier, because antenna 13198 was hardcoded into both `antennas4G` and `antennas4G5G`. The sets
   are gone on both apps; classification is unambiguous from frequency alone (5G = n77/n78 3.3–3.8
-  GHz or n257/n258 24.25–29.5 GHz mmWave; everything sub-3 GHz is 4G or decommissioned 3G).
+  GHz or n257/n258 24.25–29.5 GHz mmWave. Below 3 GHz a sector is 4G or decommissioned 3G, unless a
+  per-carrier arm in `getNetworkTypeStatic` returns `[LTE, NR]`: Optus, Vodafone and Telstra carriers
+  at 700, 850, 900 MHz, 1.8, 2.1, 2.3 and 2.6 GHz, the exact ranges being in those arms).
 - **The `switch` dispatches on `emission[6]` — any emission-string equality check must live in the
   matching `case`.** E.g. Telstra's dual 4G/5G `"14M9G7W"` carrier has `'W'` as its own 7th
   character, so the check belongs in `case 'W'`, not `case 'D'` — a 2026-08-20 bug (found while
@@ -283,15 +283,13 @@ default) and generation-rank tie-breaking (`generationRank`, newest genuine capa
 Ported from the Java app's `SupportPromptActivity` / `MapsActivity.maybeShowSupportPrompt()`.
 
 - **`SupportPromptScreen`**: a full-screen prompt (pushed via `Navigator.push`, not a dialog) with
-  the cost-transparency message, the three donation buttons (small/medium/large, same SKUs as the
-  Donate menu), and — unless `PurchaseHelper().isSubscribed` — the two ad-free purchase buttons
-  (same SKUs as Remove Ads), plus a "Maybe later" dismiss button. All purchase taps log a
+  the cost-transparency message, the three donation buttons (small/medium/large, the donation SKUs), and — unless `PurchaseHelper().isSubscribed` — the two ad-free purchase buttons
+  (the ad-free SKUs), plus a "Maybe later" dismiss button. All purchase taps log a
   `support_prompt_<action>` analytics event (matching Java) before calling
   `PurchaseHelper().initiatePurchase` and popping the route.
 - **Reachable two ways**, matching Java exactly:
-  1. Manually: the *last* item in the Donate submenu (`listDonateItem` in `option_menu.dart`,
-     `Strings.donateSupportPrompt` = "Support the App") — it is a sub-item of Donate, not a
-     separate top-level menu entry.
+  1. Manually: the *Support the App* row in the top-level overflow menu (`OptionMenuItem.supportTheApp`
+     in `option_menu.dart`, label `Strings.donateSupportPrompt`). There is no Donate submenu.
   2. Automatically, about once a week: `SupportPromptHelper.decide` (pure, unit-tested in
      `test/helpers/support_prompt_helper_test.dart`) is the ported decision logic — first-ever
      launch just seeds a SharedPreferences timestamp without showing, then it shows once ≥7 days
@@ -305,15 +303,14 @@ Ported from the Java app's `SupportPromptActivity` / `MapsActivity.maybeShowSupp
 
 ## Top-level option menu ordering (lib/ui/widgets/option_menu.dart)
 `OptionMenuItem`'s declaration order drives the on-screen order (`OptionMenuItem.values` is mapped
-directly in `itemBuilder`). It's kept aligned with the Java app's `popup_menu.xml` order for every
-item that exists on both platforms: Reload Everything, Follow GPS, Hide Borders, Search Sites, Map
-Mode, Rotating Map, Hiding Menu, Export Data, Remove Ads, Donate, Problems Menu, Rate App, Close
-App. Two items have no Android equivalent (`lockMap`, `polygonPrecision`) and are inserted next to
-their closest thematic neighbour (`rotatingMap`, `exportData` respectively) rather than breaking
-that shared sequence. `Calculate Terrain` and `Timing Advance` are Android menu items with no iOS
-menu equivalent (Calculate Terrain is a persistent toolbar icon button in `map_common.dart`; Timing
-Advance isn't implemented on iOS at all) and are intentionally absent here — don't add them to this
-enum without also building the underlying feature.
+directly in `itemBuilder`, with `exportData` filtered out on web). The six items, in order: Refresh
+Data (Reload Everything), Export Data, Settings, User Guide, Report a Problem, Support the App. That
+order matches the Android overflow, and `test/ui/widgets/option_menu_test.dart` pins it.
+There are no Remove Ads or Donate submenus: purchases are sold only from `SupportPromptScreen`.
+Export Data is hidden on web because `dart:io` cannot write files there. `Calculate Terrain` and
+`Timing Advance` are Android menu items with no iOS menu equivalent (Calculate Terrain is a toolbar
+button in `map_common.dart`; Timing Advance is not implemented on iOS), so they are absent here.
+Do not add them to this enum without also building the underlying feature.
 
 ## Ads and billing (lib/helpers/ads_helper.dart, lib/helpers/purchase_helper.dart)
 Non-subscribed users see an inline adaptive AdMob banner at the bottom of the map; purchasing

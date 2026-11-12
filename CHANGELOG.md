@@ -8,6 +8,30 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **5G coverage rings mark the same signal levels as the Android app** (-80, -90, -100 and -110 dBm).
+  The iPhone app still used the levels Android retired on 2026-08-23, so the same 5G tower looked
+  smaller here and the strongest ring was a few tens of metres wide. 5G shapes get larger.
+- **Towers with no active transmitter now appear** (half-transparent, as on Android). They stayed
+  hidden until a filter was changed.
+- **A tower download that fails no longer leaves the area empty for the session.** The area is
+  tried again on the next pan, and "Server is unreachable!" is shown at most every 30 seconds.
+- **The "Other" carriers switch keeps its own setting at launch** instead of following Optus.
+- **The map no longer jumps back** when you pull down Notification Centre or close a purchase or
+  permission sheet.
+- **Search without a connection says it could not reach the tower database** instead of "No sites
+  match", and a four-digit number inside an address no longer turns the search into a postcode.
+- **Map rotation mode is remembered** between launches.
+- **Exports appear in the Files app** (On My iPhone → Aus Phone Towers → Exports); files older than
+  30 days are removed. Export Data is hidden on the web, where it could not work.
+- **Android build:** Back closes the search field instead of leaving the app, and the build's minimum
+  Android version is Android 7 again (it was accidentally Android 14).
+
+### Changed
+- Banner ads also carry local keywords (postcode, state, suburb words), as on Android.
+
 ## [1.16.3+164] — 2026-11-08
 
 ### Removed

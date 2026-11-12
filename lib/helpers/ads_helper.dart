@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'ad_keywords.dart';
+import 'site_helper.dart';
 
 class AdsHelper {
   static final AdsHelper _singleton = new AdsHelper._internal();
@@ -66,15 +68,13 @@ class AdsHelper {
     // home internet) plus the app's own coverage/tower vocabulary and the road-trip
     // audience. The old hobbyist tail (pager, PMR, CB radio, amateur radio, scanner,
     // TV, CBRS, aviation) had near-zero advertiser demand and diluted the list.
-    AdRequest adRequestBuilder = new AdRequest(keywords: [
-      "mobile phone", "mobile plan", "SIM only", "prepaid", "unlimited data",
-      "home internet", "internet plan", "NBN", "broadband",
-      "mobile coverage", "coverage map", "signal booster",
-      "mobile tower", "phone tower", "cell tower",
-      "5G", "4G", "wireless internet",
-      "GPS navigation", "road trip", "camping",
-      "satellite phone", "Australia",
-    ]);
+    // Head first, then postcode, state and suburb words from the sites loaded on the map
+    // (the local terms advertisers bid on), as Android does.
+    AdRequest adRequestBuilder = new AdRequest(
+      keywords: AdKeywords.build(SiteHelper.globalListMapOverlay
+          .where((o) => o.site != null)
+          .map((o) => (state: o.site!.state, postcode: o.site!.postcode, name: o.site!.name))),
+    );
 
     BannerAd(
       adUnitId: adUnitId,

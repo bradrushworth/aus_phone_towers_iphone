@@ -63,8 +63,8 @@ android {
 
     defaultConfig {
         applicationId "au.com.bitbot.phonetowers.flutter"
-        minSdkVersion rootProject.ext.targetSdkVersion
-        targetSdkVersion rootProject.ext.compileSdkVersion
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
