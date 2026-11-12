@@ -204,7 +204,7 @@ class SiteHelper with ChangeNotifier {
       if (telcoInUse == null || telcoInUse == Telco.NBN)
         toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
       if (telcoInUse == null || telcoInUse == Telco.Other)
-        toggleTelcoMarkers(Telco.Other, NavigationMenu.isOptusVisible);
+        toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
     }
 
     //TODO code for currently connected tower

@@ -7,6 +7,7 @@ import 'package:phonetowers/model/device_detail.dart';
 import 'package:phonetowers/model/overlay.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/restful/get_licenceHRP.dart';
+import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 
 // Regression test for #24: toggling a telco back on used to unconditionally
 // mark every one of its markers visible, bypassing whatever network-type /
@@ -94,6 +95,30 @@ void main() {
       // marker must stay hidden rather than being blindly turned back on.
       siteHelper.toggleTelcoMarkers(Telco.Optus, true);
       expect(SiteHelper.globalListMapOverlay[0].marker!.visible, false);
+    });
+  });
+
+  group('SiteHelper.enableTelcoInUse', () {
+    // Regression (iPhone audit I6): the Other telco was tied to the Optus switch at launch,
+    // so with Optus hidden and Other shown, Other was hidden and never downloaded.
+    setUp(() {
+      SiteHelper.hideTelco = Set<Telco>();
+    });
+
+    tearDown(() {
+      NavigationMenu.isOptusVisible = true;
+      NavigationMenu.isOtherVisible = true;
+      SiteHelper.hideTelco = Set<Telco>();
+    });
+
+    test('Other follows its own switch, not the Optus switch', () {
+      NavigationMenu.isOptusVisible = false;
+      NavigationMenu.isOtherVisible = true;
+
+      SiteHelper().enableTelcoInUse(true);
+
+      expect(SiteHelper.hideTelco.contains(Telco.Optus), isTrue);
+      expect(SiteHelper.hideTelco.contains(Telco.Other), isFalse);
     });
   });
 }
