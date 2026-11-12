@@ -50,6 +50,7 @@ import 'package:phonetowers/ui/widgets/entitlement_gated_ad_banner.dart';
 import 'package:phonetowers/ui/widgets/navigation_menu.dart';
 import 'package:phonetowers/ui/widgets/option_menu.dart';
 import 'package:phonetowers/ui/widgets/filter_sheet.dart';
+import 'package:phonetowers/ui/widgets/search_back_scope.dart';
 import 'package:phonetowers/ui/widgets/layers_settings_sheets.dart';
 import 'package:phonetowers/ui/widgets/legend_sheet.dart';
 import 'package:phonetowers/ui/widgets/support_prompt_screen.dart';
@@ -381,6 +382,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    return SearchBackScope(child: _buildMapStack(context));
+  }
+
+  Widget _buildMapStack(BuildContext context) {
     return Stack(
       children: <Widget>[
         Stack(
