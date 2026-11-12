@@ -280,6 +280,10 @@ class SettingsSheet {
                     onSelected: (v) async {
                       if (v) {
                         await MapBodyState.setRotatingMapMode(entry[1] as RotatingMapMode);
+                        SharedPreferencesHelper.setInt(
+                            key: SharedPreferencesHelper.krotatingMapMode,
+                            value: MapBodyState.rotatingMapMode.index,
+                            prefs: prefs);
                       }
                       refresh();
                     },

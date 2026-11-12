@@ -87,6 +87,13 @@ class SiteHelper with ChangeNotifier {
     }
   }
 
+  /// Un-mark areas whose download failed, for [telco] only, so they are requested again.
+  static void forgetGeohashes(Iterable<String> geohashes, Telco telco) {
+    for (final String geohash in geohashes) {
+      downloadedGeohashes.remove(getGeohashTelco(geohash, telco));
+    }
+  }
+
   static String getGeohashTelco(String geohash, Telco telco) {
     return geohash + "_" + TelcoHelper.getName(telco);
   }
