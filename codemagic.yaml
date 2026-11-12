@@ -41,7 +41,11 @@ workflows:
       vars:
         AWS_DEFAULT_REGION: ap-southeast-2
         AWS_S3_BUCKET: ausphonetowers.com.au
-      flutter: stable
+      # Pinned (2026-11-13). `stable` moved to 3.50.0 on 2026-11-11, which refuses AGP below 9.1.1
+      # and Kotlin below 2.4.10, so builds 165 and 166 failed before producing anything. 3.47.9 is
+      # the stable that built 1.16.3+164. Raise this deliberately, after the AGP 9 / Kotlin
+      # migration (bead aptios-zmk), and check its DependencyVersionChecker minimums first.
+      flutter: 3.47.9
       xcode: latest
       cocoapods: default
     integrations:
@@ -188,7 +192,11 @@ workflows:
     instance_type: mac_mini_m4
     max_build_duration: 30
     environment:
-      flutter: stable
+      # Pinned (2026-11-13). `stable` moved to 3.50.0 on 2026-11-11, which refuses AGP below 9.1.1
+      # and Kotlin below 2.4.10, so builds 165 and 166 failed before producing anything. 3.47.9 is
+      # the stable that built 1.16.3+164. Raise this deliberately, after the AGP 9 / Kotlin
+      # migration (bead aptios-zmk), and check its DependencyVersionChecker minimums first.
+      flutter: 3.47.9
       xcode: latest
       cocoapods: default
     scripts:
