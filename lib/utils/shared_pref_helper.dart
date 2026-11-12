@@ -6,7 +6,7 @@ class SharedPreferencesHelper {
   static final String kisTelstraVisible = 'isTelstraVisible';
   static final String kisOptusVisible = 'isOptusVisible';
   static final String kisVodafoneVisible = 'isVodafoneVisible';
-  static final String kisDenseAirVisible = 'isNBNVisible';
+  static final String kisDenseAirVisible = 'isDenseAirVisible';
   static final String kisNBNVisible = 'isNBNVisible';
   static final String kisOtherVisible = 'isOtherVisible';
 
