@@ -4,7 +4,10 @@ class NetworkTypeHelper {
   static List<int> gsmBars = [-89, -97, -103, -107]; // CellSignalStrengthGsm
   static List<int> umtsBars = [-77, -87,  -97, -107]; // CellSignalStrengthWcdma
   static List<int> lteBars = [-85, -95, -105, -115]; // Setting RSRP numbers, not RSSI, from CellSignalStrengthLte
-  static List<int> nrBars = [-65, -80,  -90, -110]; // Setting RSRP numbers, not RSSI, from CellSignalStrengthNr
+  static List<int> nrBars = [-80, -90, -100, -110]; // SS-RSRP from CellSignalStrengthNr. Same as Android NetworkType.nrBars (retuned 2026-08-23 from
+  // {-65, -80, -90, -110}): the -65 top rung essentially never occurred away from the mast, so a healthy
+  // mid-band n78 cell at -83 dBm delivering 180 Mbps was classed as merely "Good". Keep one definition;
+  // Android's own status bar is looser still. This array also sets the NR polygon contours.
   static List<int> otherBars = [-77, -87,  -97, -107];
 
   // Min Max as per the phone's signal strength numbers
