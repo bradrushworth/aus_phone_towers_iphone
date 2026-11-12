@@ -12,4 +12,24 @@ void main() {
       expect(SearchHelper.searchFailed(SiteResponse()), isFalse);
     });
   });
+
+  group('SearchHelper.buildFilter (iPhone audit I16)', () {
+    test('a four-digit query is a postcode filter', () {
+      expect(SearchHelper.buildFilter('2600'), 'postcode~~2600');
+    });
+
+    test('surrounding spaces do not stop a postcode match', () {
+      expect(SearchHelper.buildFilter('  2600 '), 'postcode~~2600');
+    });
+
+    test('four digits inside a longer query are a name filter', () {
+      expect(SearchHelper.buildFilter('Lot 1234 Smith Rd'),
+          'name~~%25Lot%201234%20Smith%20Rd%25');
+    });
+
+    test('a name query keeps the wildcard format', () {
+      expect(SearchHelper.buildFilter('Northbourne'),
+          'name~~%25Northbourne%25');
+    });
+  });
 }

@@ -59,11 +59,6 @@ class SearchHelper with ChangeNotifier {
     notifyListeners();
   }
 
-  /// True when the search request itself failed (no response at all, e.g. a network error).
-  /// A null response must take the "Could not reach the tower database" branch, not read as
-  /// zero rows ("No sites match").
-  static bool searchFailed(SiteResponse? r) => r == null;
-
   void executeSiteSearch(String query,
       void Function(String geoHash, bool expandGeohash) downloadTowers) {
     // A blank query would build a wildcard-only filter (and a blank postcode an
@@ -79,17 +74,30 @@ class SearchHelper with ChangeNotifier {
     PolygonHelper().clearSitePatterns(true);
     calculatingSearchResults = true;
     recordRecentSearch(query);
-    String filter;
-    if (RegExp(r'\d{4}').hasMatch(query)) {
-      filter = 'postcode~~$query';
-    } else {
-      filter = 'name~~$DB_WILD_CARD${Uri.encodeFull(query)}$DB_WILD_CARD';
-    }
+    String filter = buildFilter(query);
     String fields = "site_id,name,state,postcode,latitude,longitude,geohash";
     String url =
         '/towers/site/?_view=json&_expand=no&_count=50&_filter=$filter&_fields=$fields';
     getSearch(url, query, downloadTowers);
   }
+
+  /// The RESTify `_filter` clause for a search.
+  ///
+  /// A query that is exactly four digits is a postcode. The match is anchored: an unanchored
+  /// `\d{4}` made any text containing four digits ("Lot 1234 Smith Rd") a postcode search that
+  /// found nothing. Values are URL-encoded either way.
+  static String buildFilter(String query) {
+    final String q = query.trim();
+    if (RegExp(r'^\d{4}$').hasMatch(q)) {
+      return 'postcode~~${Uri.encodeFull(q)}';
+    }
+    return 'name~~$DB_WILD_CARD${Uri.encodeFull(q)}$DB_WILD_CARD';
+  }
+
+  /// True when the search request itself failed (no response at all, e.g. a network error).
+  /// A null response must take the "Could not reach the tower database" branch, not read as
+  /// zero rows ("No sites match").
+  static bool searchFailed(SiteResponse? r) => r == null;
 
   /// Returns a Future (never `async void`): an `async void` body sends any failure straight to
   /// the zone as an unhandled error — the caller cannot catch it and the user just sees a dead
