@@ -77,7 +77,16 @@ enum RotatingMapMode {
 
   /// No forced bearing changes; the camera keeps whatever bearing it currently has
   /// (Android's "Disable Rotation").
-  disableRotation,
+  disableRotation;
+
+  /// The mode for a persisted enum index; a missing or out-of-range value gives the default
+  /// (Travel direction).
+  static RotatingMapMode fromIndex(int? index) {
+    if (index == null || index < 0 || index >= RotatingMapMode.values.length) {
+      return RotatingMapMode.travelDirection;
+    }
+    return RotatingMapMode.values[index];
+  }
 }
 
 class MapScreen extends StatefulWidget {
@@ -149,7 +158,6 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     // dismiss reads as an unfinished product. This still initialises prefs, which the toolbar
     // toggles and the saved navigation state write through.
     prefs = await SharedPreferences.getInstance();
-    _prefsLoaded = true;
   }
 
   @override
@@ -158,6 +166,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     screenHeight = MediaQuery.of(context).size.height;
 
     // This Container sits OUTSIDE the SafeArea, so it is what paints the strip behind the iPhone
+    // status bar and the home indicator. Hardcoded white left a bright band across the top of an
     // otherwise dark screen in dark mode (reported on iOS 1.14.4) — it has to follow the theme.
     return Container(
       color: Theme.of(context).colorScheme.surface,
@@ -713,6 +722,11 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
     prefs = await SharedPreferences.getInstance();
     _prefsLoaded = true;
 
+    // Saved only; the compass for Phone orientation starts when Follow GPS is turned on, so
+    // launch never asks for anything.
+    MapBodyState.rotatingMapMode =
+        RotatingMapMode.fromIndex(prefs.getInt(SharedPreferencesHelper.krotatingMapMode));
+
     //Licences
     NavigationMenu.isTelstraVisible = SharedPreferencesHelper.getMenuStatus(
       key: SharedPreferencesHelper.kisTelstraVisible,
@@ -1057,6 +1071,10 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       if (!await state._locationService.serviceEnabled()) {
         await state._locationService.requestService();
       }
+      // A saved Phone orientation mode has no compass listener yet (nothing is started at launch).
+      if (rotatingMapMode == RotatingMapMode.phoneOrientation && _compassSubscription == null) {
+        _startCompassListening(state, announce: false);
+      }
       _followGpsSubscription = state._locationService.onLocationChanged.listen((LocationData location) {
         if (!MapHelper.followGPS) return;
         if (lockMap) return;
@@ -1109,6 +1127,37 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         return _lastCompassHeading ?? fallback;
       case RotatingMapMode.disableRotation:
         return fallback;
+    }
+  }
+
+  /// Start caching the compass heading for Phone Orientation. Location permission has already been
+  /// granted by the caller. [announce] shows the mode snackbar (when the user just chose the mode).
+  static void _startCompassListening(MapBodyState state, {required bool announce}) {
+    final Stream<CompassEvent>? events = FlutterCompass.events;
+    if (events == null) {
+      // Mirrors Android's RotationVectorSensorEventListener check for
+      // Sensor.TYPE_ROTATION_VECTOR / "Unfortunately, your device has no compass!".
+      state.showSnackbar(
+          message: 'Unfortunately, your device has no compass!', isDismissible: true);
+    } else {
+      _lastCompassHeading = null;
+      _compassSubscription = events.listen((CompassEvent event) {
+        if (rotatingMapMode != RotatingMapMode.phoneOrientation) return;
+        if (event.heading != null) _lastCompassHeading = event.heading;
+      });
+      // flutter_compass has no synchronous "has compass" check (unlike Android's
+      // SensorManager.getDefaultSensor() == null), so detect it the way Android's message is
+      // surfaced to the user: if no heading has arrived shortly after subscribing, assume
+      // there's no usable compass sensor on this device.
+      _compassAvailabilityTimer = Timer(const Duration(seconds: 3), () {
+        if (rotatingMapMode == RotatingMapMode.phoneOrientation && _lastCompassHeading == null) {
+          state.showSnackbar(
+              message: 'Unfortunately, your device has no compass!', isDismissible: true);
+        }
+      });
+      state.showSnackbar(
+          message: 'Rotating Map: Phone Orientation. While Follow GPS is on, the map will '
+              'face where you point the phone.');
     }
   }
 
@@ -1165,32 +1214,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
           await state._locationService.requestService();
         }
 
-        final Stream<CompassEvent>? events = FlutterCompass.events;
-        if (events == null) {
-          // Mirrors Android's RotationVectorSensorEventListener check for
-          // Sensor.TYPE_ROTATION_VECTOR / "Unfortunately, your device has no compass!".
-          state.showSnackbar(
-              message: 'Unfortunately, your device has no compass!', isDismissible: true);
-        } else {
-          _lastCompassHeading = null;
-          _compassSubscription = events.listen((CompassEvent event) {
-            if (rotatingMapMode != RotatingMapMode.phoneOrientation) return;
-            if (event.heading != null) _lastCompassHeading = event.heading;
-          });
-          // flutter_compass has no synchronous "has compass" check (unlike Android's
-          // SensorManager.getDefaultSensor() == null), so detect it the way Android's message is
-          // surfaced to the user: if no heading has arrived shortly after subscribing, assume
-          // there's no usable compass sensor on this device.
-          _compassAvailabilityTimer = Timer(const Duration(seconds: 3), () {
-            if (rotatingMapMode == RotatingMapMode.phoneOrientation && _lastCompassHeading == null) {
-              state.showSnackbar(
-                  message: 'Unfortunately, your device has no compass!', isDismissible: true);
-            }
-          });
-          state.showSnackbar(
-              message: 'Rotating Map: Phone Orientation. While Follow GPS is on, the map will '
-                  'face where you point the phone.');
-        }
+        _startCompassListening(state, announce: true);
         break;
     }
     state.setState(() {});
