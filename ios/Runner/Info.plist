@@ -30,6 +30,10 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

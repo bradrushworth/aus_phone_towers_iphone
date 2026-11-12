@@ -61,7 +61,7 @@ iOS. The table below lists each one and whether it can be brought to iOS.
 | --- | --- | --- |
 | Connected-cell info bar + tower lookup (`CellIdentity`, `CalculateConnectedTower`) | Not available (CoreTelephony only exposes carrier / MCC-MNC / radio type) | No |
 | Crowd-sourced cell observation upload (`PostObservedLocation`, OpenCellID) | Not available | Partial (GPS-only, no auto cell detection) |
-| Export towers / coverage as GeoJSON, CSV or KML (`ExportHelper`) | Partial — files are written (GeoJSON / CSV / KML) but only into the app's private documents folder, with no share sheet, and the web build cannot export at all (bead `aptios-8x8`) | Yes (share sheet on iOS, browser download on web) |
+| Export towers / coverage as GeoJSON, CSV or KML (`ExportHelper`) | Partial — files are written (GeoJSON / CSV / KML) into an `Exports` folder that iPhone shows under Files → On My iPhone → Aus Phone Towers; no share sheet yet, and the web build cannot export at all (bead `aptios-8x8`) | Yes (share sheet on iOS, browser download on web) |
 | User ranking / gamification (`GetUserRanking`) | Not available | Yes (pure API) |
 | Mozilla Location Service geolocation (`PostMlsGeolocate`) | Not available | Yes (network only) |
 | Follow-GPS map centring + heading rotation (`RotationVectorSensorEventListener`) | Available — Follow GPS toolbar toggle, with Travel direction / Phone orientation / Off rotation in Settings (`flutter_compass`; rotation is not offered on web). Started by hand only: Android's self-starting Driving Mode is a deliberate non-port (see the comment on the toolbar button in `lib/ui/map_common.dart`) | Yes |
