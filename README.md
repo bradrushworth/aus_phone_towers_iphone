@@ -140,31 +140,27 @@ The coverage-polygon math was checked against the Android implementation and is 
   on iOS using a small centroid marker per polygon. They are a cosmetic aid only and do not affect
   the propagation calculation.
 
-### Path loss algorithm (learned coefficients)
+### Path loss algorithm (model v2)
 
-The path-loss model has been ported from the Java Android app to this Flutter app. The algorithm
-estimates the distance a radio signal travels given a measured path-loss in dB, using learned
-coefficients fetched from the REST API at
-`https://api.bitbot.com.au/api/towers/pathloss_coefficients/`.
+The app draws LTE and NR coverage rings with model v2, ported from the Android app. A ring is the
+perimeter for one signal bar, drawn at the distance where a moving phone most likely measures that
+level.
 
-**How it works:**
+1. The coefficients are bundled with the app in `assets/pathloss/pathloss_v2.json`, byte-identical to
+   the Android copy. There is no network fetch. The table is loaded once at start-up; if it cannot be
+   read, built-in band values are used and the failure is reported once.
+2. Distance = 10 ^ ((P - ring - A_urban - offset - nrTddOffset) / (k x s(h))), clamped to 0.01 to
+   100 km. `P` is the licence's EIRP shared across its subcarriers, plus the relative antenna pattern
+   (`licence_hrp.power` is a relative pattern only). `A_urban` and `s` come from the Hata model and `h`
+   is the effective antenna height. `k` and `offset` are looked up per density class and band.
+3. 5G on TDD beamforming bands (n40, n78) carries an extra loss looked up per carrier. FDD 5G and LTE
+   carriers get none.
+4. Other network types (GSM, UMTS, CDMA, NB-IoT) still use the legacy model with `licence_hrp.power`
+   read as a raw level, as before.
 
-1. On app startup, `PathLossModelProvider` fetches trained coefficients from the REST API (the
-   Java Android app trains these server-side from crowd-sourced signal observations and writes
-   them to the MySQL `pathloss_coefficients` table).
-2. The learned model (`LearnedPathLossModel`) uses one of three functional forms:
-   - **log-distance** (legacy): `level = b0 + b1·log10(d) + b2·log10(f) + b3·log10(h)`
-   - **hata-correction**: `level = hataIntercept + b0 + b1·hataSlope·log10(d)`
-   - **hata-calibration** (current): `log10(d) = b0 + b1·log10(hataDistance)`
-3. Coefficients are looked up by composite key (telco MNC + network type + frequency band + city
-   density), falling back to density-only, then to the analytic Hata/COST-231 model if no trained
-   coefficients exist.
-4. For 5G NR, the 3GPP TR 38.901 model is used as the anchor instead of Hata.
-5. If the REST fetch fails or hasn't completed yet, the analytic model is used — the app behaves
-   exactly as before until training data is available.
-
-This means the iPhone app now draws the same polygon shapes and distances as the Android app,
-using the same trained coefficients. See `AGENTS.md` for full architecture details.
+The table is re-issued only by a deliberate calibration run in the Android repository, and both apps
+ship it in the same release. See `AGENTS.md` for the full derivation and the tests that pin the table
+by SHA-256.
 
 Some relevant links:
 
