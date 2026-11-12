@@ -149,6 +149,7 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     // dismiss reads as an unfinished product. This still initialises prefs, which the toolbar
     // toggles and the saved navigation state write through.
     prefs = await SharedPreferences.getInstance();
+    _prefsLoaded = true;
   }
 
   @override
@@ -157,7 +158,6 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     screenHeight = MediaQuery.of(context).size.height;
 
     // This Container sits OUTSIDE the SafeArea, so it is what paints the strip behind the iPhone
-    // status bar and the home indicator. Hardcoded white left a bright band across the top of an
     // otherwise dark screen in dark mode (reported on iOS 1.14.4) — it has to follow the theme.
     return Container(
       color: Theme.of(context).colorScheme.surface,
@@ -316,6 +316,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   static MapBodyState? currentInstance;
   late SharedPreferences prefs;
+  bool _prefsLoaded = false;
   final TextEditingController _searchTextFilter = new TextEditingController();
   bool isShowCancelSearch = false;
 
@@ -643,32 +644,29 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
       // Persist camera position as a single JSON blob (one atomic write) so we
       // can restore it if the OS reclaims memory and cold-restarts the app
       // while backgrounded.
-      if (lastCameraPosition != null) {
+      if (lastCameraPosition != null && _prefsLoaded) {
         SharedPreferencesHelper.setString(
           SharedPreferencesHelper.kCameraPosition,
           encodeCameraPosition(lastCameraPosition!),
           prefs,
         );
       }
-    } else if (state == AppLifecycleState.resumed) {
-      // AppLifecycleState.resumed fires on every return to the foreground,
-      // warm or cold restart alike -- it is not restricted to cold restarts.
-      // Restoring here is safe to call unconditionally because
-      // _restoreCameraIfAvailable() is a no-op unless there's a saved
-      // position and Follow GPS isn't active.
-      _restoreCameraIfAvailable();
     }
+    // No camera restore on `resumed`: iOS sends inactive -> resumed WITHOUT paused for Notification
+    // Centre, purchase sheets and permission dialogs, so a restore here threw the map back to the
+    // last real backgrounding. The cold-restart case is handled in onMapCreated.
   }
 
   /// Restores the last-saved camera position (persisted above when the app is
-  /// paused), used both for a cold OS restart (via [onMapCreated]) and for a
-  /// plain foreground resume. Skips restoring when Follow GPS is active, since
+  /// paused), used for a cold OS restart (via [onMapCreated]); no longer on resume. Skips restoring when Follow GPS is active, since
   /// live GPS tracking should win over a stale pre-background position.
   ///
   /// Returns the restored position (or null if nothing was restored) so
   /// callers -- notably [askForLocationPermission] -- can tell whether they
   /// need to avoid clobbering it with their own GPS-centering camera move.
   CameraPosition? _restoreCameraIfAvailable() {
+    // `prefs` is a late field; it may not be assigned yet on a very early call.
+    if (!_prefsLoaded) return null;
     final String storedJson = SharedPreferencesHelper.getString(
         SharedPreferencesHelper.kCameraPosition, prefs);
     final CameraPosition? restored = resolveRestoredCameraPosition(
@@ -713,6 +711,7 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
 
   void _loadNavigationSavedState() async {
     prefs = await SharedPreferences.getInstance();
+    _prefsLoaded = true;
 
     //Licences
     NavigationMenu.isTelstraVisible = SharedPreferencesHelper.getMenuStatus(
