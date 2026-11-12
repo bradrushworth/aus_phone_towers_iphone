@@ -4,7 +4,7 @@ allprojects {
         agpVersion = "8.13.2"
         compileSdkVersion = 36
         minSdkVersion = 24
-        targetSdkVersion = 34
+        targetSdkVersion = 36
         appCompatVersion = "1.6.1"
         lifeCycleRuntimeVersion = "2.7.0"
         lifeCycleExtensionsVersion = "2.2.0"

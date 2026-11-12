@@ -30,6 +30,10 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
@@ -61,10 +65,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>io.flutter.embedded_views_preview</key>
-	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
-	<string>NO</string>
+	<false/>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier is used to deliver personalized advertisements and measure ad performance within Aus Phone Towers. For example, the app may show ads relevant to your interests and track how many users interact with those ads.</string>
 	<!-- iOS 18+: list finished consumable purchases in StoreKit's Transaction.all. "One Year Ad
