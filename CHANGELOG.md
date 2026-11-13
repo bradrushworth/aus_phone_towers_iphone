@@ -16,6 +16,9 @@ features and bugs are frequently fixed in both.
   therefore run new app code against old copies of those files. Every file now revalidates on
   each visit and downloads again only when it has changed. Browsers that cached files under the
   old rule keep them until they clear them (bead aptios-pkv).
+- **The website no longer throws an error at startup.** The app called Crashlytics, which has no
+  web version. The call failed, and so did the attempt to report that failure, and the browser
+  console showed only "Uncaught Error". On web, errors are now printed to the console instead.
 
 ### Changed
 - **Material widgets come from Flutter's `material_ui` package**, which replaces the Material

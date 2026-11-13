@@ -12,7 +12,8 @@ class AnalyticsHelper {
   AnalyticsHelper._internal();
 
   log(String message) {
-    if (!Foundation.kDebugMode) {
+    // Crashlytics has no web implementation; calling it there throws.
+    if (!Foundation.kDebugMode && !Foundation.kIsWeb) {
       FirebaseCrashlytics.instance.log(message);
     }
   }

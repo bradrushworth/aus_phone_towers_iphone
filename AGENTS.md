@@ -133,6 +133,11 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   from 1.14.5 to 1.16.5 `assets/*` went out `immutable` for a year, so a returning visitor could
   pair a new main.dart.js with an old path-loss table or icon font. Browsers that cached assets
   in that window keep them until evicted (bead aptios-pkv).
+- **Crashlytics has no web implementation.** Every `FirebaseCrashlytics` call must be skipped on
+  web (`kIsWeb`); on web, print with `debugPrint` instead (`logger` is silent in release builds).
+  Until 1.16.6, `AnalyticsHelper.log` called it on web. The failure reached the zone handler,
+  whose `recordError` then threw a pigeon `channel-error`, and the website's console showed
+  only an `Uncaught Error` at every start.
 
 ## Path loss module (lib/pathloss/)
 **Model v2 (shipped in 1.16.0+161, 2026-09-20; Android 7.9.0 (352) is the same release).** A ring is
