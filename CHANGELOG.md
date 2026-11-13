@@ -8,6 +8,21 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.16.5+168] — 2026-11-13
+
+### Changed
+- **Built with Flutter 3.50.0** (was 3.47.9). The Android build moves to Android Gradle Plugin
+  9.3.1, Gradle 9.5.0 and Kotlin 2.4.20, the versions Flutter 3.50 supports, and compiles against
+  API 37. It still targets API 36 and still runs on Android 7 and later.
+- **Plugin upgrades:** Firebase core 5.1, Analytics 13.0 and Crashlytics 6.0 (Firebase iOS SDK 13
+  and Android BoM 35; iOS 15 stays the minimum), location 10.2 (a Swift package on iOS now),
+  permission_handler 13, device_info_plus 13, package_info_plus 10 and cupertino_icons 2.
+
+### Fixed
+- **Travel Direction no longer swings the map towards north on a fix with no heading.** The
+  location plugin reported a missing heading as 0 on Android and -1 on iPhone; it now leaves
+  heading, speed, altitude and accuracy empty when the fix does not carry them.
+
 ## [1.16.4+167] — 2026-11-13
 
 ### Fixed

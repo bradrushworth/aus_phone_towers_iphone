@@ -1,13 +1,11 @@
+// Toolchain versions live in settings.gradle (AGP and Kotlin plugins) and
+// gradle/wrapper/gradle-wrapper.properties (Gradle). They match the template of the Flutter
+// version codemagic.yaml pins; see AGENTS.md "Android toolchain" before changing them.
 allprojects {
     ext {
-        kotlin_version = "2.3.0"
-        agpVersion = "8.13.2"
-        compileSdkVersion = 36
+        compileSdkVersion = 37
         minSdkVersion = 24
         targetSdkVersion = 36
-        appCompatVersion = "1.6.1"
-        lifeCycleRuntimeVersion = "2.7.0"
-        lifeCycleExtensionsVersion = "2.2.0"
     }
 
     repositories {
@@ -16,14 +14,16 @@ allprojects {
     }
 }
 
-rootProject.buildDir = '../build'
+def newBuildDir = rootProject.layout.buildDirectory.dir('../../build').get()
+rootProject.layout.buildDirectory.value(newBuildDir)
+
 subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.layout.buildDirectory.value(newBuildDir.dir(project.name))
 }
 subprojects {
     project.evaluationDependsOn(':app')
 }
 
 tasks.register("clean", Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
 }
