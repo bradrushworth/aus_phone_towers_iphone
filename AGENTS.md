@@ -92,6 +92,12 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   already where built-in Kotlin expects it) and the Kotlin plugin line from `settings.gradle`,
   then build a release bundle (bead aptios-8mo). Until then every build prints Flutter's KGP
   warning.
+- **Gradle runs on Java 21.** AGP 9.3's lint calls `List.removeLast()`, a Java 21 method. On
+  Codemagic's default Java 17, build 168 (the first 1.16.5) failed in the plugins'
+  `lintVitalAnalyzeRelease` tasks with `NoSuchMethodError` (stack frames `Thread.java:840` are
+  Java 17's). The local build had passed because Flutter here uses Android Studio's JBR, which is
+  21. `codemagic.yaml` sets `java: 21` and runs `flutter config --jdk-dir="$JAVA_HOME"` before the
+  bundle. This is the JDK that runs Gradle; the app's `jvmToolchain(21)` only sets the compiler.
 - **Reproducing a Codemagic Android build locally.** `C:/Users/Brad/flutter` is a July 2026
   master build, not the pinned stable; use a checkout of the pinned tag. Put it at a short path:
   under the session scratchpad, Windows' 260-character path limit left files out of the checkout

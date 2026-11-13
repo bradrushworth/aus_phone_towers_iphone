@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [1.16.5+168] — 2026-11-13
+## [1.16.5+169] — 2026-11-13
 
 ### Changed
 - **Built with Flutter 3.50.0** (was 3.47.9). The Android build moves to Android Gradle Plugin

@@ -2,10 +2,9 @@
 #
 # Recreated 2026-08-21 from the "Default Workflow" configured in Codemagic's
 # workflow-editor UI (app 61db713b344ed87cc8f87b61), so the pipeline is
-# versioned in the repo instead of living only in the dashboard. Codemagic does
-# NOT switch to this file automatically: in the app's settings choose
-# "Switch to YAML configuration" and select this workflow. Until then the
-# workflow editor remains the active configuration.
+# versioned in the repo instead of living only in the dashboard. The app has
+# since been switched to this file: the November 2026 builds ran its step names
+# and its pinned Flutter version.
 #
 # Secrets stay in Codemagic, never in this file:
 #   - Android keystore: team reference "android_flutter" (alias "bitbot") —
@@ -47,6 +46,10 @@ workflows:
       # this version's app template (AGENTS.md "Android toolchain"). To raise it, read the new
       # version's DependencyVersionChecker.kt and gradle_utils.dart and move android/ to match.
       flutter: 3.50.0
+      # Gradle must run on Java 21, not Codemagic's default 17: AGP 9.3's lint calls
+      # List.removeLast(), which Java 17 lacks, and build 168 failed in lintVitalAnalyzeRelease
+      # with NoSuchMethodError. The bundle step points Flutter at this JDK.
+      java: 21
       xcode: latest
       cocoapods: default
     integrations:
@@ -101,7 +104,12 @@ workflows:
           storeFile=$CM_KEYSTORE_PATH
           EOF
       - name: Build Android App Bundle (release)
-        script: flutter build appbundle --release
+        script: |
+          # Flutter prefers its own config, then Android Studio's JDK, then JAVA_HOME; pin it to
+          # the Java 21 that `java: 21` puts in JAVA_HOME so Gradle cannot fall back to 17.
+          flutter config --jdk-dir="$JAVA_HOME"
+          java -version
+          flutter build appbundle --release
       - name: Set up iOS code signing
         script: xcode-project use-profiles
       - name: Build iOS IPA (release)
