@@ -8,7 +8,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geohash/geohash.dart';
@@ -325,6 +325,14 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
   static Timer? _compassAvailabilityTimer;
 
   static MapBodyState? currentInstance;
+
+  /// Rebuilds the map so a changed [lockMap] reaches the GoogleMap gesture flags. The Layers
+  /// sheet calls this; it may not call this State's protected setState itself.
+  static void applyLockMap() {
+    final MapBodyState? state = currentInstance;
+    if (state == null || !state.mounted) return;
+    state.setState(() {});
+  }
   late SharedPreferences prefs;
   bool _prefsLoaded = false;
   final TextEditingController _searchTextFilter = new TextEditingController();

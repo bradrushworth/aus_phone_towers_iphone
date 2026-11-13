@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:phonetowers/helpers/telco_helper.dart';
 
 /// F3 (UI overhaul port): the map legend, opened from the persistent "ⓘ Legend" chip. Explains

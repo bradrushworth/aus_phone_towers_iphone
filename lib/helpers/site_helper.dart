@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 
 import '../model/overlay.dart';
@@ -199,19 +199,13 @@ class SiteHelper with ChangeNotifier {
 
   void enableTelcoInUse(bool drawDefaultTelco) {
     if (drawDefaultTelco) {
-      Telco? telcoInUse; // I want to show all of the telcos now
-      if (telcoInUse == null || telcoInUse == Telco.Telstra)
-        toggleTelcoMarkers(Telco.Telstra, NavigationMenu.isTelstraVisible);
-      if (telcoInUse == null || telcoInUse == Telco.Optus)
-        toggleTelcoMarkers(Telco.Optus, NavigationMenu.isOptusVisible);
-      if (telcoInUse == null || telcoInUse == Telco.Vodafone)
-        toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
-      if (telcoInUse == null || telcoInUse == Telco.Dense_Air)
-        toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
-      if (telcoInUse == null || telcoInUse == Telco.NBN)
-        toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
-      if (telcoInUse == null || telcoInUse == Telco.Other)
-        toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
+      // Every carrier, whichever one the phone is on.
+      toggleTelcoMarkers(Telco.Telstra, NavigationMenu.isTelstraVisible);
+      toggleTelcoMarkers(Telco.Optus, NavigationMenu.isOptusVisible);
+      toggleTelcoMarkers(Telco.Vodafone, NavigationMenu.isVodafoneVisible);
+      toggleTelcoMarkers(Telco.Dense_Air, NavigationMenu.isDenseAirVisible);
+      toggleTelcoMarkers(Telco.NBN, NavigationMenu.isNBNVisible);
+      toggleTelcoMarkers(Telco.Other, NavigationMenu.isOtherVisible);
     }
 
     //TODO code for currently connected tower

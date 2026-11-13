@@ -50,7 +50,14 @@ workflows:
       # List.removeLast(), which Java 17 lacks, and build 168 failed in lintVitalAnalyzeRelease
       # with NoSuchMethodError. The bundle step points Flutter at this JDK.
       java: 21
+      # Deliberately not pinned (bead aptios-84p): App Store Connect only accepts builds from
+      # recent Xcode SDKs, and Codemagic moves `latest` to a new major Xcode only on a date it
+      # announces in its GitHub Discussions (minor and patch releases move at once). The build
+      # log's machine-preparation step names the Xcode each build used. Pin a version here
+      # (e.g. `xcode: 27.2`) if a new Xcode ever breaks the build, and unpin once fixed.
       xcode: latest
+      # Codemagic's default for the image (1.16.2 on the Xcode 26.6 image, 1.17.0 on 27.x). Pin
+      # it to the version on the last line of the committed ios/Podfile.lock once there is one.
       cocoapods: default
     integrations:
       app_store_connect: Codemagic Nuptial Flight
@@ -121,38 +128,32 @@ workflows:
       #
       # Cache headers are load-bearing: the site sits behind Cloudflare, and when S3 sends no
       # Cache-Control, Cloudflare edge-caches .js by its default TTL — after the 1.13.12
-      # deploy, edges kept serving the OLD main.dart.js (Flutter web entry filenames are not
-      # content-hashed, and browsers heuristic-cache them on top). The step below splits the
-      # upload so the non-hashed entry files revalidate while content-hashed assets stay
-      # cacheable; see the inline notes there.
+      # deploy, edges kept serving the OLD main.dart.js. Every file is uploaded with no-cache;
+      # see the inline notes below for why nothing is cached for longer.
       - name: Publish web app to S3 (ausphonetowers.com.au)
         script: |
           set -e
-          # Two passes, because the two kinds of file want opposite caching.
+          # Everything with Cache-Control: no-cache, i.e. "revalidate", not "do not store": an
+          # unchanged file costs the browser a 304 by ETag, a changed one is fetched at once.
           #
-          # 1) Everything, cacheable. Flutter content-hashes the heavy assets (canvaskit wasm,
-          #    fonts, assets/*): their filenames change when their bytes change, so they can be
-          #    cached hard and are never stale. Blanket no-cache on these was making returning
-          #    visitors revalidate several MB of wasm on every load for no benefit.
-          aws s3 sync build/web "s3://$AWS_S3_BUCKET" --delete             --cache-control "public, max-age=31536000, immutable"
+          # Nothing in build/web is content-hashed: main.dart.js, assets/* (the path-loss table,
+          # map style, pin icons, the tree-shaken MaterialIcons font, AssetManifest) and the icons
+          # all keep their names from build to build. Until 1.16.6 this step uploaded them
+          # "immutable" for a year on the belief that Flutter hashed the assets, and since Flutter
+          # 3.50 its service worker only unregisters itself, so nothing re-fetched them either: a
+          # returning visitor could run a new main.dart.js against last year's path-loss table or
+          # icon font (bead aptios-rk2). One policy for every file keeps a load consistent.
           #
-          # 2) Re-upload the entry files with no-cache. These are NOT content-hashed - identical
-          #    filenames every build - and the service worker gates everything else, so if they
-          #    are cached, returning visitors and Cloudflare's edge keep serving the PREVIOUS
-          #    build until the TTL expires. "no-cache" means revalidate, not "no-store": the
-          #    multi-MB main.dart.js still gets a cheap 304 when unchanged.
-          #    aws s3 cp preserves the auto-detected Content-Type and only overrides Cache-Control.
+          # canvaskit/ is not exempt: the engine loads CanvasKit from www.gstatic.com by engine
+          # revision, so these copies are normally never requested, and they are not versioned
+          # either. Cloudflare passes origin no-cache through (its 4 h Browser Cache TTL only
+          # raises a shorter max-age); the zone's "Flutter entry files" Cache Rule is harmless.
           #
-          #    assets/docs/user-guide.html (the in-app User Guide, shown in an iframe on web) is
-          #    on the list for the same reason. Flutter does NOT content-hash asset filenames, so
-          #    under pass 1's year of "immutable" a visitor not under service-worker control would
-          #    keep reading the guide from their first visit. The rest of assets/* has the same
-          #    exposure and is deliberately left alone here - see bead aptios-rk2.
-          for f in index.html flutter_bootstrap.js flutter.js main.dart.js                    flutter_service_worker.js version.json manifest.json                    assets/docs/user-guide.html; do
-            if [ -f "build/web/$f" ]; then
-              aws s3 cp "build/web/$f" "s3://$AWS_S3_BUCKET/$f" --cache-control "no-cache"
-            fi
-          done
+          # cp --recursive, not sync, so every object is rewritten with this header even when
+          # sync would skip it as unchanged (a file copied out of the Flutter SDK can keep an old
+          # mtime). The sync after it only deletes objects the new build no longer has.
+          aws s3 cp build/web "s3://$AWS_S3_BUCKET" --recursive --cache-control "no-cache"
+          aws s3 sync build/web "s3://$AWS_S3_BUCKET" --delete --cache-control "no-cache"
       # Old objects cached at Cloudflare edges persist until their TTL even after the
       # headers change, so purge on deploy. No-ops until CLOUDFLARE_ZONE_ID and
       # CLOUDFLARE_API_TOKEN (a token with Zone.Cache Purge permission) are added to the
@@ -170,6 +171,10 @@ workflows:
     artifacts:
       - build/app/outputs/bundle/release/*.aab
       - build/ios/ipa/*.ipa
+      # The CocoaPods lock this build resolved (native Google Maps, Ads and Firebase versions,
+      # and the CocoaPods version on its last line). Download it from the build to commit it;
+      # see AGENTS.md "Reproducible builds" (bead aptios-84p).
+      - ios/Podfile.lock
       - flutter_drive.log
     publishing:
       email:

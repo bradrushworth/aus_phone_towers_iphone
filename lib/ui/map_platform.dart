@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:core';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:geohash/geohash.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/search_helper.dart';
-import 'package:phonetowers/helpers/site_helper.dart';
 import 'package:phonetowers/model/site.dart';
 import 'package:phonetowers/networking/api.dart';
 import 'package:phonetowers/ui/map_common.dart';

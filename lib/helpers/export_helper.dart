@@ -266,10 +266,10 @@ class ExportHelper {
       'azimuth': device.azimuth,
       'towerHeight': device.getTowerHeight(),
       'signalStrengthOrder': e.polygon.order,
-      'colorARGB': po.fillColor.value,
+      'colorARGB': po.fillColor.toARGB32(),
       'strokeWidth': po.strokeWidth,
-      'fill': po.fillColor.alpha > 0,
-      'stroke': po.strokeColor.alpha > 0,
+      'fill': (po.fillColor.toARGB32() >> 24) > 0,
+      'stroke': (po.strokeColor.toARGB32() >> 24) > 0,
     };
   }
 

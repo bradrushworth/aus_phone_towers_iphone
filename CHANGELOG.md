@@ -8,6 +8,25 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **The website always loads the current build's files.** Map icons, the map style, fonts and
+  the coverage table used to be cached by browsers for a year. A returning visitor could
+  therefore run new app code against old copies of those files. Every file now revalidates on
+  each visit and downloads again only when it has changed. Browsers that cached files under the
+  old rule keep them until they clear them (bead aptios-pkv).
+
+### Changed
+- **Material widgets come from Flutter's `material_ui` package**, which replaces the Material
+  library that Flutter 3.50 deprecates in its SDK.
+- **Android builds use AGP's built-in Kotlin.** The in-app review plugin is carried in the
+  repository with a small Gradle fix until its maintainers release theirs.
+- **Two unused packages removed** (permission_handler, html_unescape), which also drops a
+  native iOS pod.
+- **Codemagic keeps each iOS build's `Podfile.lock`**, so the native library versions can be
+  recorded in the repository. The website deploy uploads every file with `no-cache`.
+
 ## [1.16.5+169] — 2026-11-13
 
 ### Changed

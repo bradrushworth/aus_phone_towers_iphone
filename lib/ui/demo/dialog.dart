@@ -1,5 +1,5 @@
 import 'package:after_layout/after_layout.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class DialogDemo extends StatefulWidget {
   @override
