@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.16.6+170] — 2026-11-14
 
 ### Fixed
 - **The website always loads the current build's files.** Map icons, the map style, fonts and
