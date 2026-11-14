@@ -133,6 +133,13 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   from 1.14.5 to 1.16.5 `assets/*` went out `immutable` for a year, so a returning visitor could
   pair a new main.dart.js with an old path-loss table or icon font. Browsers that cached assets
   in that window keep them until evicted (bead aptios-pkv).
+- **What Cloudflare does with those headers** (measured 2026-11-14). Cloudflare's edge also held 17
+  of those files under the old year-long header until the owner purged them on 2026-11-14. It now
+  revalidates every file with S3 (`cf-cache-status: REVALIDATED`), so it cannot serve old copies
+  again. Browsers get `no-cache` for `.html`, `.js` and `.json`, but `max-age=14400` for images and
+  fonts, because the zone's 4-hour Browser Cache TTL overrides the origin for those types (the S3
+  objects themselves say `no-cache`). After a release a browser can keep a pin icon or the icon
+  font for up to 4 hours. Changing that is a Cloudflare setting, so it is the owner's call.
 - **Crashlytics has no web implementation.** Every `FirebaseCrashlytics` call must be skipped on
   web (`kIsWeb`); on web, print with `debugPrint` instead (`logger` is silent in release builds).
   Until 1.16.6, `AnalyticsHelper.log` called it on web. The failure reached the zone handler,
