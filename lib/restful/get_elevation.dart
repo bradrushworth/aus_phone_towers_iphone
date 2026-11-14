@@ -117,7 +117,6 @@ class GetElevation {
     sb.write(latLng.longitude.toStringAsFixed(3));
     sb.write("|");
 
-    int measurements = 1;
     num loops = 0;
 
     for (double dist in SAMPLE_DISTANCES) {
@@ -140,13 +139,12 @@ class GetElevation {
         sb.write("|");
 
         //mapsActivity.addMarkerToMap(new MarkerOptions().position(point).title("Elevation").alpha(0.2f), site);
-        measurements++;
       }
 
     }
 
     String positionString = sb.toString().substring(0, sb.length - 1);
-    //debugPrint('GetElevation", "getPositionsString: measurements=$measurements and positionString is $positionString');
+    //debugPrint('GetElevation", "getPositionsString: positionString is $positionString');
     return positionString;
   }
 

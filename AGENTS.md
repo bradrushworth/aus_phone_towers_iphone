@@ -70,7 +70,7 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
 - **The versions follow the app template of the Flutter version `codemagic.yaml` pins** (3.50.0):
   AGP 9.3.1 and Kotlin Gradle plugin 2.4.20 in `android/settings.gradle`, Gradle 9.5.0 in
   `android/gradle/wrapper/gradle-wrapper.properties`. `android/build.gradle` holds the SDK levels:
-  compileSdk 37 (permission_handler_android 14 compiles against 37, and Flutter warns when a
+  compileSdk 37 (raised for permission_handler_android 14, since removed; Flutter warns when a
   plugin's compileSdk is above the app's), targetSdk 36, minSdk 24.
 - **Why not newer.** Flutter 3.50's `packages/flutter_tools/lib/src/android/gradle_utils.dart`
   names AGP 9.4, Gradle 9.5.0 and Kotlin 2.4.20 as the newest it knows and supports. Its
@@ -82,16 +82,20 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
 - **Do not reintroduce `ext.kotlin_version` in `android/build.gradle`.** Flutter's
   `VersionFetcher.getKGPVersion` reads a `kotlin_version` project property before it looks at the
   applied Kotlin plugin, so a stale value there (it said `2.3.0`) is what the version check sees.
-- **`android.builtInKotlin=false` and `android.newDsl=false` stay**, as in Flutter 3.50's own
-  template. Built-in Kotlin is blocked only by `in_app_review` 2.0.12 (the latest), which applies
-  `kotlin-android` and `kotlinOptions` unconditionally, and AGP 9 rejects that once built-in
-  Kotlin is on (upstream britannio/in_app_review#190). Every other plugin either checks
-  `android.builtInKotlin` or leaves Kotlin to Flutter; checked over `.dart_tool/package_config.json`
-  on 2026-11-13. When in_app_review is fixed: set `android.builtInKotlin=true`, delete
-  `id "kotlin-android"` from `android/app/build.gradle` (its top-level `kotlin {}` block is
-  already where built-in Kotlin expects it) and the Kotlin plugin line from `settings.gradle`,
-  then build a release bundle (bead aptios-8mo). Until then every build prints Flutter's KGP
-  warning.
+- **AGP built-in Kotlin is on (`android.builtInKotlin=true`, bead aptios-8mo, 2026-11-14);
+  `android.newDsl=false` stays** until Flutter's template turns it on. Flutter 3.50's own template
+  still writes `builtInKotlin=false`. Nothing applies the Kotlin Gradle plugin: not
+  `android/app/build.gradle` (its top-level `kotlin { jvmToolchain(21) }` is the built-in form),
+  and not any plugin. `settings.gradle` still declares `org.jetbrains.kotlin.android` 2.4.20
+  `apply false`, only so AGP compiles with that Kotlin rather than the older one it depends on.
+- **`in_app_review` is vendored** under `packages/in_app_review` (2.0.12, the latest release),
+  because upstream still applies `kotlin-android` and `kotlinOptions`, which AGP rejects with
+  built-in Kotlin on (britannio/in_app_review#190; PRs #188 and #191 open on 2026-11-14). The
+  only change is its `android/build.gradle`; `packages/in_app_review/VENDORED.md` says what and
+  how to go back to the hosted package once a fixed release is out. `packages/**` is excluded
+  from `flutter analyze`. Every other plugin either checks `android.builtInKotlin` or leaves
+  Kotlin to the build; Flutter's KGP warning matches on build-script text, so it may still list
+  `firebase_core`, whose `apply plugin: 'kotlin-android'` sits behind that check and never runs.
 - **Gradle runs on Java 21.** AGP 9.3's lint calls `List.removeLast()`, a Java 21 method. On
   Codemagic's default Java 17, build 168 (the first 1.16.5) failed in the plugins'
   `lintVitalAnalyzeRelease` tasks with `NoSuchMethodError` (stack frames `Thread.java:840` are
@@ -104,6 +108,36 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   and broke `flutter analyze`. A release bundle needs `android/key.properties` (git-ignored);
   without it `signReleaseBundle` fails with a bare `NullPointerException`. A throwaway keystore
   is enough to prove the bundle builds.
+
+## Reproducible builds and the web deploy (beads aptios-84p, aptios-rk2, 2026-11-14)
+- **Flutter is pinned** in `codemagic.yaml` (see "Android toolchain"). **Xcode is deliberately
+  `latest`**: App Store Connect only accepts recent SDKs, and Codemagic moves `latest` to a new
+  major Xcode on an announced date. Pin it there only while a new Xcode breaks the build.
+- **`ios/Podfile.lock` is not committed yet.** Nobody here has a Mac, so it has to come from a
+  Codemagic build: every build now keeps `ios/Podfile.lock` as an artifact. After the next
+  release, download it from that build, commit it, and set `cocoapods:` in `codemagic.yaml` to the
+  version on its last line. From then on `pod install` uses the committed versions, so a plugin
+  upgrade that needs a newer native pod fails the iOS build with "could not find compatible
+  versions": delete `ios/Podfile.lock` in that change, let the release build resolve afresh, and
+  commit the new lock from its artifacts.
+- **Material comes from `package:material_ui`**, not `package:flutter/material.dart` (deprecated
+  in Flutter 3.50; aptios-2sh). Import `package:material_ui/material_ui.dart` in new files. It is
+  a separate copy of the library: a dependency that renders SDK Material widgets or reads the SDK
+  `Theme` would need `MaterialUiCompatibilityBridge` in `MaterialApp.builder`. None does today
+  (checked over every hosted dependency on 2026-11-14); re-check when adding a UI package.
+- **Website caching.** Nothing Flutter writes to `build/web` is content-hashed (main.dart.js,
+  `assets/*`, icons, even `canvaskit/`), and since Flutter 3.50 `flutter_service_worker.js` only
+  unregisters itself, so the browser's HTTP cache is the only cache. The Codemagic deploy uploads
+  every file with `Cache-Control: no-cache` (revalidate by ETag, a 304 when unchanged). Do not
+  bring back a long max-age or `immutable` for any path that keeps its name between builds:
+  from 1.14.5 to 1.16.5 `assets/*` went out `immutable` for a year, so a returning visitor could
+  pair a new main.dart.js with an old path-loss table or icon font. Browsers that cached assets
+  in that window keep them until evicted (bead aptios-pkv).
+- **Crashlytics has no web implementation.** Every `FirebaseCrashlytics` call must be skipped on
+  web (`kIsWeb`); on web, print with `debugPrint` instead (`logger` is silent in release builds).
+  Until 1.16.6, `AnalyticsHelper.log` called it on web. The failure reached the zone handler,
+  whose `recordError` then threw a pigeon `channel-error`, and the website's console showed
+  only an `Uncaught Error` at every start.
 
 ## Path loss module (lib/pathloss/)
 **Model v2 (shipped in 1.16.0+161, 2026-09-20; Android 7.9.0 (352) is the same release).** A ring is

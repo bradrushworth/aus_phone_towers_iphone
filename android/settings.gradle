@@ -20,6 +20,8 @@ pluginManagement {
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
     id "com.android.application" version "9.3.1" apply false
+    // Not applied anywhere (built-in Kotlin): declared so AGP compiles with Kotlin 2.4.20 rather
+    // than the older Kotlin Gradle plugin it depends on itself.
     id "org.jetbrains.kotlin.android" version "2.4.20" apply false
 }
 

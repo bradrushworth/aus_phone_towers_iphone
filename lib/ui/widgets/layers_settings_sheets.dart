@@ -1,7 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -209,7 +209,7 @@ class LayersSheet {
                       message: v
                           ? 'Map locked — all camera movement (gestures, my location, Follow GPS, search) disabled for screenshots.'
                           : 'Map unlocked — camera movement enabled again.');
-                  MapBodyState.currentInstance?.setState(() {});
+                  MapBodyState.applyLockMap();
                   refresh();
                 },
               ),

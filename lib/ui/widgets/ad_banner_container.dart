@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Bottom-of-screen container that reserves space for a banner ad only once
 /// the ad's actual rendered size is known.

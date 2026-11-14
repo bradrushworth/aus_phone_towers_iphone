@@ -6,7 +6,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart' as Foundation;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:phonetowers/helpers/map_helper.dart';
@@ -117,7 +117,11 @@ Future<void> main() async {
       final Object? error = ContourCoefficients.bundledLoadError;
       if (error == null) return;
       logger.e('ContourCoefficients.loadBundled: using the hard-coded fallback table: $error');
-      if (useFirebase && !Foundation.kDebugMode) {
+      if (kIsWeb) {
+        // logger is silent in release builds and Crashlytics has no web implementation, so the
+        // browser console is the only place a web visitor's failure can show.
+        Foundation.debugPrint('ContourCoefficients.loadBundled failed, using the fallback: $error');
+      } else if (useFirebase && !Foundation.kDebugMode) {
         FirebaseCrashlytics.instance.recordError(error, StackTrace.current,
             reason: 'ContourCoefficients bundled table failed to load');
       }
@@ -157,7 +161,11 @@ Future<void> main() async {
       child: AusPhoneTowers(),
     ));
   }, (error, stackTrace) {
-    if (useFirebase && !Foundation.kDebugMode) {
+    if (kIsWeb && !Foundation.kDebugMode) {
+      // Crashlytics has no web implementation: recordError there throws its own "channel-error",
+      // which used to be the only thing the browser console showed. Print the real error instead.
+      Foundation.debugPrint('Uncaught error: $error\n$stackTrace');
+    } else if (useFirebase && !Foundation.kDebugMode) {
       FirebaseCrashlytics.instance.recordError(error, stackTrace);
     } else {
       throw error;

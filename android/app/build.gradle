@@ -1,6 +1,6 @@
 plugins {
     id "com.android.application"
-    id "kotlin-android"
+    // No "kotlin-android": AGP built-in Kotlin (android.builtInKotlin=true) compiles MainActivity.kt.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -82,8 +82,7 @@ android {
     }
 }
 
-// Top-level, not inside android {}: this is where Flutter's built-in Kotlin migration guide puts it,
-// so the block needs no change when android.builtInKotlin is turned on.
+// Top-level, not inside android {}: where AGP built-in Kotlin provides it.
 kotlin {
     jvmToolchain(21)
 }

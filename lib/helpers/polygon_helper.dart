@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:logger/logger.dart';
@@ -660,7 +660,7 @@ class PolygonHelper with ChangeNotifier {
       position: position,
       icon: icon,
       anchor: const Offset(0.5, 0.5),
-      zIndex: 2,
+      zIndexInt: 2,
       consumeTapEvents: false,
     );
     labelOverlays.add(MapOverlay(marker: marker, site: site));
@@ -700,7 +700,7 @@ class PolygonHelper with ChangeNotifier {
 
   /// Render a small rounded label bitmap for use as a Marker icon.
   static Future<BitmapDescriptor> _createLabelIcon(String text, Color color) async {
-    final String key = '$text|${color.value}';
+    final String key = '$text|${color.toARGB32()}';
     final BitmapDescriptor? cached = _labelIconCache[key];
     if (cached != null) return cached;
 
@@ -720,7 +720,7 @@ class PolygonHelper with ChangeNotifier {
 
     final ui.PictureRecorder recorder = ui.PictureRecorder();
     final ui.Canvas canvas = ui.Canvas(recorder);
-    final ui.Paint bg = ui.Paint()..color = ui.Color(color.value);
+    final ui.Paint bg = ui.Paint()..color = color;
     canvas.drawRRect(
       ui.RRect.fromRectAndRadius(
         ui.Rect.fromLTWH(0, 0, width, height),

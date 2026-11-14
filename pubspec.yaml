@@ -12,7 +12,7 @@ publish_to: 'none'
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.16.5+169
+version: 1.16.6+170
 
 environment:
   sdk: '>=3.9.2 <4.0.0'
@@ -20,13 +20,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Flutter 3.50 deprecates package:flutter/material.dart in favour of this package (the same
+  # Material library, moved out of the SDK). No dependency renders SDK Material widgets, so
+  # MaterialUiCompatibilityBridge is not needed; re-check that if a UI package is added.
+  material_ui: ^1.11.0
   google_maps_flutter: ^2.17.1
   google_maps_flutter_platform_interface: ^2.14.1
   cupertino_icons: ^2.0.0
   #http: ^1.0.0
   dio: ^5.10.0
   logger: ^2.5.0
-  permission_handler: ^13.0.2
   geohash:
     git: https://github.com/bradrushworth/dart-geohash.git
     #path: ../geohash
@@ -34,7 +37,6 @@ dependencies:
   flutter_compass: ^0.8.1
   json_annotation: ^4.12.0
   intl: ^0.20.3
-  html_unescape: ^2.0.0
   provider: ^6.1.2
   shared_preferences: ^2.5.5
   path_provider: ^2.1.6
@@ -54,7 +56,12 @@ dependencies:
 #      path: packages/google_mobile_ads
   #gma_mediation_meta: ^1.5.0 # Needs upgrade for gradle
   after_layout: ^1.2.0
-  in_app_review: ^2.0.12
+  # 2.0.12 vendored with one Gradle change so the app can use AGP built-in Kotlin: upstream
+  # still applies the Kotlin Gradle plugin (britannio/in_app_review#190, PRs #188/#191 open).
+  # Go back to the hosted package once a fixed version is published; see
+  # packages/in_app_review/VENDORED.md.
+  in_app_review:
+    path: packages/in_app_review
   app_tracking_transparency: ^2.0.7
   auto_size_text: ^3.0.0
   url_launcher: ^6.3.2

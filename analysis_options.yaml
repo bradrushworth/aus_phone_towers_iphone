@@ -16,6 +16,8 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
+    # Third-party code vendored unchanged apart from its build files (packages/*/VENDORED.md).
+    - packages/**
 include: package:flutter_lints/flutter.yaml
 
 linter:
