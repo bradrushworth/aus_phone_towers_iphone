@@ -21,4 +21,10 @@ abstract class RestFilter {
   static bool isUsableValue(String? value) {
     return value != null && value.trim().isNotEmpty;
   }
+
+  /// RESTify (a PHP falsy-string check) rejects a bare `0` filter value with the same HTTP 412
+  /// ERROR #120 as an empty one. Zero is legitimate, so it is zero-padded to `00`, which MySQL
+  /// compares equal to 0. Every numeric filter value should go through this. Mirrors the Java
+  /// app's `RestFilter.zeroSafe`.
+  static String zeroSafe(int value) => value == 0 ? '00' : value.toString();
 }

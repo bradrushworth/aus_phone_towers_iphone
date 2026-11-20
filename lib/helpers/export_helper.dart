@@ -9,6 +9,7 @@ import '../model/device_detail.dart';
 import '../model/overlay.dart';
 import '../model/site.dart';
 import '../restful/get_licenceHRP.dart' show CityDensity;
+import '../restful/site_terrain_batch.dart';
 import '../utils/polygon_container.dart';
 import 'export_delivery_io.dart' if (dart.library.js_interop) 'export_delivery_web.dart';
 import 'export_feature.dart';
@@ -79,8 +80,20 @@ class ExportHelper {
   /// Builds and delivers the export for [choice]. Returns the file names, or an empty list when
   /// there is nothing to export. Call on the UI thread (it reads map objects).
   static Future<List<String>> export(ExportChoice choice, {Rect? shareOrigin}) async {
-    final List<ExportFeature> features =
-        isTowers(choice) ? collectTowerFeatures() : collectCoverageFeatures();
+    final List<ExportFeature> features;
+    if (isTowers(choice)) {
+      final List<Site> sites = visibleTowerSites();
+      // Ground heights the map has not loaded yet are fetched now, in one bounded batch. A
+      // failure only leaves those towers unverified.
+      final Map<String, int> fetched = await SiteTerrainBatchFetcher.fetchGround(
+          sites
+              .where((Site s) => s.terrainGroundM == null && !s.terrainLoaded)
+              .map((Site s) => s.siteId),
+          PolygonHelper.api);
+      features = sites.map((Site s) => buildTowerFeature(s, fetchedGround: fetched)).toList();
+    } else {
+      features = collectCoverageFeatures();
+    }
     if (features.isEmpty) return <String>[];
 
     final String stamp = _timeStamp();
@@ -132,7 +145,7 @@ class ExportHelper {
 
   /// One feature per site whose marker is visible (so the filters are respected), built from the
   /// transmitters that pass the filters. Sorted by telco then site id so repeat exports compare.
-  static List<ExportFeature> collectTowerFeatures() {
+  static List<Site> visibleTowerSites() {
     final Set<Site> sites = <Site>{};
     for (final MapOverlay overlay in SiteHelper.globalListMapOverlay) {
       final Site? site = overlay.site;
@@ -145,10 +158,13 @@ class ExportHelper {
         final int t = TelcoHelper.getName(a.getTelco()).compareTo(TelcoHelper.getName(b.getTelco()));
         return t != 0 ? t : (a.siteId ?? '').compareTo(b.siteId ?? '');
       });
-    return sorted.map(buildTowerFeature).toList();
+    return sorted;
   }
 
-  static ExportFeature buildTowerFeature(Site site) {
+  /// [fetchedGround] holds terrain-model ground heights fetched at export time (site id to
+  /// metres); the site itself is not modified, so map drawing is unaffected.
+  static ExportFeature buildTowerFeature(Site site,
+      {Map<String, int> fetchedGround = const <String, int>{}}) {
     final List<DeviceDetails> all = site.getDeviceDetailsMobile();
     List<DeviceDetails> visible = all.where(site.isDeviceVisible).toList();
     // A visible marker with no visible transmitters is stale; fall back to everything known.
@@ -160,7 +176,7 @@ class ExportHelper {
       latitude: site.latitude!,
       longitude: site.longitude!,
       acmaElevationText: site.elevation,
-      demGroundM: site.terrainGroundM,
+      demGroundM: site.terrainGroundM ?? fetchedGround[site.siteId],
       visibleDevices: visible.map((DeviceDetails d) {
         final NetworkType nt = d.getNetworkType();
         return TowerDeviceInput(

@@ -28,6 +28,8 @@ features and bugs are frequently fixed in both.
   known.
 
 ### Added
+- Ground heights are fetched when you export towers, for visible towers the map has not loaded
+  them for (up to 20 seconds; a tower that does not answer exports as `unverified`).
 - Three tower export columns, also added to the Android app: `ground_elevation_dem_m` (terrain
   model ground height), `elevation_check` (`ok`, `differs` over 30 m, `unverified`) and
   `antenna_height_all_max_m` (tallest antenna ignoring filters).

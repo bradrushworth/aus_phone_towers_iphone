@@ -207,7 +207,10 @@ class _OptionsMenuState extends State<OptionsMenu> {
     final ExportChoice? choice = choices[chosen.title];
     if (choice == null) return;
     final String what = ExportHelper.isTowers(choice) ? 'towers' : 'coverage polygons';
-    widget.showSnackBar(message: 'Exporting $what...');
+    widget.showSnackBar(
+        message: ExportHelper.isTowers(choice)
+            ? 'Exporting $what, checking ground heights (can take up to 20 seconds)...'
+            : 'Exporting $what...');
     try {
       final List<String> names = await ExportHelper.export(choice, shareOrigin: _shareOrigin());
       _reportExport(names, what);

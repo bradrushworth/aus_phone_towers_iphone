@@ -586,7 +586,12 @@ behaviour change a user would notice. Do not leave docs stale after a code chang
   `antenna_height_all_max_m` ignores filters. One feature per site whose marker is visible.
 - `elevation_check`: `ok` when the ACMA ground and the terrain-model ground (`Site.terrainGroundM`)
   differ by at most 30 m (`TowerExport.elevationToleranceM`), `differs` above that, `unverified` when
-  either is missing. The terrain ground is exported only if already loaded; the export fetches nothing.
+  either is missing. The terrain ground is `Site.terrainGroundM` when the map already loaded it; for
+  visible sites without it the export fetches `site_terrain.ground_m` at export time
+  (`lib/restful/site_terrain_batch.dart`, mirroring Android's `SiteTerrainBatchFetcher`: 50 ids per
+  request, 3 in flight, 12 s per request, 20 s overall; ids must be plain `[A-Za-z0-9_-]+`, a bare 0
+  is zero-padded; a failed batch only leaves its sites `unverified`). The fetched value is not
+  written back to the site, so map drawing is unchanged.
 - Nulls are empty CSV cells and JSON null, never the text `null`. Numbers are locale independent.
 - Each menu row writes only its own format (`ExportHelper.formatsFor`). Coverage properties use the
   Android names (`frequency_mhz`, `eirp_w`, `signal_dbm`, ...); there is no `sim` property (one SIM).
