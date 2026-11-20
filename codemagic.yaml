@@ -146,8 +146,15 @@ workflows:
           #
           # canvaskit/ is not exempt: the engine loads CanvasKit from www.gstatic.com by engine
           # revision, so these copies are normally never requested, and they are not versioned
-          # either. Cloudflare passes origin no-cache through (its 4 h Browser Cache TTL only
-          # raises a shorter max-age); the zone's "Flutter entry files" Cache Rule is harmless.
+          # either.
+          #
+          # Cloudflare, measured 2026-11-14 after a purge: the edge revalidates every file with S3
+          # (cf-cache-status REVALIDATED), so it does not serve old copies. Browsers get no-cache
+          # for .html, .js and .json (the zone's "Flutter entry files" Cache Rule passes it
+          # through), but max-age=14400 for images and fonts, where the zone's 4 h Browser Cache
+          # TTL overrides the origin. So a browser can keep a pin icon or the icon font for up to
+          # 4 hours after a release (bead aptios-pkv). Until 2026-11-14 this comment said
+          # Cloudflare passed no-cache through for every file; that holds only for those types.
           #
           # cp --recursive, not sync, so every object is rewritten with this header even when
           # sync would skip it as unchanged (a file copied out of the Flutter SDK can keep an old
@@ -157,7 +164,8 @@ workflows:
       # Old objects cached at Cloudflare edges persist until their TTL even after the
       # headers change, so purge on deploy. No-ops until CLOUDFLARE_ZONE_ID and
       # CLOUDFLARE_API_TOKEN (a token with Zone.Cache Purge permission) are added to the
-      # Codemagic environment group.
+      # Codemagic environment group. Since 1.16.6 every file goes out no-cache and the edge
+      # revalidates it with S3, so this purge is a backstop, not needed for a correct deploy.
       - name: Purge Cloudflare cache (skipped until credentials configured)
         script: |
           if [ -n "${CLOUDFLARE_ZONE_ID:-}" ] && [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
