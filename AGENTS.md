@@ -566,6 +566,33 @@ project, you MUST also update the relevant documentation before considering the 
 This applies to new menu items, exported formats, map overlays/labels, settings, and any
 behaviour change a user would notice. Do not leave docs stale after a code change.
 
+## Export Data (towers and coverage)
+- **The tower export is a contract shared with the Android app** (`aus_phone_towers_java`,
+  `ExportHelper.TOWER_CSV_COLUMNS` and `buildTowerFeature`). Search and rescue agencies load it into
+  CalTopo / ArcGIS Pro for viewsheds, so names, order, units and number formatting must not drift.
+  Change both apps together. Columns (CSV order; the same names are the GeoJSON properties):
+  `site_id, name, telco, latitude, longitude, ground_elevation_m, antenna_height_max_m,
+  antenna_height_avg_m, antenna_height_min_m, antenna_top_elevation_m, technologies,
+  frequencies_mhz, transmitter_count, state, postcode, city_density, active,
+  ground_elevation_dem_m, elevation_check, antenna_height_all_max_m`. The last three were added
+  to both apps on 2026-11-20.
+- Code: pure `lib/helpers/export_feature.dart` (no Flutter/platform imports; tested in
+  `test/helpers/export_feature_test.dart`), `ExportHelper` (collects from the map, `formatsFor`),
+  and delivery split by conditional import: `export_delivery_io.dart` (writes into `Exports`,
+  deletes files over 30 days old, opens `share_plus`) and `export_delivery_web.dart` (Blob
+  download, no dart:io).
+- Heights are the raw `DeviceDetails.height`, values <= 0 ignored. NEVER use `getTowerHeight()` (it
+  floors at 10 m). Stats are over the transmitters passing the filters (`Site.isDeviceVisible`);
+  `antenna_height_all_max_m` ignores filters. One feature per site whose marker is visible.
+- `elevation_check`: `ok` when the ACMA ground and the terrain-model ground (`Site.terrainGroundM`)
+  differ by at most 30 m (`TowerExport.elevationToleranceM`), `differs` above that, `unverified` when
+  either is missing. The terrain ground is exported only if already loaded; the export fetches nothing.
+- Nulls are empty CSV cells and JSON null, never the text `null`. Numbers are locale independent.
+- Each menu row writes only its own format (`ExportHelper.formatsFor`). Coverage properties use the
+  Android names (`frequency_mhz`, `eirp_w`, `signal_dbm`, ...); there is no `sim` property (one SIM).
+- iOS shows `Exports` in the Files app via `UIFileSharingEnabled` and
+  `LSSupportsOpeningDocumentsInPlace`; nothing else is written to Documents.
+
 ## Push to `main` only for an explicit release
 A Codemagic build is triggered by every push, and each build costs money, so:
 

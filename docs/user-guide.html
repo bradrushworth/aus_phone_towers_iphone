@@ -297,26 +297,34 @@ it and tap the pin again in a moment.</div>
 
 <h2 id="s9">9. Exporting map data</h2>
 
-<p><strong>⋮ → Export Data</strong> offers three exports:</p>
+<p><strong>⋮ → Export Data</strong> offers four exports. Each one writes only the file it names:</p>
 
 <table>
   <tr><th style="width:38%">Option</th><th>Contents</th></tr>
-  <tr><td>Export Towers (GeoJSON)<br>Export Towers (CSV)</td><td>Every tower gathered as you panned around —
-      not just what is on screen right now — one entry per band, with its carrier, generation, frequency,
-      bandwidth, power, azimuth and height. Either option writes both files.</td></tr>
-  <tr><td>Export Coverage (GeoJSON)</td><td>One polygon per coverage ring currently drawn, with its tower and
-      transmitter details, written as GeoJSON, CSV and KML for tools such as QGIS, CalTopo, ArcGIS Pro and
-      Google Earth. Tap a tower to draw its coverage first.</td></tr>
+  <tr><td>Export Towers (GeoJSON)<br>Export Towers (CSV)</td><td>One entry per tower that is currently shown on the map
+      (towers hidden by the filters are left out), including those gathered as you panned around. Each entry has the
+      tower's name, carrier, position, ground elevation, the antenna heights, the antenna top elevation, the
+      technologies and frequencies, the number of transmitters, state, postcode, city density and whether it is
+      active.</td></tr>
+  <tr><td>Export Coverage (GeoJSON)<br>Export Coverage (KML)</td><td>One polygon per coverage ring currently drawn, with
+      its tower and transmitter details, for tools such as QGIS, CalTopo, ArcGIS Pro and Google Earth. Tap a tower to
+      draw its coverage first.</td></tr>
 </table>
 
-<p>The files are time-stamped and saved in an <em>Exports</em> folder inside the app's storage. On iPhone they
-appear in the Files app under <strong>On My iPhone → Aus Phone Towers → Exports</strong>, where you can move or
-share them. The message that follows lists each file's name. If there is nothing on the map to export, the app
-says so instead. Exports older than 30 days are removed automatically the next time you export.</p>
+<p>The tower file uses the same column names, in the same order, as the Android app, so a CalTopo or ArcGIS
+template built for one loads the other. Heights are the licensed antenna heights in metres above ground, exactly as
+registered (a 4 m antenna is exported as 4). A height that is not known is left empty rather than guessed. Three
+extra columns help you judge the elevation figures: <em>ground_elevation_dem_m</em> is the ground height from the
+terrain model, when the app has loaded it for that tower; <em>elevation_check</em> is <em>ok</em> when the licensed
+and terrain-model ground heights agree within 30 metres, <em>differs</em> when they do not, and <em>unverified</em>
+when either is missing; and <em>antenna_height_all_max_m</em> is the tallest antenna at the tower whatever the
+filters hide.</p>
 
-<div class="warn"><strong>Known limits.</strong> On iPhone the exported files are reached through the Files app,
-not through a share button inside this app. The web edition cannot export at all. The Android app can share
-exports from inside the app today; bringing the same to this edition is planned.</div>
+<p>On iPhone and Android the app saves the file in an <em>Exports</em> folder and opens the share sheet, so you can
+send it to Mail, Files, AirDrop or a mapping app. On iPhone the folder also appears in the Files app under
+<strong>On My iPhone → Aus Phone Towers → Exports</strong>. In a web browser the file downloads straight away. The
+message that follows names each file. If there is nothing on the map to export, the app says so instead. Exports older
+than 30 days are removed automatically the next time you export on a phone.</p>
 
 <div class="tip"><strong>Why this exists:</strong> police search-and-rescue units export the tower position and
 antenna height into CalTopo or ArcGIS Pro and run a <em>viewshed</em> — a line-of-sight analysis that produces
@@ -400,7 +408,7 @@ same in both.</p>
   <tr><td>Observation trail and the Tower Spotter Leaderboard</td><td>Not available</td></tr>
   <tr><td>Hypothetical-location pin (press and hold the map)</td><td>Not available</td></tr>
   <tr><td>Driving Mode that starts itself when you drive</td><td>Follow GPS, started by hand; map rotation on iPhone only</td></tr>
-  <tr><td>Exports shared to any app</td><td>iPhone: in the Files app under On My iPhone → Aus Phone Towers → Exports. Web: not available</td></tr>
+  <tr><td>Exports shared to any app</td><td>iPhone: the same, through the share sheet. Web: the file downloads in the browser</td></tr>
   <tr><td>Ads, ad-free purchases and donations</td><td>iPhone: the same. Web: no ads and no purchases</td></tr>
 </table>
 

@@ -1,44 +1,71 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../model/device_detail.dart';
 import '../model/overlay.dart';
 import '../model/site.dart';
+import '../restful/get_licenceHRP.dart' show CityDensity;
 import '../utils/polygon_container.dart';
-import 'let_type_helper.dart';
+import 'export_delivery_io.dart' if (dart.library.js_interop) 'export_delivery_web.dart';
+import 'export_feature.dart';
+import 'export_file.dart';
 import 'network_type_helper.dart';
 import 'polygon_helper.dart';
 import 'site_helper.dart';
 import 'telco_helper.dart';
 
-/// Exports the currently drawn signal-coverage polygons (and their on-tower
-/// metadata) to GeoJSON, CSV and KML files in the app documents folder.
+/// The file formats the menu can produce.
+enum ExportFormat {
+  geojson('.geojson', 'application/geo+json'),
+  csv('.csv', 'text/csv'),
+  kml('.kml', 'application/vnd.google-earth.kml+xml');
+
+  const ExportFormat(this.extension, this.mimeType);
+  final String extension;
+  final String mimeType;
+}
+
+/// One row of the Export Data menu.
+enum ExportChoice { towersGeoJson, towersCsv, coverageGeoJson, coverageKml }
+
+/// Exports the towers on the map, and the signal-coverage polygons currently drawn, as GeoJSON,
+/// CSV or KML, then hands the file to the share sheet (iOS/Android) or the browser (web).
 ///
-/// This mirrors the Android app's ExportKMLAsyncTask / ExportCSVAsyncTask /
-/// ExportKMZAsyncTask behaviour, where every polygon (each signal-strength
-/// ring) is exported along with the site and device properties.
+/// The tower contract (columns, names, order, units) is shared with the Android app; see
+/// export_feature.dart and AGENTS.md "Export Data".
 class ExportHelper {
-  /// Subfolder of the documents directory that exports are written into. iOS shows it under
-  /// Files → On My iPhone → Aus Phone Towers (UIFileSharingEnabled in Info.plist).
-  static const String kExportsFolderName = 'Exports';
+  static const String kExportsFolderName = kExportsFolder;
+  static const Duration kExportRetention = kExportsRetention;
 
-  /// Exports older than this are deleted before each new export is written.
-  static const Duration kExportRetention = Duration(days: 30);
+  static bool isExpired(DateTime modified, DateTime now) => isExportExpired(modified, now);
 
-  /// True when a file last modified at [modified] is past [kExportRetention] at [now].
-  static bool isExpired(DateTime modified, DateTime now) =>
-      now.difference(modified) > kExportRetention;
+  /// Which files a menu row writes: exactly the one format it names, never more.
+  static List<ExportFormat> formatsFor(ExportChoice choice) {
+    switch (choice) {
+      case ExportChoice.towersGeoJson:
+      case ExportChoice.coverageGeoJson:
+        return const <ExportFormat>[ExportFormat.geojson];
+      case ExportChoice.towersCsv:
+        return const <ExportFormat>[ExportFormat.csv];
+      case ExportChoice.coverageKml:
+        return const <ExportFormat>[ExportFormat.kml];
+    }
+  }
 
-  /// The message shown after a successful export: the file names only (never the sandbox path),
-  /// with the Files-app location on iPhone.
-  static String describeSavedFiles(List<String> paths, {required bool isIOS}) {
+  static bool isTowers(ExportChoice c) =>
+      c == ExportChoice.towersGeoJson || c == ExportChoice.towersCsv;
+
+  /// The message shown after a successful export: the file names only (never the sandbox path).
+  static String describeSavedFiles(List<String> paths,
+      {required bool isIOS, bool isWeb = false}) {
     final StringBuffer sb = StringBuffer();
-    if (isIOS) {
+    if (isWeb) {
+      sb.write('Downloaded:\n');
+    } else if (isIOS) {
       sb.write('Saved to Files → On My iPhone → Aus Phone Towers → Exports:\n');
     } else {
       sb.write("Saved to the app's $kExportsFolderName folder:\n");
@@ -49,66 +76,43 @@ class ExportHelper {
     return sb.toString().trimRight();
   }
 
-  /// Returns the Exports folder, creating it if needed and first deleting any export older than
-  /// [kExportRetention]. A file that cannot be inspected or removed is skipped, not fatal.
-  static Future<Directory> _exportsDirectory() async {
-    final Directory docs = await getApplicationDocumentsDirectory();
-    final Directory dir = Directory(p.join(docs.path, kExportsFolderName));
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
-    }
-    final DateTime now = DateTime.now();
-    await for (final FileSystemEntity entity in dir.list()) {
-      if (entity is! File) continue;
-      try {
-        if (isExpired(await entity.lastModified(), now)) {
-          await entity.delete();
-        }
-      } on FileSystemException {
-        // Locked or already gone: leave it for a later export.
-      }
-    }
-    return dir;
-  }
-  /// Exports all signal polygons currently on the map.
-  /// Returns the list of written file paths (GeoJSON, CSV, KML).
-  static Future<List<String>> exportSignalPolygons() async {
-    // Gather every (site, device, polygon) triple currently drawn on the map.
-    final List<_ExportEntry> entries = <_ExportEntry>[];
-    for (final MapEntry<Site, Map<DeviceDetails, Set<PolygonContainer>>> siteEntry
-        in PolygonHelper.sitesPolygons.entries) {
-      final Site site = siteEntry.key;
-      for (final MapEntry<DeviceDetails, Set<PolygonContainer>> deviceEntry
-          in siteEntry.value.entries) {
-        final DeviceDetails device = deviceEntry.key;
-        for (final PolygonContainer container in deviceEntry.value) {
-          entries.add(_ExportEntry(site: site, device: device, polygon: container));
-        }
-      }
-    }
+  /// Builds and delivers the export for [choice]. Returns the file names, or an empty list when
+  /// there is nothing to export. Call on the UI thread (it reads map objects).
+  static Future<List<String>> export(ExportChoice choice, {Rect? shareOrigin}) async {
+    final List<ExportFeature> features =
+        isTowers(choice) ? collectTowerFeatures() : collectCoverageFeatures();
+    if (features.isEmpty) return <String>[];
 
-    if (entries.isEmpty) return <String>[];
-
-    final Directory dir = await _exportsDirectory();
     final String stamp = _timeStamp();
-    final List<String> paths = <String>[];
+    final String label = isTowers(choice) ? 'Towers' : 'Coverage';
+    final List<ExportFile> files = <ExportFile>[];
+    for (final ExportFormat format in formatsFor(choice)) {
+      files.add(ExportFile(
+        name: 'AusPhoneTowers_${label}_$stamp${format.extension}',
+        text: _render(format, features, isTowers(choice)),
+        mimeType: format.mimeType,
+      ));
+    }
+    await deliverExportFiles(files, shareOrigin: shareOrigin);
+    return files.map((ExportFile f) => f.name).toList();
+  }
 
-    // GeoJSON
-    final File geoFile = File(p.join(dir.path, 'signal_polygons_$stamp.geojson'));
-    await geoFile.writeAsString(_toGeoJson(entries), flush: true);
-    paths.add(geoFile.path);
+  static String _render(ExportFormat format, List<ExportFeature> features, bool towers) {
+    switch (format) {
+      case ExportFormat.geojson:
+        return GeoJsonWriter.write(features,
+            generator: 'Aus Phone Towers', generated: _isoNow());
+      case ExportFormat.csv:
+        return CsvWriter.write(TowerExport.csvColumns, features);
+      case ExportFormat.kml:
+        return _toKml(features);
+    }
+  }
 
-    // CSV
-    final File csvFile = File(p.join(dir.path, 'signal_polygons_$stamp.csv'));
-    await csvFile.writeAsString(_toCsv(entries), flush: true);
-    paths.add(csvFile.path);
-
-    // KML
-    final File kmlFile = File(p.join(dir.path, 'signal_polygons_$stamp.kml'));
-    await kmlFile.writeAsString(_toKml(entries), flush: true);
-    paths.add(kmlFile.path);
-
-    return paths;
+  static String _isoNow() {
+    final DateTime n = DateTime.now().toUtc();
+    return '${n.year}-${_pad(n.month)}-${_pad(n.day)}T${_pad(n.hour)}:${_pad(n.minute)}:'
+        '${_pad(n.second)}Z';
   }
 
   static String _timeStamp() {
@@ -117,245 +121,153 @@ class ExportHelper {
         '_${_pad(now.hour)}${_pad(now.minute)}${_pad(now.second)}';
   }
 
-  /// Exports every tower currently on the map to a towers GeoJSON file (one point per tower
-  /// carrying its carrier, generation, frequency and device attributes) and a towers CSV file.
-  /// Mirrors the Android app's Export Towers (GeoJSON) / Export Towers (CSV) menu items.
-  /// Returns the list of written file paths (empty if there are no towers on the map).
-  static Future<List<String>> exportTowers() async {
-    // Collect every unique site currently drawn on the map, with its devices.
-    final Map<Site, List<DeviceDetails>> siteDevices = <Site, List<DeviceDetails>>{};
-    for (final MapOverlay overlay in SiteHelper.globalListMapOverlay) {
-      final Site? site = overlay.site;
-      if (site == null) continue;
-      siteDevices.putIfAbsent(site, () => site.getDeviceDetailsMobileBands().values
-          .map((MapEntry<DeviceDetails, bool> e) => e.key)
-          .toList());
-    }
-
-    if (siteDevices.isEmpty) return <String>[];
-
-    final Directory dir = await _exportsDirectory();
-    final String stamp = _timeStamp();
-    final List<String> paths = <String>[];
-
-    // GeoJSON
-    final File geoFile = File(p.join(dir.path, 'AusPhoneTowers_Towers_$stamp.geojson'));
-    await geoFile.writeAsString(_towersToGeoJson(siteDevices), flush: true);
-    paths.add(geoFile.path);
-
-    // CSV
-    final File csvFile = File(p.join(dir.path, 'AusPhoneTowers_Towers_$stamp.csv'));
-    await csvFile.writeAsString(_towersToCsv(siteDevices), flush: true);
-    paths.add(csvFile.path);
-
-    return paths;
-  }
-
-  static Map<String, dynamic> _towerProperties(Site site, DeviceDetails device) {
-    return <String, dynamic>{
-      'name': site.getNameFormatted(),
-      'operatorName': TelcoHelper.getName(site.getTelco()),
-      'siteId': site.siteId,
-      'networkType': NetworkTypeHelper.resolveNetworkToName(device.getNetworkType()),
-      'lteType': LteTypeHelper.getFirstTwoChars(device.getLteType()),
-      'frequency': (device.frequency ?? 0) / 1000 / 1000,
-      'bandwidth': (device.bandwidth ?? 0) / 1000 / 1000,
-      'emission': device.emission ?? '',
-      'eirp': device.eirp,
-      'azimuth': device.azimuth,
-      'towerHeight': device.getTowerHeight(),
-      'latitude': site.getLatLng().latitude,
-      'longitude': site.getLatLng().longitude,
-    };
-  }
-
-  static String _towersToGeoJson(Map<Site, List<DeviceDetails>> siteDevices) {
-    final List<Map<String, dynamic>> features = <Map<String, dynamic>>[];
-    for (final MapEntry<Site, List<DeviceDetails>> entry in siteDevices.entries) {
-      final Site site = entry.key;
-      for (final DeviceDetails device in entry.value) {
-        features.add(<String, dynamic>{
-          'type': 'Feature',
-          'geometry': <String, dynamic>{
-            'type': 'Point',
-            'coordinates': <double>[
-              site.getLatLng().longitude,
-              site.getLatLng().latitude,
-            ],
-          },
-          'properties': _towerProperties(site, device),
-        });
-      }
-    }
-    return JsonEncoder.withIndent('  ').convert(<String, dynamic>{
-      'type': 'FeatureCollection',
-      'features': features,
-    });
-  }
-
-  static String _towersToCsv(Map<Site, List<DeviceDetails>> siteDevices) {
-    final StringBuffer sb = StringBuffer();
-    sb.writeln('name,operatorName,siteId,networkType,lteType,frequency,'
-        'bandwidth,emission,eirp,azimuth,towerHeight,latitude,longitude');
-    for (final MapEntry<Site, List<DeviceDetails>> entry in siteDevices.entries) {
-      final Site site = entry.key;
-      for (final DeviceDetails device in entry.value) {
-        final Map<String, dynamic> props = _towerProperties(site, device);
-        final List<String> values = <String>[
-          '"${(props['name'] as String).replaceAll('"', '""')}"',
-          '"${props['operatorName']}"',
-          '${props['siteId']}',
-          '"${props['networkType']}"',
-          '"${props['lteType']}"',
-          '${props['frequency']}',
-          '${props['bandwidth']}',
-          '"${props['emission']}"',
-          '${props['eirp']}',
-          '${props['azimuth']}',
-          '${props['towerHeight']}',
-          '${props['latitude']}',
-          '${props['longitude']}',
-        ];
-        sb.writeln(values.join(','));
-      }
-    }
-    return sb.toString();
-  }
-
   static String _pad(int value) => value.toString().padLeft(2, '0');
 
-  static String _coords(List<LatLng> points) {
-    final StringBuffer sb = StringBuffer();
-    for (int i = 0; i < points.length; i++) {
-      if (i > 0) sb.write(' ');
-      sb.write('${points[i].longitude.toStringAsFixed(6)},'
-          '${points[i].latitude.toStringAsFixed(6)},0');
-    }
-    return sb.toString();
+  static String _hex(Telco telco) {
+    final int argb = TelcoHelper.getColor(telco, 255).toARGB32();
+    return '#${(argb & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}';
   }
 
-  static String _coordLine(List<LatLng> points) {
-    // GeoJSON / KML ring: close the ring by repeating the first point.
-    final StringBuffer sb = StringBuffer();
-    for (int i = 0; i < points.length; i++) {
-      if (i > 0) sb.write(' ');
-      sb.write('${points[i].longitude.toStringAsFixed(6)} '
-          '${points[i].latitude.toStringAsFixed(6)} 0');
-    }
-    if (points.isNotEmpty) {
-      sb.write(' ${points[0].longitude.toStringAsFixed(6)} '
-          '${points[0].latitude.toStringAsFixed(6)} 0');
-    }
-    return sb.toString();
-  }
+  static String? _density(CityDensity? d) => TowerExport.cityDensityValue(d?.name);
 
-  static Map<String, dynamic> _properties(_ExportEntry e) {
-    final Site site = e.site;
-    final DeviceDetails device = e.device;
-    final Polygon po = e.polygon.polygon;
-    return <String, dynamic>{
-      'name': site.getNameFormatted(),
-      'operatorName': TelcoHelper.getName(site.getTelco()),
-      'siteId': site.siteId,
-      'networkType': NetworkTypeHelper.resolveNetworkToName(device.getNetworkType()),
-      'lteType': LteTypeHelper.getFirstTwoChars(device.getLteType()),
-      'frequency': (device.frequency ?? 0) / 1000 / 1000,
-      'bandwidth': (device.bandwidth ?? 0) / 1000 / 1000,
-      'emission': device.emission ?? '',
-      'eirp': device.eirp,
-      'azimuth': device.azimuth,
-      'towerHeight': device.getTowerHeight(),
-      'signalStrengthOrder': e.polygon.order,
-      'colorARGB': po.fillColor.toARGB32(),
-      'strokeWidth': po.strokeWidth,
-      'fill': (po.fillColor.toARGB32() >> 24) > 0,
-      'stroke': (po.strokeColor.toARGB32() >> 24) > 0,
-    };
-  }
-
-  static String _toGeoJson(List<_ExportEntry> entries) {
-    final List<Map<String, dynamic>> features = <Map<String, dynamic>>[];
-    for (final _ExportEntry e in entries) {
-      final List<LatLng> pts = e.polygon.polygon.points;
-      final List<List<double>> ring = pts
-          .map((LatLng p) => <double>[p.longitude, p.latitude])
-          .toList();
-      if (ring.isNotEmpty) {
-        ring.add(<double>[ring[0][0], ring[0][1]]); // close ring
-      }
-      features.add(<String, dynamic>{
-        'type': 'Feature',
-        'geometry': <String, dynamic>{
-          'type': 'Polygon',
-          'coordinates': <List<List<double>>>[ring],
-        },
-        'properties': _properties(e),
+  /// One feature per site whose marker is visible (so the filters are respected), built from the
+  /// transmitters that pass the filters. Sorted by telco then site id so repeat exports compare.
+  static List<ExportFeature> collectTowerFeatures() {
+    final Set<Site> sites = <Site>{};
+    for (final MapOverlay overlay in SiteHelper.globalListMapOverlay) {
+      final Site? site = overlay.site;
+      if (site == null || overlay.marker?.visible != true) continue;
+      if (site.latitude == null || site.longitude == null) continue;
+      sites.add(site);
+    }
+    final List<Site> sorted = sites.toList()
+      ..sort((Site a, Site b) {
+        final int t = TelcoHelper.getName(a.getTelco()).compareTo(TelcoHelper.getName(b.getTelco()));
+        return t != 0 ? t : (a.siteId ?? '').compareTo(b.siteId ?? '');
       });
+    return sorted.map(buildTowerFeature).toList();
+  }
+
+  static ExportFeature buildTowerFeature(Site site) {
+    final List<DeviceDetails> all = site.getDeviceDetailsMobile();
+    List<DeviceDetails> visible = all.where(site.isDeviceVisible).toList();
+    // A visible marker with no visible transmitters is stale; fall back to everything known.
+    if (visible.isEmpty) visible = List<DeviceDetails>.of(all);
+    return TowerExport.buildFeature(
+      siteId: site.siteId,
+      name: site.name,
+      telco: TelcoHelper.getName(site.getTelco()),
+      latitude: site.latitude!,
+      longitude: site.longitude!,
+      acmaElevationText: site.elevation,
+      demGroundM: site.terrainGroundM,
+      visibleDevices: visible.map((DeviceDetails d) {
+        final NetworkType nt = d.getNetworkType();
+        return TowerDeviceInput(
+          heightM: d.height,
+          technology: NetworkTypeHelper.resolveNetworkToName(nt),
+          technologyOrder: nt.index,
+          frequencyMhz: d.frequency == null ? null : d.frequency! ~/ 1000 ~/ 1000,
+        );
+      }).toList(),
+      allDeviceHeights: all.map((DeviceDetails d) => d.height),
+      state: site.state,
+      postcode: site.postcode,
+      cityDensity: _density(site.getCityDensity()),
+      active: site.active,
+      markerColour: _hex(site.getTelco()),
+    );
+  }
+
+  /// Every ring currently drawn (filtered-out polygons are removed from the map, not hidden).
+  static List<ExportFeature> collectCoverageFeatures() {
+    final List<ExportFeature> features = <ExportFeature>[];
+    final List<Site> sites = PolygonHelper.sitesPolygons.keys.toList()
+      ..sort((Site a, Site b) {
+        final int t = TelcoHelper.getName(a.getTelco()).compareTo(TelcoHelper.getName(b.getTelco()));
+        return t != 0 ? t : (a.siteId ?? '').compareTo(b.siteId ?? '');
+      });
+    for (final Site site in sites) {
+      final Map<DeviceDetails, Set<PolygonContainer>>? devices = PolygonHelper.sitesPolygons[site];
+      if (devices == null || site.latitude == null || site.longitude == null) continue;
+      for (final MapEntry<DeviceDetails, Set<PolygonContainer>> e in devices.entries) {
+        final List<PolygonContainer> rings = e.value.toList()
+          ..sort((PolygonContainer a, PolygonContainer b) => a.order.compareTo(b.order));
+        for (final PolygonContainer c in rings) {
+          final Polygon po = c.polygon;
+          if (!po.visible || po.points.length < 3) continue;
+          features.add(_coverageFeature(site, e.key, c.order, po));
+        }
+      }
     }
-    return JsonEncoder.withIndent('  ').convert(<String, dynamic>{
-      'type': 'FeatureCollection',
-      'features': features,
-    });
+    return features;
   }
 
-  static String _csvHeader() {
-    return 'name,operatorName,siteId,networkType,lteType,frequency,'
-        'bandwidth,emission,eirp,azimuth,towerHeight,signalStrengthOrder,'
-        'colorARGB,strokeWidth,fill,stroke,coordinates';
+  static ExportFeature _coverageFeature(Site site, DeviceDetails d, int order, Polygon po) {
+    final NetworkType nt = d.getNetworkType();
+    return CoverageExport.buildFeature(CoverageInput(
+      siteId: site.siteId,
+      siteName: site.name,
+      telco: TelcoHelper.getName(site.getTelco()),
+      latitude: site.latitude!,
+      longitude: site.longitude!,
+      networkType: NetworkTypeHelper.resolveNetworkToName(nt),
+      networkTechnology: nt.name,
+      isRsrp: NetworkTypeHelper.isRsrp(nt),
+      signalBars: NetworkTypeHelper.getNetworkBars(nt),
+      ringOrder: order,
+      frequencyMhz: (d.frequency ?? 0) ~/ 1000 ~/ 1000,
+      bandwidthMhz: (d.bandwidth ?? 0) / 1000000.0,
+      emission: d.emission,
+      eirpW: d.eirp,
+      azimuthDeg: d.azimuth,
+      heightM: d.height,
+      antennaId: d.antennaId,
+      deviceRegistrationIdentifier: d.deviceRegistrationIdentifier,
+      radiationModel: _density(site.getCityDensity()),
+      terrainAware: PolygonHelper.calculateTerrain,
+      colour: _hex(site.getTelco()),
+      ring: po.points.map((LatLng l) => <double>[l.latitude, l.longitude]).toList(),
+    ));
   }
 
-  static String _toCsv(List<_ExportEntry> entries) {
+  static String _coordLine(List<List<double>> ring) {
     final StringBuffer sb = StringBuffer();
-    sb.writeln(_csvHeader());
-    for (final _ExportEntry e in entries) {
-      final Map<String, dynamic> props = _properties(e);
-      final List<String> values = <String>[
-        '"${(props['name'] as String).replaceAll('"', '""')}"',
-        '"${props['operatorName']}"',
-        '${props['siteId']}',
-        '"${props['networkType']}"',
-        '"${props['lteType']}"',
-        '${props['frequency']}',
-        '${props['bandwidth']}',
-        '"${props['emission']}"',
-        '${props['eirp']}',
-        '${props['azimuth']}',
-        '${props['towerHeight']}',
-        '${props['signalStrengthOrder']}',
-        '${props['colorARGB']}',
-        '${props['strokeWidth']}',
-        '${props['fill']}',
-        '${props['stroke']}',
-        '"${_coords(e.polygon.polygon.points)}"',
-      ];
-      sb.writeln(values.join(','));
+    for (final List<double> pt in ring) {
+      if (sb.isNotEmpty) sb.write(' ');
+      sb.write('${ExportNumbers.formatNumber(pt[1])},${ExportNumbers.formatNumber(pt[0])},0');
+    }
+    if (ring.isNotEmpty) {
+      sb.write(' ${ExportNumbers.formatNumber(ring[0][1])},'
+          '${ExportNumbers.formatNumber(ring[0][0])},0');
     }
     return sb.toString();
   }
 
-  static String _toKml(List<_ExportEntry> entries) {
+  static String _toKml(List<ExportFeature> features) {
     final StringBuffer sb = StringBuffer();
     sb.writeln('<?xml version="1.0" encoding="UTF-8"?>');
     sb.writeln('<kml xmlns="http://www.opengis.net/kml/2.2">');
     sb.writeln('  <Document>');
     sb.writeln('    <name>Aus Phone Towers Signal Polygons</name>');
-    for (final _ExportEntry e in entries) {
-      final Map<String, dynamic> props = _properties(e);
+    for (final ExportFeature f in features) {
       sb.writeln('    <Placemark>');
-      sb.writeln('      <name>${_xml(props['operatorName'])} '
-          '${_xml(props['networkType'])} ${props['frequency']} MHz</name>');
+      sb.writeln('      <name>${_xml(f.get('title'))}</name>');
+      sb.writeln('      <description>${_xml(f.get('description'))}</description>');
       sb.writeln('      <ExtendedData>');
-      for (final MapEntry<String, dynamic> kv in props.entries) {
-        if (kv.key == 'coordinates') continue;
-        sb.writeln('        <Data name="${kv.key}">'
-            '<value>${_xml(kv.value)}</value></Data>');
+      for (final MapEntry<String, Object?> kv in f.properties.entries) {
+        if (kv.key == 'title' || kv.key == 'description') continue;
+        final Object? v = kv.value;
+        final String text = v == null
+            ? ''
+            : (v is num ? ExportNumbers.formatNumber(v) : v.toString());
+        sb.writeln('        <Data name="${_xml(kv.key)}"><value>${_xml(text)}</value></Data>');
       }
       sb.writeln('      </ExtendedData>');
       sb.writeln('      <Polygon>');
       sb.writeln('        <outerBoundaryIs>');
       sb.writeln('          <LinearRing>');
-      sb.writeln('            <coordinates>'
-          '${_coordLine(e.polygon.polygon.points)}</coordinates>');
+      sb.writeln('            <coordinates>${_coordLine(f.coordinates)}</coordinates>');
       sb.writeln('          </LinearRing>');
       sb.writeln('        </outerBoundaryIs>');
       sb.writeln('      </Polygon>');
@@ -366,16 +278,6 @@ class ExportHelper {
     return sb.toString();
   }
 
-  static String _xml(dynamic value) {
-    final HtmlEscape escape = HtmlEscape(HtmlEscapeMode.attribute);
-    return escape.convert(value.toString());
-  }
-}
-
-class _ExportEntry {
-  _ExportEntry({required this.site, required this.device, required this.polygon});
-
-  final Site site;
-  final DeviceDetails device;
-  final PolygonContainer polygon;
+  static String _xml(Object? value) =>
+      const HtmlEscape(HtmlEscapeMode.attribute).convert((value ?? '').toString());
 }

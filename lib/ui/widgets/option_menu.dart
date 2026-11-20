@@ -188,39 +188,55 @@ class _OptionsMenuState extends State<OptionsMenu> {
   bool _hasSubmenu(OptionMenuItem item) =>
       item == OptionMenuItem.exportData || item == OptionMenuItem.settings;
 
-  // ----- Export Data (mirrors Android: Export Towers GeoJSON/CSV + Export Coverage GeoJSON) -----
+  // ----- Export Data (mirrors Android: Export Towers GeoJSON/CSV + Export Coverage GeoJSON;
+  // Coverage KML is kept as its own row because iPhone users already have it). Each row writes
+  // only the format it names. -----
   Future showExportMenu() async {
+    final Map<String, ExportChoice> choices = <String, ExportChoice>{
+      Strings.export_towers_geojson: ExportChoice.towersGeoJson,
+      Strings.export_towers_csv: ExportChoice.towersCsv,
+      Strings.export_coverage_geojson: ExportChoice.coverageGeoJson,
+      Strings.export_coverage_kml: ExportChoice.coverageKml,
+    };
     final List<SingleRowItem> items = <SingleRowItem>[
       SingleRowItem(isTitle: true, title: Strings.export_data, isEnabled: false),
-      SingleRowItem(title: Strings.export_towers_geojson, isEnabled: true),
-      SingleRowItem(title: Strings.export_towers_csv, isEnabled: true),
-      SingleRowItem(title: Strings.export_coverage_geojson, isEnabled: true),
+      for (final String title in choices.keys) SingleRowItem(title: title, isEnabled: true),
     ];
     final SingleRowItem? chosen = await showSingleRowOptionMenu(items, kExportMenu);
     if (chosen == null) return;
-    if (chosen.title == Strings.export_towers_geojson ||
-        chosen.title == Strings.export_towers_csv) {
-      widget.showSnackBar(message: 'Exporting towers...');
-      ExportHelper.exportTowers().then((List<String> paths) {
-        _reportExport(paths, 'towers');
-      });
-    } else if (chosen.title == Strings.export_coverage_geojson) {
-      widget.showSnackBar(message: 'Exporting coverage polygons...');
-      ExportHelper.exportSignalPolygons().then((List<String> paths) {
-        _reportExport(paths, 'coverage polygons');
-      });
+    final ExportChoice? choice = choices[chosen.title];
+    if (choice == null) return;
+    final String what = ExportHelper.isTowers(choice) ? 'towers' : 'coverage polygons';
+    widget.showSnackBar(message: 'Exporting $what...');
+    try {
+      final List<String> names = await ExportHelper.export(choice, shareOrigin: _shareOrigin());
+      _reportExport(names, what);
+    } catch (e, st) {
+      logger.e('Export failed', error: e, stackTrace: st);
+      widget.showSnackBar(message: 'Could not export the $what.');
     }
   }
 
-  void _reportExport(List<String> paths, String what) {
-    if (paths.isEmpty) {
+  /// Anchor for the iPad share popover (it needs a non-empty rectangle).
+  Rect? _shareOrigin() {
+    if (!mounted) return null;
+    final RenderObject? box = context.findRenderObject();
+    if (box is RenderBox && box.hasSize && !box.size.isEmpty) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+    final Size size = MediaQuery.sizeOf(context);
+    return Rect.fromLTWH(size.width / 2, size.height / 2, 1, 1);
+  }
+
+  void _reportExport(List<String> names, String what) {
+    if (names.isEmpty) {
       widget.showSnackBar(
           message:
               'There are no $what on the map to export. Load some towers${what == "coverage polygons" ? " and tap one to draw its coverage" : ""} first...');
     } else {
       widget.showSnackBar(
-          message: ExportHelper.describeSavedFiles(paths,
-              isIOS: !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS),
+          message: ExportHelper.describeSavedFiles(names,
+              isIOS: !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS, isWeb: kIsWeb),
           duration: const Duration(seconds: 10));
     }
   }

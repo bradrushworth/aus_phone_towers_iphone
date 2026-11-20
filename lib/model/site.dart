@@ -183,47 +183,32 @@ class Site {
       return false;
     }
 
-    deviceLoop:
     for (DeviceDetails d in getDeviceDetailsMobile()) {
-      //Log.i("Site", "shouldBeVisible(): checking site=" + this + " d=" + d);
-
-      // Check we want to see this network type (e.g. 2G, 3G)
-      if (SiteHelper.hideDensity.contains(d.getRadiationModel())) {
-        continue deviceLoop;
+      if (isDeviceVisible(d)) {
+        // This site has at least one transmitter we are interested in
+        return true;
       }
-
-      // Check we want to see this network type (e.g. 2G, 3G)
-      if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) {
-        continue deviceLoop;
-      }
-
-      // Check we want to see this multiplex type
-      LteType lteType = d.getLteType();
-      if (lteType == LteType.NOT_LTE && !PolygonHelper.displayNotLteMultiplex) {
-        continue deviceLoop;
-      }
-      if (lteType == LteType.TD_LTE && !PolygonHelper.displayTdMultiplex) {
-        continue deviceLoop;
-      }
-      if (lteType == LteType.FD_LTE && !PolygonHelper.displayFdMultiplex) {
-        continue deviceLoop;
-      }
-
-      // Check we want to see this frequency band
-      int frequency = d.frequency! / 1000 ~/ 1000;
-      for (List<int> range in SiteHelper.hideFrequency) {
-        if (frequency >= range[0] && frequency <= range[1]) {
-          continue deviceLoop;
-        }
-      }
-
-      // This site has at least one transmitter we are interested in
-      return true;
     }
 
     // This site has zero transmitters we are interested in
     //Log.i("Site", "shouldBeVisible(): false for site=" + this);
     return false;
+  }
+
+  /// True when this transmitter passes the current filters (density, network type, multiplex
+  /// and frequency band). Telco hiding is a site-level check in [shouldBeVisible].
+  bool isDeviceVisible(DeviceDetails d) {
+    if (SiteHelper.hideDensity.contains(d.getRadiationModel())) return false;
+    if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) return false;
+    LteType lteType = d.getLteType();
+    if (lteType == LteType.NOT_LTE && !PolygonHelper.displayNotLteMultiplex) return false;
+    if (lteType == LteType.TD_LTE && !PolygonHelper.displayTdMultiplex) return false;
+    if (lteType == LteType.FD_LTE && !PolygonHelper.displayFdMultiplex) return false;
+    int frequency = d.frequency! / 1000 ~/ 1000;
+    for (List<int> range in SiteHelper.hideFrequency) {
+      if (frequency >= range[0] && frequency <= range[1]) return false;
+    }
+    return true;
   }
 
   Telco getTelco() {
