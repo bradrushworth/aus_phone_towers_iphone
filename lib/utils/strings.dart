@@ -1,8 +1,9 @@
 class Strings {
-  /// Address of the app's published privacy policy. Empty on purpose until the address is
-  /// confirmed against the store listings (bead aptios-rj1): while it is empty the Settings
-  /// "Privacy policy" row is hidden, so the app never links to an invented page.
-  static const String privacyPolicyUrl = '';
+  /// Address of the app's published privacy policy: the same page the App Store listing and the
+  /// Android app's Play listing link to (checked 2026-11-20, bead aptios-rj1; served over https).
+  /// If it is ever emptied, the Settings "Privacy policy" row hides itself.
+  static const String privacyPolicyUrl =
+      'https://www.bitbot.com.au/services/software-development/portfolio/aus-phone-towers-privacy-policy/';
   static String privacyPolicy = 'Privacy policy';
   static String supportUnavailableOnWeb =
       'Purchases and donations are made in the iPhone or Android app. The web edition has no ads and nothing to buy.';

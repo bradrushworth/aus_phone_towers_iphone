@@ -20,8 +20,8 @@ features and bugs are frequently fixed in both.
 - **The website no longer offers Support the App.** Purchases are made in the iPhone or Android
   app; the row is gone from the web menu, and the page says so if it is reached anyway (bead
   aptios-vfn).
-- **Privacy policy row.** Settings, Help, Privacy policy opens the policy once its address is set
-  in `Strings.privacyPolicyUrl`; it is hidden until then (bead aptios-rj1).
+- **Privacy policy in the app.** Settings, Help, Privacy policy opens the same policy page the App
+  Store and Play listings link to, and the user guide prints its address (bead aptios-rj1).
 
 ## [1.16.6+170] — 2026-11-14
 

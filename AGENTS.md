@@ -361,8 +361,10 @@ default) and generation-rank tie-breaking (`generationRank`, newest genuine capa
   fresh install may still see the prompt once.
 - `Info.plist` declares `NSLocationWhenInUseUsageDescription` only: no background location mode,
   so no "Always" strings.
-- **Privacy policy row**: `Strings.privacyPolicyUrl` (empty = row hidden). Set it to the address on
-  the store listings; then print it in the user guide's Help section (plain text, no link).
+- **Privacy policy row**: `Strings.privacyPolicyUrl` (empty = row hidden) holds the address the App
+  Store listing and the Android app's Play listing link to (checked 2026-11-20). The user guide's
+  Help row prints the same address as plain text (the guide may not link out). Change all three
+  together if the policy moves.
 - **Web**: the overflow menu omits Export Data and Support the App (`OptionsMenu.visibleItems`);
   `SupportPromptScreen` shows only a sentence on web. The store is never initialised on web.
 
