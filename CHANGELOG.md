@@ -13,6 +13,12 @@ features and bugs are frequently fixed in both.
 ### Added
 - **App privacy manifest** (`ios/Runner/PrivacyInfo.xcprivacy`), declaring tracking, the Google
   ad domains and the collected data types (bead aptios-bks).
+- Ground heights are fetched when you export towers, for visible towers the map has not loaded
+  them for (up to 20 seconds; a tower that does not answer exports as `unverified`).
+- Three tower export columns, also added to the Android app: `ground_elevation_dem_m` (terrain
+  model ground height), `elevation_check` (`ok`, `differs` over 30 m, `unverified`) and
+  `antenna_height_all_max_m` (tallest antenna ignoring filters).
+- Dependency: `share_plus`.
 
 ### Changed
 - **iPhone asks for ad tracking once.** The request used to be made twice, before and after the
@@ -36,6 +42,21 @@ features and bugs are frequently fixed in both.
   force-casting the window's root view controller, which crashes under the UIScene life cycle.
   It is now registered when Flutter's implicit engine starts, and the app adopts the UIScene
   life cycle (bead aptios-is9). Not yet built or run on a device.
+- **Export Data now works on iPhone and the web.** Exported files used to land in a folder
+  the phone would not show, and the web edition failed after saying "Exporting...". The app now
+  opens the share sheet (iPhone, Android) or downloads the file in the browser (web) (beads
+  aptios-8x8, aptios-bvg).
+- **Each Export Data row writes only the format it names.** Export Towers (GeoJSON) and (CSV)
+  used to write both files, and Export Coverage wrote three. Export Coverage (KML) is its own row.
+- **The tower export carries the fields search and rescue need, under the Android names.** One
+  entry per visible tower with ground elevation, real antenna heights (a 4 m antenna is no longer
+  exported as 10 m, and an unknown height is empty), antenna top elevation, technologies,
+  frequencies, state, postcode, city density and active, in the same columns, order and units as
+  the Android app. Towers hidden by the filters are no longer exported. Empty values are empty
+  cells, not the text `null`. Coverage properties use the Android names too (bead aptios-1wc).
+- **The site panel shows the real antenna height** as a minimum to maximum range, instead of an
+  average that treated every antenna under 10 m as 10 m. The row is left out when no height is
+  known.
 
 ## [1.16.6+170] — 2026-11-14
 

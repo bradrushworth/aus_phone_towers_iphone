@@ -102,6 +102,7 @@ class Strings {
   static String export_towers_geojson = 'Export Towers (GeoJSON)';
   static String export_towers_csv = 'Export Towers (CSV)';
   static String export_coverage_geojson = 'Export Coverage (GeoJSON)';
+  static String export_coverage_kml = 'Export Coverage (KML)';
 
   static String problems_menu = 'Help & Feedback';
 

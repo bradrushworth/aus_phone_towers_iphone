@@ -29,10 +29,10 @@ void main() {
       expect(names.contains('subscribe'), isFalse);
     });
 
-    test('web offers neither Export Data nor Support the App', () {
+    test('web offers Export Data (a browser download) but not Support the App', () {
       final web = OptionsMenu.visibleItems(isWeb: true);
       expect(web, isNot(contains(OptionMenuItem.supportTheApp)));
-      expect(web, isNot(contains(OptionMenuItem.exportData)));
+      expect(web, contains(OptionMenuItem.exportData));
       expect(OptionsMenu.visibleItems(isWeb: false), OptionMenuItem.values);
     });
   });

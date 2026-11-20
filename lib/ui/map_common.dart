@@ -17,6 +17,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as onlyPath;
+import 'package:phonetowers/helpers/export_feature.dart';
 import 'package:phonetowers/helpers/carrier_tint.dart';
 import 'package:phonetowers/helpers/ads_helper.dart';
 import 'package:phonetowers/helpers/analytics_helper.dart';
@@ -1819,10 +1820,12 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                         'Latitude:': '${site.latitude}',
                         'Longitude:': '${site.longitude}',
                         if (site.elevation!.isNotEmpty) 'Elevation:': '${site.elevation} metres',
-                        if (getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile()) > 0)
-                          'Tower Height:':
-                              '${getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile())} metres',
-                        if (getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile()) > 0)
+                        if (TowerExport.describeHeightRange(
+                                site.getDeviceDetailsMobile().map((DeviceDetails d) => d.height)) !=
+                            null)
+                          'Antenna height:': TowerExport.describeHeightRange(
+                              site.getDeviceDetailsMobile().map((DeviceDetails d) => d.height))!,
+                        if (site.getDeviceDetailsMobile().isNotEmpty)
                           'City Density:': '${Site.getCityDensityName(site.getCityDensity())}',
                       },
                     ),
@@ -2074,15 +2077,6 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         );
       },
     );
-  }
-
-  int getTowerHeightFromDeviceDetails(List<DeviceDetails> deviceDetailsMobile) {
-    int height = 0;
-    if (deviceDetailsMobile.length == 0) return height;
-    for (DeviceDetails d in deviceDetailsMobile) {
-      height += d.getTowerHeight();
-    }
-    return height = height ~/ deviceDetailsMobile.length;
   }
 
   List<TableRow> getMoreTableRows(Site site) {
