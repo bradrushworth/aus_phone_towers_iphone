@@ -8,6 +8,22 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Fixed
+- **Report a Problem attaches the screenshot.** The iPhone email composer opened with the text
+  "Please attach your screenshot" and never attached it, and without a Mail account the user hit
+  a dead end. The screenshot is now attached; with no Mail account a share sheet opens with the
+  image and the text instead (bead aptios-47s).
+- **Launch no longer depends on the window existing.** The screenshot channel was set up by
+  force-casting the window's root view controller, which crashes under the UIScene life cycle.
+  It is now registered when Flutter's implicit engine starts, and the app adopts the UIScene
+  life cycle (bead aptios-is9). Not yet built or run on a device.
+
+### Added
+- **App privacy manifest** (`ios/Runner/PrivacyInfo.xcprivacy`), declaring tracking, the Google
+  ad domains and the collected data types (bead aptios-bks).
+
 ## [1.16.6+170] — 2026-11-14
 
 ### Fixed

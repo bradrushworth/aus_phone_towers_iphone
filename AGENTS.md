@@ -549,6 +549,28 @@ why), and leave pins, polygons and the signal ramp alone: they carry meaning.
 - After a run, revert the two files the tool touches that are not icon assets:
   `ios/Runner.xcodeproj/project.pbxproj` and `macos/Flutter/GeneratedPluginRegistrant.swift`.
 
+## iOS native code (ios/Runner)
+- **UIScene life cycle.** `Info.plist` carries `UIApplicationSceneManifest` (scene delegate
+  `FlutterSceneDelegate`, storyboard `Main`), and `AppDelegate` conforms to
+  `FlutterImplicitEngineDelegate`. Plugins are registered and the screenshot method channel is
+  created in `didInitializeImplicitFlutterEngine`, with `engineBridge.applicationRegistrar.messenger()`.
+  Never read `window` or `rootViewController` in `didFinishLaunchingWithOptions`: under scenes the
+  window does not exist yet and `UIApplicationDelegate.window` stays nil. Look up the presenting
+  view controller when needed (`topViewController()`: connected `UIWindowScene`, key window, topmost
+  presented controller). Guide: https://docs.flutter.dev/to/uiscene-migration.
+- **Report a Problem** (`au.com.bitbot.phonetowers.flutter.provider/screenshot`, `takeScreenshot`,
+  arguments `path` = file name, `subject`). Swift looks for the PNG in `NSTemporaryDirectory()` and
+  the Caches directory (path_provider's temporary directory on iOS). With Mail set up it attaches
+  the PNG to the composer; otherwise it shows a `UIActivityViewController` (popover anchored for iPad).
+- **Privacy manifest** `ios/Runner/PrivacyInfo.xcprivacy` is a Runner resource. Its collected data
+  types must match the App Privacy answers in App Store Connect; change both together. It was
+  written from the public App Store page, which differs from what was first assumed (device ID is
+  not tracking there; usage data is). The three tracking domains are Google's ad-serving domains
+  (Google publishes no AdMob-specific list; `NSPrivacyTracking` true needs at least one). Do not add
+  `google.com`: with tracking denied iOS blocks listed domains, which would break Maps. Required-reason
+  APIs: the app's own Swift code uses none; plugins ship their own manifests.
+- None of this has been compiled: it was written without a Mac. Check the first Codemagic build.
+
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
 project, you MUST also update the relevant documentation before considering the task complete:
