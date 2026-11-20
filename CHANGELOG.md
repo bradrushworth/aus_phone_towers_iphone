@@ -10,6 +10,23 @@ features and bugs are frequently fixed in both.
 
 ## [Unreleased]
 
+### Added
+- **App privacy manifest** (`ios/Runner/PrivacyInfo.xcprivacy`), declaring tracking, the Google
+  ad domains and the collected data types (bead aptios-bks).
+
+### Changed
+- **iPhone asks for ad tracking once.** The request used to be made twice, before and after the
+  first screen, and the ads SDK was started twice. It is now asked once after the first screen,
+  before the ads SDK starts, and not at all for someone already known to be ad-free (beads
+  aptios-yqa).
+- **Location wording.** The iPhone no longer declares "Always" location use, which the app never
+  needed. The remaining text says only what the app does with your position while it is open.
+- **The website no longer offers Support the App.** Purchases are made in the iPhone or Android
+  app; the row is gone from the web menu, and the page says so if it is reached anyway (bead
+  aptios-vfn).
+- **Privacy policy in the app.** Settings, Help, Privacy policy opens the same policy page the App
+  Store and Play listings link to, and the user guide prints its address (bead aptios-rj1).
+
 ### Fixed
 - **Report a Problem attaches the screenshot.** The iPhone email composer opened with the text
   "Please attach your screenshot" and never attached it, and without a Mail account the user hit
@@ -19,10 +36,6 @@ features and bugs are frequently fixed in both.
   force-casting the window's root view controller, which crashes under the UIScene life cycle.
   It is now registered when Flutter's implicit engine starts, and the app adopts the UIScene
   life cycle (bead aptios-is9). Not yet built or run on a device.
-
-### Added
-- **App privacy manifest** (`ios/Runner/PrivacyInfo.xcprivacy`), declaring tracking, the Google
-  ad domains and the collected data types (bead aptios-bks).
 
 ## [1.16.6+170] — 2026-11-14
 

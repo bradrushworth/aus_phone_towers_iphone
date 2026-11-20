@@ -363,6 +363,8 @@ class SettingsSheet {
               _row(bc, Strings.androidPlayStore, '↗',
                   () => Utils.launchURL(
                       'https://play.google.com/store/apps/details?id=au.com.bitbot.phonetowers.flutter')),
+            if (Strings.privacyPolicyUrl.isNotEmpty)
+              _row(bc, Strings.privacyPolicy, '↗', () => Utils.launchURL(Strings.privacyPolicyUrl)),
             _row(bc, 'Source code', '↗',
                 () => Utils.launchURL('https://github.com/bradrushworth/aus_phone_towers_iphone')),
             // Which build am I actually running? Previously unanswerable from inside the app,

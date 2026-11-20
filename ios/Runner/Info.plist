@@ -55,12 +55,8 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Aus Phone Towers uses your location to find and display nearby mobile phone towers on the map, calculate distances to towers, and provide directions. For example, when you open the map view, the app will show your current position and list towers within your area so you can see which ones are closest to you.</string>
+	<string>Aus Phone Towers uses your location while the app is open to show where you are on the map and which mobile phone towers are near you, and to measure the distance and bearing to them.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Aus Phone Towers uses motion data to determine your device orientation and movement for accurately displaying map directions and your heading on the map. For example, when navigating to a tower location, the app uses your device's heading to orient the map in the direction you are facing.</string>
 	<key>UILaunchStoryboardName</key>

@@ -352,6 +352,22 @@ default) and generation-rank tie-breaking (`generationRank`, newest genuine capa
   porting this method, present in both apps) had it in the wrong arm, making it permanently
   unreachable and silently downgrading those genuine dual-tech carriers to plain UMTS→LTE.
 
+## Tracking prompt, ads start-up and privacy policy (beads aptios-yqa, aptios-rj1, aptios-vfn, 2026-11)
+- **One tracking request, one ads initialisation**, both in `MapScreenState.initAppTracingTransparency`
+  (`lib/ui/map_common.dart`), started after the first frame. Order: load the cached entitlement,
+  ask for tracking permission on iOS (skipped when `kScreenshotMode` or the cached entitlement says
+  ad-free), then `AdsHelper().initialize()` (non-web). `main.dart` no longer does either. The
+  entitlement is only the local cache at that point (the store loads later), so a paying user on a
+  fresh install may still see the prompt once.
+- `Info.plist` declares `NSLocationWhenInUseUsageDescription` only: no background location mode,
+  so no "Always" strings.
+- **Privacy policy row**: `Strings.privacyPolicyUrl` (empty = row hidden) holds the address the App
+  Store listing and the Android app's Play listing link to (checked 2026-11-20). The user guide's
+  Help row prints the same address as plain text (the guide may not link out). Change all three
+  together if the policy moves.
+- **Web**: the overflow menu omits Export Data and Support the App (`OptionsMenu.visibleItems`);
+  `SupportPromptScreen` shows only a sentence on web. The store is never initialised on web.
+
 ## Support the App (lib/helpers/support_prompt_helper.dart, lib/ui/widgets/support_prompt_screen.dart)
 Ported from the Java app's `SupportPromptActivity` / `MapsActivity.maybeShowSupportPrompt()`.
 

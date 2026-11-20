@@ -40,6 +40,19 @@ class SupportPromptScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The store is never initialised on web, so every purchase button would fail. The overflow
+    // menu hides the row there; this keeps the screen safe if it is reached some other way.
+    if (kIsWeb) {
+      return Scaffold(
+        appBar: AppBar(title: Text(Strings.supportPromptTitle)),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(Strings.supportUnavailableOnWeb, style: const TextStyle(fontSize: 15)),
+          ),
+        ),
+      );
+    }
     return Consumer<PurchaseHelper>(
       builder: (context, purchaseHelper, child) => Scaffold(
         appBar: AppBar(title: Text(Strings.supportPromptTitle)),

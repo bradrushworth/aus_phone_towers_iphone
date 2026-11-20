@@ -28,5 +28,12 @@ void main() {
       expect(names.contains('removeads'), isFalse);
       expect(names.contains('subscribe'), isFalse);
     });
+
+    test('web offers neither Export Data nor Support the App', () {
+      final web = OptionsMenu.visibleItems(isWeb: true);
+      expect(web, isNot(contains(OptionMenuItem.supportTheApp)));
+      expect(web, isNot(contains(OptionMenuItem.exportData)));
+      expect(OptionsMenu.visibleItems(isWeb: false), OptionMenuItem.values);
+    });
   });
 }
