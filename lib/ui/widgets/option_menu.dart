@@ -60,6 +60,15 @@ class OptionsMenu extends StatefulWidget {
       required this.onCameraMoveFromLastLocation,
       required this.takeScreenshot});
 
+  /// The overflow rows for a platform. On web there is no file system to export to and no store
+  /// to buy from (the store is never initialised there), so Export Data and Support the App are
+  /// not offered.
+  @visibleForTesting
+  static List<OptionMenuItem> visibleItems({required bool isWeb}) => OptionMenuItem.values
+      .where((OptionMenuItem item) =>
+          !(isWeb && (item == OptionMenuItem.exportData || item == OptionMenuItem.supportTheApp)))
+      .toList();
+
   @override
   _OptionsMenuState createState() => _OptionsMenuState();
 }
@@ -104,8 +113,7 @@ class _OptionsMenuState extends State<OptionsMenu> {
       icon: Icon(Icons.more_vert),
       itemBuilder: (BuildContext context) {
         // dart:io cannot write files on web, so Export Data is not offered there.
-        final Iterable<OptionMenuItem> items = OptionMenuItem.values
-            .where((OptionMenuItem item) => !(kIsWeb && item == OptionMenuItem.exportData));
+        final Iterable<OptionMenuItem> items = OptionsMenu.visibleItems(isWeb: kIsWeb);
         return items.map<PopupMenuItem<OptionMenuItem>>((OptionMenuItem item) {
           return PopupMenuItem<OptionMenuItem>(
             value: item,

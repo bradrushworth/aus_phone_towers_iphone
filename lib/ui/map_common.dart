@@ -120,7 +120,24 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     WidgetsFlutterBinding.ensureInitialized().addPostFrameCallback((_) => initAppTracingTransparency());
   }
 
+  /// The one tracking request and the one ads-SDK initialisation. Order matters: the iOS prompt
+  /// comes first so the ads SDK starts knowing the answer. Users already known to be ad-free
+  /// (from the cached entitlement, which the store round-trip later confirms or overturns) are
+  /// not asked, since no ad will be requested for them. Never prompts during the screenshot run
+  /// (see [kScreenshotMode]); web has neither prompt nor ads.
   Future<void> initAppTracingTransparency() async {
+    if (kIsWeb) return;
+    await PurchaseHelper().loadCachedEntitlement();
+    try {
+      if (Platform.isIOS && !kScreenshotMode && !PurchaseHelper().isSubscribed) {
+        await _requestTrackingAuthorization();
+      }
+    } finally {
+      AdsHelper().initialize();
+    }
+  }
+
+  Future<void> _requestTrackingAuthorization() async {
     if (!kIsWeb && Platform.isIOS) {
       // Show tracking authorization dialog and ask for permission
       final TrackingStatus status = await AppTrackingTransparency.trackingAuthorizationStatus;
@@ -384,8 +401,6 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         isShowCancelSearch = _searchTextFilter.text.isNotEmpty;
       });
     });
-
-    if (!kIsWeb) AdsHelper().initialize();
   }
 
   @override

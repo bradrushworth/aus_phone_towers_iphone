@@ -8,6 +8,21 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [Unreleased]
+
+### Changed
+- **iPhone asks for ad tracking once.** The request used to be made twice, before and after the
+  first screen, and the ads SDK was started twice. It is now asked once after the first screen,
+  before the ads SDK starts, and not at all for someone already known to be ad-free (beads
+  aptios-yqa).
+- **Location wording.** The iPhone no longer declares "Always" location use, which the app never
+  needed. The remaining text says only what the app does with your position while it is open.
+- **The website no longer offers Support the App.** Purchases are made in the iPhone or Android
+  app; the row is gone from the web menu, and the page says so if it is reached anyway (bead
+  aptios-vfn).
+- **Privacy policy row.** Settings, Help, Privacy policy opens the policy once its address is set
+  in `Strings.privacyPolicyUrl`; it is hidden until then (bead aptios-rj1).
+
 ## [1.16.6+170] — 2026-11-14
 
 ### Fixed

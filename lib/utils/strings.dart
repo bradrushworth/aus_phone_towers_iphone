@@ -1,4 +1,11 @@
 class Strings {
+  /// Address of the app's published privacy policy. Empty on purpose until the address is
+  /// confirmed against the store listings (bead aptios-rj1): while it is empty the Settings
+  /// "Privacy policy" row is hidden, so the app never links to an invented page.
+  static const String privacyPolicyUrl = '';
+  static String privacyPolicy = 'Privacy policy';
+  static String supportUnavailableOnWeb =
+      'Purchases and donations are made in the iPhone or Android app. The web edition has no ads and nothing to buy.';
   static String something_went_wrong = 'Oops something went wrong!';
   static String app_title = "Aus Phone Towers";
   static String telstra = "Telstra";
