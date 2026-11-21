@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -40,13 +39,8 @@ Future<void> main() async {
 
     if (kScreenshotMode) debugPrint('SCREENSHOT_MODE: binding ready, skipping ATT');
 
-    // Never prompt during the screenshot run — see [kScreenshotMode]. There is nobody to
-    // answer the dialog, and awaiting it deadlocks startup before runApp().
-    if (!kIsWeb && Platform.isIOS && !kScreenshotMode) {
-      // Show tracking authorization dialog and ask for permission
-      await AppTrackingTransparency.requestTrackingAuthorization();
-      await AppTrackingTransparency.getAdvertisingIdentifier();
-    }
+    // The tracking prompt is NOT requested here. It is asked once, after the first frame, from
+    // MapScreenState (lib/ui/map_common.dart), which then initialises the ads SDK.
 
     // Initialize Firebase
     if (useFirebase) {
@@ -82,8 +76,7 @@ Future<void> main() async {
         }
       }
 
-      // Initialize admob
-      AdsHelper().initialize();
+      // AdMob is initialised from MapScreenState once the tracking prompt has been answered.
 
       // Initialize In App Purchase (No longer required?)
       //InAppPurchaseConnection.enablePendingPurchases();

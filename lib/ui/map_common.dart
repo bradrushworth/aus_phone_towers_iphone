@@ -17,6 +17,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:location/location.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as onlyPath;
+import 'package:phonetowers/helpers/export_feature.dart';
 import 'package:phonetowers/helpers/carrier_tint.dart';
 import 'package:phonetowers/helpers/ads_helper.dart';
 import 'package:phonetowers/helpers/analytics_helper.dart';
@@ -120,7 +121,24 @@ class MapScreenState extends State<MapScreen> with AfterLayoutMixin<MapScreen> {
     WidgetsFlutterBinding.ensureInitialized().addPostFrameCallback((_) => initAppTracingTransparency());
   }
 
+  /// The one tracking request and the one ads-SDK initialisation. Order matters: the iOS prompt
+  /// comes first so the ads SDK starts knowing the answer. Users already known to be ad-free
+  /// (from the cached entitlement, which the store round-trip later confirms or overturns) are
+  /// not asked, since no ad will be requested for them. Never prompts during the screenshot run
+  /// (see [kScreenshotMode]); web has neither prompt nor ads.
   Future<void> initAppTracingTransparency() async {
+    if (kIsWeb) return;
+    await PurchaseHelper().loadCachedEntitlement();
+    try {
+      if (Platform.isIOS && !kScreenshotMode && !PurchaseHelper().isSubscribed) {
+        await _requestTrackingAuthorization();
+      }
+    } finally {
+      AdsHelper().initialize();
+    }
+  }
+
+  Future<void> _requestTrackingAuthorization() async {
     if (!kIsWeb && Platform.isIOS) {
       // Show tracking authorization dialog and ask for permission
       final TrackingStatus status = await AppTrackingTransparency.trackingAuthorizationStatus;
@@ -384,8 +402,6 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         isShowCancelSearch = _searchTextFilter.text.isNotEmpty;
       });
     });
-
-    if (!kIsWeb) AdsHelper().initialize();
   }
 
   @override
@@ -1804,10 +1820,12 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
                         'Latitude:': '${site.latitude}',
                         'Longitude:': '${site.longitude}',
                         if (site.elevation!.isNotEmpty) 'Elevation:': '${site.elevation} metres',
-                        if (getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile()) > 0)
-                          'Tower Height:':
-                              '${getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile())} metres',
-                        if (getTowerHeightFromDeviceDetails(site.getDeviceDetailsMobile()) > 0)
+                        if (TowerExport.describeHeightRange(
+                                site.getDeviceDetailsMobile().map((DeviceDetails d) => d.height)) !=
+                            null)
+                          'Antenna height:': TowerExport.describeHeightRange(
+                              site.getDeviceDetailsMobile().map((DeviceDetails d) => d.height))!,
+                        if (site.getDeviceDetailsMobile().isNotEmpty)
                           'City Density:': '${Site.getCityDensityName(site.getCityDensity())}',
                       },
                     ),
@@ -2059,15 +2077,6 @@ class MapBodyState extends AbstractMapBodyState with WidgetsBindingObserver {
         );
       },
     );
-  }
-
-  int getTowerHeightFromDeviceDetails(List<DeviceDetails> deviceDetailsMobile) {
-    int height = 0;
-    if (deviceDetailsMobile.length == 0) return height;
-    for (DeviceDetails d in deviceDetailsMobile) {
-      height += d.getTowerHeight();
-    }
-    return height = height ~/ deviceDetailsMobile.length;
   }
 
   List<TableRow> getMoreTableRows(Site site) {

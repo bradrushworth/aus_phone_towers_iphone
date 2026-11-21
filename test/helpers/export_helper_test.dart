@@ -43,6 +43,22 @@ void main() {
     });
   });
 
+  group('ExportHelper.formatsFor', () {
+    test('each menu row writes only the format it names', () {
+      expect(ExportHelper.formatsFor(ExportChoice.towersGeoJson),
+          <ExportFormat>[ExportFormat.geojson]);
+      expect(ExportHelper.formatsFor(ExportChoice.towersCsv), <ExportFormat>[ExportFormat.csv]);
+      expect(ExportHelper.formatsFor(ExportChoice.coverageGeoJson),
+          <ExportFormat>[ExportFormat.geojson]);
+      expect(ExportHelper.formatsFor(ExportChoice.coverageKml), <ExportFormat>[ExportFormat.kml]);
+    });
+  });
+
+  test('web message names downloaded files only', () {
+    expect(ExportHelper.describeSavedFiles(<String>['a/b/a.csv'], isIOS: false, isWeb: true),
+        'Downloaded:\na.csv');
+  });
+
   test('keeps the Exports folder name stable', () {
     expect(ExportHelper.kExportsFolderName, 'Exports');
     expect(ExportHelper.kExportRetention, const Duration(days: 30));

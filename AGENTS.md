@@ -133,6 +133,13 @@ touch targets/decorative semantics/reduce motion) and what changed here as a res
   from 1.14.5 to 1.16.5 `assets/*` went out `immutable` for a year, so a returning visitor could
   pair a new main.dart.js with an old path-loss table or icon font. Browsers that cached assets
   in that window keep them until evicted (bead aptios-pkv).
+- **What Cloudflare does with those headers** (measured 2026-11-14). Cloudflare's edge also held 17
+  of those files under the old year-long header until the owner purged them on 2026-11-14. It now
+  revalidates every file with S3 (`cf-cache-status: REVALIDATED`), so it cannot serve old copies
+  again. Browsers get `no-cache` for `.html`, `.js` and `.json`, but `max-age=14400` for images and
+  fonts, because the zone's 4-hour Browser Cache TTL overrides the origin for those types (the S3
+  objects themselves say `no-cache`). After a release a browser can keep a pin icon or the icon
+  font for up to 4 hours. Changing that is a Cloudflare setting, so it is the owner's call.
 - **Crashlytics has no web implementation.** Every `FirebaseCrashlytics` call must be skipped on
   web (`kIsWeb`); on web, print with `debugPrint` instead (`logger` is silent in release builds).
   Until 1.16.6, `AnalyticsHelper.log` called it on web. The failure reached the zone handler,
@@ -352,6 +359,23 @@ default) and generation-rank tie-breaking (`generationRank`, newest genuine capa
   porting this method, present in both apps) had it in the wrong arm, making it permanently
   unreachable and silently downgrading those genuine dual-tech carriers to plain UMTS→LTE.
 
+## Tracking prompt, ads start-up and privacy policy (beads aptios-yqa, aptios-rj1, aptios-vfn, 2026-11)
+- **One tracking request, one ads initialisation**, both in `MapScreenState.initAppTracingTransparency`
+  (`lib/ui/map_common.dart`), started after the first frame. Order: load the cached entitlement,
+  ask for tracking permission on iOS (skipped when `kScreenshotMode` or the cached entitlement says
+  ad-free), then `AdsHelper().initialize()` (non-web). `main.dart` no longer does either. The
+  entitlement is only the local cache at that point (the store loads later), so a paying user on a
+  fresh install may still see the prompt once.
+- `Info.plist` declares `NSLocationWhenInUseUsageDescription` only: no background location mode,
+  so no "Always" strings.
+- **Privacy policy row**: `Strings.privacyPolicyUrl` (empty = row hidden) holds the address the App
+  Store listing and the Android app's Play listing link to (checked 2026-11-20). The user guide's
+  Help row prints the same address as plain text (the guide may not link out). Change all three
+  together if the policy moves.
+- **Web**: the overflow menu omits Support the App (`OptionsMenu.visibleItems`); Export Data stays
+  and downloads the file in the browser;
+  `SupportPromptScreen` shows only a sentence on web. The store is never initialised on web.
+
 ## Support the App (lib/helpers/support_prompt_helper.dart, lib/ui/widgets/support_prompt_screen.dart)
 Ported from the Java app's `SupportPromptActivity` / `MapsActivity.maybeShowSupportPrompt()`.
 
@@ -549,6 +573,28 @@ why), and leave pins, polygons and the signal ramp alone: they carry meaning.
 - After a run, revert the two files the tool touches that are not icon assets:
   `ios/Runner.xcodeproj/project.pbxproj` and `macos/Flutter/GeneratedPluginRegistrant.swift`.
 
+## iOS native code (ios/Runner)
+- **UIScene life cycle.** `Info.plist` carries `UIApplicationSceneManifest` (scene delegate
+  `FlutterSceneDelegate`, storyboard `Main`), and `AppDelegate` conforms to
+  `FlutterImplicitEngineDelegate`. Plugins are registered and the screenshot method channel is
+  created in `didInitializeImplicitFlutterEngine`, with `engineBridge.applicationRegistrar.messenger()`.
+  Never read `window` or `rootViewController` in `didFinishLaunchingWithOptions`: under scenes the
+  window does not exist yet and `UIApplicationDelegate.window` stays nil. Look up the presenting
+  view controller when needed (`topViewController()`: connected `UIWindowScene`, key window, topmost
+  presented controller). Guide: https://docs.flutter.dev/to/uiscene-migration.
+- **Report a Problem** (`au.com.bitbot.phonetowers.flutter.provider/screenshot`, `takeScreenshot`,
+  arguments `path` = file name, `subject`). Swift looks for the PNG in `NSTemporaryDirectory()` and
+  the Caches directory (path_provider's temporary directory on iOS). With Mail set up it attaches
+  the PNG to the composer; otherwise it shows a `UIActivityViewController` (popover anchored for iPad).
+- **Privacy manifest** `ios/Runner/PrivacyInfo.xcprivacy` is a Runner resource. Its collected data
+  types must match the App Privacy answers in App Store Connect; change both together. It was
+  written from the public App Store page, which differs from what was first assumed (device ID is
+  not tracking there; usage data is). The three tracking domains are Google's ad-serving domains
+  (Google publishes no AdMob-specific list; `NSPrivacyTracking` true needs at least one). Do not add
+  `google.com`: with tracking denied iOS blocks listed domains, which would break Maps. Required-reason
+  APIs: the app's own Swift code uses none; plugins ship their own manifests.
+- None of this has been compiled: it was written without a Mac. Check the first Codemagic build.
+
 ## Documentation must be kept in sync
 Whenever you add, change, or remove a user-facing feature, command, or behaviour in this
 project, you MUST also update the relevant documentation before considering the task complete:
@@ -565,6 +611,38 @@ project, you MUST also update the relevant documentation before considering the 
 
 This applies to new menu items, exported formats, map overlays/labels, settings, and any
 behaviour change a user would notice. Do not leave docs stale after a code change.
+
+## Export Data (towers and coverage)
+- **The tower export is a contract shared with the Android app** (`aus_phone_towers_java`,
+  `ExportHelper.TOWER_CSV_COLUMNS` and `buildTowerFeature`). Search and rescue agencies load it into
+  CalTopo / ArcGIS Pro for viewsheds, so names, order, units and number formatting must not drift.
+  Change both apps together. Columns (CSV order; the same names are the GeoJSON properties):
+  `site_id, name, telco, latitude, longitude, ground_elevation_m, antenna_height_max_m,
+  antenna_height_avg_m, antenna_height_min_m, antenna_top_elevation_m, technologies,
+  frequencies_mhz, transmitter_count, state, postcode, city_density, active,
+  ground_elevation_dem_m, elevation_check, antenna_height_all_max_m`. The last three were added
+  to both apps on 2026-11-20.
+- Code: pure `lib/helpers/export_feature.dart` (no Flutter/platform imports; tested in
+  `test/helpers/export_feature_test.dart`), `ExportHelper` (collects from the map, `formatsFor`),
+  and delivery split by conditional import: `export_delivery_io.dart` (writes into `Exports`,
+  deletes files over 30 days old, opens `share_plus`) and `export_delivery_web.dart` (Blob
+  download, no dart:io).
+- Heights are the raw `DeviceDetails.height`, values <= 0 ignored. NEVER use `getTowerHeight()` (it
+  floors at 10 m). Stats are over the transmitters passing the filters (`Site.isDeviceVisible`);
+  `antenna_height_all_max_m` ignores filters. One feature per site whose marker is visible.
+- `elevation_check`: `ok` when the ACMA ground and the terrain-model ground (`Site.terrainGroundM`)
+  differ by at most 30 m (`TowerExport.elevationToleranceM`), `differs` above that, `unverified` when
+  either is missing. The terrain ground is `Site.terrainGroundM` when the map already loaded it; for
+  visible sites without it the export fetches `site_terrain.ground_m` at export time
+  (`lib/restful/site_terrain_batch.dart`, mirroring Android's `SiteTerrainBatchFetcher`: 50 ids per
+  request, 3 in flight, 12 s per request, 20 s overall; ids must be plain `[A-Za-z0-9_-]+`, a bare 0
+  is zero-padded; a failed batch only leaves its sites `unverified`). The fetched value is not
+  written back to the site, so map drawing is unchanged.
+- Nulls are empty CSV cells and JSON null, never the text `null`. Numbers are locale independent.
+- Each menu row writes only its own format (`ExportHelper.formatsFor`). Coverage properties use the
+  Android names (`frequency_mhz`, `eirp_w`, `signal_dbm`, ...); there is no `sim` property (one SIM).
+- iOS shows `Exports` in the Files app via `UIFileSharingEnabled` and
+  `LSSupportsOpeningDocumentsInPlace`; nothing else is written to Documents.
 
 ## Push to `main` only for an explicit release
 A Codemagic build is triggered by every push, and each build costs money, so:
