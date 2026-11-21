@@ -8,7 +8,7 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
-## [Unreleased]
+## [1.16.7+171] — 2026-11-21
 
 ### Added
 - **App privacy manifest** (`ios/Runner/PrivacyInfo.xcprivacy`), declaring tracking, the Google
