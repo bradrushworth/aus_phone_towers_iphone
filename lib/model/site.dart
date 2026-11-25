@@ -197,13 +197,21 @@ class Site {
 
   /// True when this transmitter passes the current filters (density, network type, multiplex
   /// and frequency band). Telco hiding is a site-level check in [shouldBeVisible].
+  ///
+  /// Network type and multiplex describe mobile networks, so they apply to mobile carriers only.
+  /// A broadcast, aviation or CB licence classifies as GSM just because its emission's
+  /// information type is 'E' (FM 200KF8EHF, AM 18K0A3E), so hiding 2G used to hide every radio
+  /// station even with Radio on (user report, 2026-11-25; Android #168). The transmitter-type
+  /// switches show or hide those; density and frequency still apply to every transmitter.
   bool isDeviceVisible(DeviceDetails d) {
     if (SiteHelper.hideDensity.contains(d.getRadiationModel())) return false;
-    if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) return false;
-    LteType lteType = d.getLteType();
-    if (lteType == LteType.NOT_LTE && !PolygonHelper.displayNotLteMultiplex) return false;
-    if (lteType == LteType.TD_LTE && !PolygonHelper.displayTdMultiplex) return false;
-    if (lteType == LteType.FD_LTE && !PolygonHelper.displayFdMultiplex) return false;
+    if (TelcoHelper.isTelecommunications(telco)) {
+      if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) return false;
+      LteType lteType = d.getLteType();
+      if (lteType == LteType.NOT_LTE && !PolygonHelper.displayNotLteMultiplex) return false;
+      if (lteType == LteType.TD_LTE && !PolygonHelper.displayTdMultiplex) return false;
+      if (lteType == LteType.FD_LTE && !PolygonHelper.displayFdMultiplex) return false;
+    }
     int frequency = d.frequency! / 1000 ~/ 1000;
     for (List<int> range in SiteHelper.hideFrequency) {
       if (frequency >= range[0] && frequency <= range[1]) return false;

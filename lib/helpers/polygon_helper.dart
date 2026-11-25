@@ -307,26 +307,31 @@ class PolygonHelper with ChangeNotifier {
       } else {
         // If we don't know the specific devices, use the menu configuration
 
-        // Don't download network types we are hiding
-        if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) {
-          logger.d(
-              "PolygonHelper: queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType()})");
-          continue deviceLoop;
-        }
+        // Network type and multiplex apply to mobile carriers only: a radio, aviation or CB
+        // licence classifies as GSM from its emission, and must not lose its coverage when 2G
+        // is hidden (see Site.isDeviceVisible).
+        if (TelcoHelper.isTelecommunications(site.getTelco())) {
+          // Don't download network types we are hiding
+          if (SiteHelper.hideNetworkType.contains(d.getNetworkType())) {
+            logger.d(
+                "PolygonHelper: queryForSignalPolygon: SiteHelper.hideNetworkType.contains(${d.getNetworkType()})");
+            continue deviceLoop;
+          }
 
-        // Don't download LTE types we are hiding
-        LteType lteType = d.getLteType();
-        if (lteType == LteType.NOT_LTE && !displayNotLteMultiplex) {
-          logger.d("PolygonHelper: queryForSignalPolygon: !displayNotLteMultiplex");
-          continue deviceLoop;
-        }
-        if (lteType == LteType.TD_LTE && !displayTdMultiplex) {
-          logger.d("PolygonHelper: queryForSignalPolygon: !displayTdMultiplex");
-          continue deviceLoop;
-        }
-        if (lteType == LteType.FD_LTE && !displayFdMultiplex) {
-          logger.d("PolygonHelper: queryForSignalPolygon: !displayFdMultiplex");
-          continue deviceLoop;
+          // Don't download LTE types we are hiding
+          LteType lteType = d.getLteType();
+          if (lteType == LteType.NOT_LTE && !displayNotLteMultiplex) {
+            logger.d("PolygonHelper: queryForSignalPolygon: !displayNotLteMultiplex");
+            continue deviceLoop;
+          }
+          if (lteType == LteType.TD_LTE && !displayTdMultiplex) {
+            logger.d("PolygonHelper: queryForSignalPolygon: !displayTdMultiplex");
+            continue deviceLoop;
+          }
+          if (lteType == LteType.FD_LTE && !displayFdMultiplex) {
+            logger.d("PolygonHelper: queryForSignalPolygon: !displayFdMultiplex");
+            continue deviceLoop;
+          }
         }
 
         // Don't download frequencies we are hiding

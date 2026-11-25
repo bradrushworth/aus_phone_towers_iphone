@@ -8,6 +8,16 @@ See the sibling [`aus_phone_towers_java`](https://github.com/bradrushworth/aus_p
 repo's own `CHANGELOG.md` for the Android app's parallel history — the two apps share most
 features and bugs are frequently fixed in both.
 
+## [1.16.8+172] — 2026-11-25
+
+### Fixed
+- **Radio, aviation and CB towers show again when 2G is switched off.** The app labels these
+  licences "2G" because of how their licence codes describe voice and sound broadcasting, so
+  hiding 2G GSM hid every radio station and its coverage even with Radio on. The Generation and
+  Multiplex filters now apply to mobile carriers only (`Site.isDeviceVisible`,
+  `PolygonHelper.queryForSignalPolygon`; `test/model/site_visibility_test.dart`). Same fix as
+  Android 7.11.7.
+
 ## [1.16.7+171] — 2026-11-21
 
 ### Added
